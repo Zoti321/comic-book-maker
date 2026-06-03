@@ -1,0 +1,22 @@
+[package]
+name = "comic_book_maker_core"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+flutter_rust_bridge = "=2.12.0"
+once_cell = "1.21.3"
+rusqlite = { version = "0.37.0", features = ["bundled"] }
+uuid = { version = "1.18.1", features = ["v4"] }
+anyhow = "1.0.98"
+image = { version = "0.25.9", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp", "avif"] }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
+quick-xml = "0.37.5"
+natord = "1.0.9"
+unrar-ng = "0.7"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

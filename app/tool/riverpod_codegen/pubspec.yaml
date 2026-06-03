@@ -1,0 +1,20 @@
+name: riverpod_codegen
+description: 独立工作区，用于在不引入 flutter_test 约束下运行 riverpod build_runner。
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  comic_book_maker:
+    path: ../..
+  riverpod_annotation: 4.0.2
+
+dev_dependencies:
+  build_runner: 2.10.0
+  riverpod_generator: ^4.0.2
+
+dependency_overrides:
+  analyzer: ^9.0.0
+  dart_style: 3.1.3
+  mockito: 5.6.1

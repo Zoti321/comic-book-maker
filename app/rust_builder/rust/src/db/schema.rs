@@ -1,0 +1,70 @@
+pub const SCHEMA: &str = "
+CREATE TABLE IF NOT EXISTS projects (
+    id TEXT PRIMARY KEY NOT NULL,
+    title TEXT NOT NULL,
+    series TEXT,
+    issue_number TEXT,
+    series_count TEXT,
+    volume TEXT,
+    alternate_series TEXT,
+    alternate_number TEXT,
+    alternate_count TEXT,
+    summary TEXT,
+    notes TEXT,
+    year INTEGER,
+    month INTEGER,
+    day INTEGER,
+    writer TEXT,
+    penciller TEXT,
+    inker TEXT,
+    colorist TEXT,
+    letterer TEXT,
+    cover_artist TEXT,
+    editor TEXT,
+    translator TEXT,
+    publisher TEXT,
+    imprint TEXT,
+    genre TEXT,
+    tags TEXT,
+    web TEXT,
+    language_iso TEXT,
+    format TEXT,
+    black_and_white TEXT,
+    manga TEXT,
+    characters TEXT,
+    teams TEXT,
+    locations TEXT,
+    main_character_or_team TEXT,
+    scan_information TEXT,
+    story_arc TEXT,
+    story_arc_number TEXT,
+    series_group TEXT,
+    age_rating TEXT,
+    community_rating TEXT,
+    review TEXT,
+    gtin TEXT,
+    cover_page_index INTEGER NOT NULL DEFAULT 0,
+    export_format TEXT NOT NULL DEFAULT 'comic_archive',
+    inferred_import_kind TEXT NOT NULL DEFAULT 'images',
+    delete_project_after_export INTEGER NOT NULL DEFAULT 0,
+    use_default_export_directory INTEGER NOT NULL DEFAULT 1,
+    export_directory TEXT,
+    comic_archive_container TEXT NOT NULL DEFAULT 'zip',
+    use_comic_archive_extension INTEGER NOT NULL DEFAULT 1,
+    created_at_ms INTEGER NOT NULL,
+    updated_at_ms INTEGER NOT NULL,
+    last_opened_at_ms INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS pages (
+    id TEXT PRIMARY KEY NOT NULL,
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    sort_index INTEGER NOT NULL,
+    asset_path TEXT NOT NULL,
+    UNIQUE(project_id, sort_index)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pages_project_sort ON pages(project_id, sort_index);
+";
+
+pub const DEFAULT_PROJECT_TITLE: &str = "未命名";
