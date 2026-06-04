@@ -29,3 +29,10 @@ Thumbs.db
 # Env
 .env
 *.env
+
+# Local agent scratch / issues (see docs/agents/issue-tracker.md)
+.scratch/
+
+# Flutter / Dart codegen (regenerate locally; do not commit)
+app/lib/**/*.g.dart
+app/lib/src/rust/

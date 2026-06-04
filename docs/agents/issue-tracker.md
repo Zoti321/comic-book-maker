@@ -1,6 +1,6 @@
 # Issue tracker: Local Markdown
 
-Issues and PRDs for this repo live as markdown files in `.scratch/`.
+Issues and PRDs for this repo live as markdown files in `.scratch/`（**不纳入 git**；每人本地维护，见仓库根 `.gitignore`）。
 
 ## Conventions
 

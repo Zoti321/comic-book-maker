@@ -39,7 +39,11 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
-# Riverpod codegen 工作区：lib/providers 为指向 app/lib/providers 的联接，勿提交
+# Riverpod / FRB 生成物（规则亦在仓库根 .gitignore；克隆后需跑 codegen）
+lib/**/*.g.dart
+lib/src/rust/
+
+# Riverpod codegen 工作区：联接目录，勿提交
 /tool/riverpod_codegen/lib/
 
 # Android Studio will place build artifacts here

@@ -87,7 +87,7 @@ class MyFeature extends _$MyFeature {
 
 ### 提交与 lint
 
-- **提交** provider 源文件与对应的 `*.g.dart`（一并 review）
+- **勿提交** `*.g.dart` 与 `lib/src/rust/`（已 gitignore）；只提交 provider 源文件，合并前本地运行 `run_codegen` / `scripts/generate-frb.ps1`
 - `analysis_options.yaml` 已排除 `**/*.g.dart`，勿手改生成文件
 - `app/pubspec.yaml` 的 `dependency_overrides`（`analyzer` / `dart_style` / `mockito`）为 codegen 工具链所需；升级 Flutter SDK 或 generator 后若 `run_codegen` 失败，先检查这些 override 是否仍适用
 
