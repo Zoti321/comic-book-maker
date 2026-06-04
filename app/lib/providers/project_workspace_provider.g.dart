@@ -61,7 +61,7 @@ final class ProjectWorkspaceProvider
   }
 }
 
-String _$projectWorkspaceHash() => r'e141f128b030f2434b593e4050f97b6de6e97987';
+String _$projectWorkspaceHash() => r'8d649bba928aed934131b44b81e900e36522fe6e';
 
 /// 单个项目编辑会话的 deep controller：封装 FRB 调用与工作区状态。
 

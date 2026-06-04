@@ -39,6 +39,9 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Riverpod codegen 工作区：lib/providers 为指向 app/lib/providers 的联接，勿提交
+/tool/riverpod_codegen/lib/providers
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

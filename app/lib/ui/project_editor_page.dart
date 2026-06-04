@@ -3,14 +3,13 @@ import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/metadata_panel.dart';
 import 'package:comic_book_maker/ui/pages/pages_panel.dart';
-import 'package:comic_book_maker/ui/import_kind_picker_rules.dart';
 import 'package:comic_book_maker/ui/project_editor_append_flow.dart';
 import 'package:comic_book_maker/ui/project_editor_app_bar.dart';
 import 'package:comic_book_maker/ui/project_editor_export_flow.dart';
+import 'package:comic_book_maker/ui/project_editor_page_operations_flow.dart';
 import 'package:comic_book_maker/ui/project_editor_tab_switcher.dart';
 import 'package:comic_book_maker/ui/project_properties_dialog.dart';
 import 'package:comic_book_maker/ui/theme/app_theme.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
@@ -53,84 +52,44 @@ class ProjectEditorPage extends HookConsumerWidget {
           workspaceNotifier: workspaceNotifier,
         );
 
-    Future<void> addGalleryPages() => runGalleryAddPageImages(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-        );
-
-    Future<void> replacePage(PageSummary page) async {
-      final kind = workspace.settings?.inferredImportKind;
-      if (kind == null) return;
-
-      final allowedExtensions = allowedExtensionsFor(
-        kind,
-        ImportKindPickerIntent.replacePage,
-      )!;
-
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: allowedExtensions,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final sourcePath = result.files.single.path;
-      if (sourcePath == null || sourcePath.isEmpty) {
-        workspaceNotifier.reportError('无法读取所选文件路径');
-        return;
-      }
-
-      try {
-        await workspaceNotifier.replacePage(page.id, sourcePath);
-      } catch (_) {}
-    }
-
-    Future<void> deletePageItem(PageSummary page) async {
-      final confirmed = await showAppConfirmDialog(
-        context: context,
-        title: '删除页面',
-        description: Text('确定删除第 ${page.sortIndex + 1} 页？'),
-        confirmLabel: '删除',
-        destructive: true,
-      );
-      if (confirmed != true) return;
-
-      try {
-        await workspaceNotifier.deletePage(page.id);
-      } catch (_) {}
-    }
-
-    Future<void> setCoverPage(PageSummary page) async {
-      try {
-        await workspaceNotifier.setCoverPage(page.sortIndex);
-      } catch (_) {}
-    }
-
-    Future<void> viewPageOriginal(PageSummary page) async {
-      await showPageImageViewer(context, page);
-    }
-
-    Future<void> movePageEarlier(PageSummary page) async {
-      try {
-        await workspaceNotifier.movePageEarlier(page);
-      } catch (_) {}
-    }
-
-    Future<void> movePageLater(PageSummary page) async {
-      try {
-        await workspaceNotifier.movePageLater(page);
-      } catch (_) {}
-    }
-
     Widget imagesTabContent() {
       return PageThumbnailGrid(
         pages: workspace.pages,
         coverPageIndex: workspace.coverPageIndex,
-        onAdd: addGalleryPages,
-        onReplace: replacePage,
-        onDelete: deletePageItem,
-        onSetCover: setCoverPage,
-        onViewOriginal: viewPageOriginal,
-        onMoveEarlier: movePageEarlier,
-        onMoveLater: movePageLater,
+        onAdd: () => runGalleryAddPageImages(
+          context: context,
+          workspaceNotifier: workspaceNotifier,
+        ),
+        onReplace: (page) => runReplacePageImage(
+          context: context,
+          workspace: workspace,
+          workspaceNotifier: workspaceNotifier,
+          page: page,
+        ),
+        onDelete: (page) => runDeletePage(
+          context: context,
+          workspaceNotifier: workspaceNotifier,
+          page: page,
+        ),
+        onSetCover: (page) => runSetCoverPage(
+          context: context,
+          workspaceNotifier: workspaceNotifier,
+          page: page,
+        ),
+        onViewOriginal: (page) => runViewPageOriginal(
+          context: context,
+          page: page,
+        ),
+        onMoveEarlier: (page) => runMovePageEarlier(
+          context: context,
+          workspaceNotifier: workspaceNotifier,
+          page: page,
+        ),
+        onMoveLater: (page) => runMovePageLater(
+          context: context,
+          workspaceNotifier: workspaceNotifier,
+          page: page,
+        ),
       );
     }
 

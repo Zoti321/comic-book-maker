@@ -53,7 +53,7 @@ class MyFeature extends _$MyFeature {
 
 ### 生成命令
 
-因 `flutter_test` 与 `riverpod_generator` 的 `analyzer` 约束冲突，**在 app 根目录直接跑 `build_runner` 可能失败**。请使用独立工作区：
+因 `flutter_test` 与 `riverpod_generator` 的 `analyzer` 约束冲突，**在 app 根目录直接跑 `build_runner` 可能失败**。请使用独立工作区（**只改** `app/lib/providers/`，勿维护 `tool/riverpod_codegen/lib/providers/` 拷贝）：
 
 ```powershell
 # Windows
@@ -65,7 +65,7 @@ class MyFeature extends _$MyFeature {
 ./app/tool/riverpod_codegen/run_codegen.sh
 ```
 
-脚本会同步 `app/lib/providers/` 中的源文件、运行 `build_runner`，并将 `*.g.dart` 拷回 `app/lib/providers/`。
+脚本将 `tool/riverpod_codegen/lib/providers` 联接 / 链接到 `app/lib/providers/`，在同一目录运行 `build_runner`，`*.g.dart` 直接写入 `app/lib/providers/`。
 
 ### 提交与 lint
 

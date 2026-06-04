@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:comic_book_maker/src/rust/api/metadata.dart';
-import 'package:comic_book_maker/src/rust/api/simple.dart';
+import 'package:comic_book_maker/application/core_gateway.dart';
+import 'package:comic_book_maker/application/metadata_editing_session.dart';
 import 'package:comic_book_maker/ui/layout/responsive.dart';
 import 'package:comic_book_maker/ui/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/project_editor_settings_bar.dart';
@@ -13,15 +13,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-const _metadataAutosaveDebounce = Duration(milliseconds: 600);
-const _saveIdlePollInterval = Duration(milliseconds: 16);
-
 /// 供项目编辑页在切 Tab / 返回前 flush 元数据自动保存。
 class MetadataPanelController {
   Future<bool> Function()? _prepareForNavigation;
   bool Function()? _isSaving;
 
-  /// Flush 待写入改动；返回 `true` 表示可以离开元数据 Tab。
   Future<bool> prepareForNavigation() async =>
       await (_prepareForNavigation?.call() ?? Future.value(true));
 
@@ -50,6 +46,7 @@ class MetadataPanel extends HookConsumerWidget {
     this.controller,
     this.onSaved,
     this.scrollController,
+    this.gateway,
   });
 
   final String projectId;
@@ -58,137 +55,31 @@ class MetadataPanel extends HookConsumerWidget {
   final MetadataPanelController? controller;
   final ValueChanged<Metadata>? onSaved;
   final ScrollController? scrollController;
+  final CoreGateway? gateway;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final schema = useMemoized(
-      () => getMetadataEditorSchema(exportFormat: exportFormat),
-      [exportFormat],
-    );
-    final metadata = useState<Metadata?>(null);
-    final loadError = useState<String?>(null);
-    final saveError = useState<String?>(null);
-    final loading = useState(true);
-    final saving = useState(false);
-    final dirty = useState(false);
     final sectionIndex = useState(0);
-    final importSnapshot = useState<ImportMetadataSnapshotFrb?>(null);
-    final inferredImportKind = useState<InferredImportKindFrb?>(null);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final controllers = useRef(<String, TextEditingController>{});
-    final debounceTimer = useRef<Timer?>(null);
 
-    void syncController(String key, String value) {
-      final field = controllers.value.putIfAbsent(
-        key,
-        TextEditingController.new,
-      );
-      if (field.text != value) field.text = value;
-    }
-
-    bool usesTextController(MetadataFieldKindFrb kind) {
-      return switch (kind) {
-        MetadataFieldKindFrb.text ||
-        MetadataFieldKindFrb.multilineText ||
-        MetadataFieldKindFrb.integer ||
-        MetadataFieldKindFrb.ageRating =>
-          true,
-        _ => false,
-      };
-    }
-
-    TextEditingController fieldController(String key) =>
-        controllers.value.putIfAbsent(key, TextEditingController.new);
-
-    void markPendingChanges(bool value) {
-      if (dirty.value == value) return;
-      dirty.value = value;
-    }
-
-    Future<void> waitForSaveIdle() async {
-      while (saving.value) {
-        await Future<void>.delayed(_saveIdlePollInterval);
-      }
-    }
-
-    bool hasPendingSave() =>
-        debounceTimer.value != null || dirty.value;
-
-    void cancelDebouncedSave() {
-      debounceTimer.value?.cancel();
-      debounceTimer.value = null;
-    }
-
-    void applyMetadata(
-      Metadata value, {
-      Map<String, String>? submittedTextFieldValues,
-    }) {
-      final withPageCount = metadataWithPageCount(
-        metadata: value,
+    final session = useMemoized(
+      () => MetadataEditingSession(
+        projectId: projectId,
+        exportFormat: exportFormat,
         pageCount: pageCount,
-      );
-      metadata.value = withPageCount;
-      var hasConcurrentEdits = false;
-      for (final section in schema.sections) {
-        for (final field in section.fields) {
-          if (usesTextController(field.kind)) {
-            final controller = fieldController(field.id);
-            final submitted = submittedTextFieldValues?[field.id];
-            if (submitted != null && controller.text != submitted) {
-              hasConcurrentEdits = true;
-              continue;
-            }
-            syncController(
-              field.id,
-              metadataFieldDisplayValue(
-                metadata: withPageCount,
-                fieldId: field.id,
-              ),
-            );
-          }
-        }
-      }
-      if (hasConcurrentEdits) {
-        markPendingChanges(true);
-      }
-    }
+        gateway: gateway ?? const FrbCoreGateway(),
+        onSaved: onSaved,
+      ),
+      [projectId, exportFormat, gateway],
+    );
 
-    Map<String, String> captureSubmittedTextFieldValues() {
-      final values = <String, String>{};
-      for (final section in schema.sections) {
-        for (final field in section.fields) {
-          if (usesTextController(field.kind)) {
-            values[field.id] = fieldController(field.id).text;
-          }
-        }
-      }
-      return values;
-    }
-
-    Future<void> loadMetadata() async {
-      loading.value = true;
-      loadError.value = null;
-      saveError.value = null;
-
-      try {
-        final loaded = getProjectMetadata(projectId: projectId);
-        applyMetadata(loaded);
-        importSnapshot.value =
-            getImportMetadataSnapshot(projectId: projectId);
-        inferredImportKind.value =
-            getProjectSettings(projectId: projectId).inferredImportKind;
-        loading.value = false;
-        markPendingChanges(false);
-      } catch (e) {
-        loading.value = false;
-        loadError.value = e.toString();
-      }
-    }
+    useListenable(session);
 
     useEffect(() {
-      loadMetadata();
-      return null;
-    }, [projectId]);
+      unawaited(session.load());
+      return session.dispose;
+    }, [session]);
 
     useEffect(() {
       sectionIndex.value = 0;
@@ -196,23 +87,12 @@ class MetadataPanel extends HookConsumerWidget {
     }, [exportFormat]);
 
     useEffect(() {
-      final current = metadata.value;
-      if (current != null && current.pageCount != pageCount) {
-        metadata.value = metadataWithPageCount(
-          metadata: current,
-          pageCount: pageCount,
-        );
-      }
-      try {
-        importSnapshot.value =
-            getImportMetadataSnapshot(projectId: projectId);
-      } catch (_) {}
+      session.setPageCount(pageCount);
       return null;
-    }, [pageCount]);
+    }, [pageCount, session]);
 
     useEffect(() {
       return () {
-        cancelDebouncedSave();
         for (final c in controllers.value.values) {
           c.dispose();
         }
@@ -220,109 +100,56 @@ class MetadataPanel extends HookConsumerWidget {
       };
     }, const []);
 
-    List<MetadataFieldValueFrb> collectFormValues() {
-      final current = metadata.value!;
-      final values = <MetadataFieldValueFrb>[];
+    TextEditingController fieldController(String key) =>
+        controllers.value.putIfAbsent(key, TextEditingController.new);
 
-      for (final section in schema.sections) {
-        for (final field in section.fields) {
-          switch (field.kind) {
-            case MetadataFieldKindFrb.text:
-            case MetadataFieldKindFrb.multilineText:
-            case MetadataFieldKindFrb.integer:
-            case MetadataFieldKindFrb.ageRating:
-              values.add(
-                MetadataFieldValueFrb(
-                  fieldId: field.id,
-                  value: fieldController(field.id).text,
-                ),
-              );
-            case MetadataFieldKindFrb.dropdown:
-              values.add(
-                MetadataFieldValueFrb(
-                  fieldId: field.id,
-                  value: metadataFieldDisplayValue(
-                    metadata: current,
-                    fieldId: field.id,
-                  ),
-                ),
-              );
-            case MetadataFieldKindFrb.readOnly:
-            case MetadataFieldKindFrb.coverPageIndex:
-            case MetadataFieldKindFrb.pageCountInfo:
-              break;
-          }
+    void syncController(String key, String value) {
+      final field = fieldController(key);
+      if (field.text != value) field.text = value;
+    }
+
+    Map<String, String> captureTextFieldValues() {
+      final values = <String, String>{};
+      for (final field in session.schema.sections.expand((s) => s.fields)) {
+        if (MetadataEditingSession.fieldUsesTextController(field.kind)) {
+          values[field.id] = fieldController(field.id).text;
         }
       }
-
       return values;
     }
 
-    Metadata buildMetadataFromForm() {
-      return mergeMetadataFromForm(
-        exportFormat: exportFormat,
-        base: metadata.value!,
-        fieldValues: collectFormValues(),
-        pageCount: pageCount,
-      );
-    }
+    bool validateForm() => formKey.currentState?.validate() ?? false;
 
-    late final Future<bool> Function() performSave;
-    late final void Function() scheduleDebouncedSave;
-
-    scheduleDebouncedSave = () {
-      markPendingChanges(true);
-      cancelDebouncedSave();
-      debounceTimer.value = Timer(_metadataAutosaveDebounce, () {
-        unawaited(performSave());
-      });
-    };
-
-    performSave = () async {
-      cancelDebouncedSave();
-      await waitForSaveIdle();
-      if (metadata.value == null) return true;
-      if (!hasPendingSave() && saveError.value == null) return true;
-      if (!formKey.currentState!.validate()) return false;
-
-      saving.value = true;
-      saveError.value = null;
-
-      final submittedTextFieldValues = captureSubmittedTextFieldValues();
-
-      try {
-        final saved = updateProjectMetadata(
-          projectId: projectId,
-          metadata: buildMetadataFromForm(),
-        );
-        applyMetadata(
-          saved,
-          submittedTextFieldValues: submittedTextFieldValues,
-        );
-        if (dirty.value) {
-          scheduleDebouncedSave();
-        } else {
-          markPendingChanges(false);
+    void syncControllersFromSession({Set<String> skipFieldIds = const {}}) {
+      for (final field in session.schema.sections.expand((s) => s.fields)) {
+        if (!MetadataEditingSession.fieldUsesTextController(field.kind)) {
+          continue;
         }
-        onSaved?.call(saved);
-        return true;
-      } catch (e) {
-        saveError.value = e.toString();
-        return false;
-      } finally {
-        saving.value = false;
+        if (skipFieldIds.contains(field.id)) continue;
+        syncController(
+          field.id,
+          session.displayValueForField(field.id),
+        );
       }
-    };
-
-    Future<bool> prepareForNavigation() async {
-      await waitForSaveIdle();
-      if (hasPendingSave()) {
-        final saved = await performSave();
-        if (!saved) return false;
-        await waitForSaveIdle();
-      }
-      return saveError.value == null;
     }
+
+    useEffect(() {
+      if (session.loading || session.metadata == null) return null;
+      syncControllersFromSession(
+        skipFieldIds: session.takeSkipSyncFieldIds(),
+      );
+      return null;
+    }, [session.loading, session.formSyncGeneration]);
+
+    Future<bool> saveNow() => session.save(
+          validateForm: validateForm,
+          readTextFieldValues: captureTextFieldValues,
+        );
+
+    Future<bool> prepareForNavigation() => session.flushForNavigation(
+          validateForm: validateForm,
+          readTextFieldValues: captureTextFieldValues,
+        );
 
     useEffect(() {
       final panelController = controller;
@@ -330,10 +157,10 @@ class MetadataPanel extends HookConsumerWidget {
 
       panelController.attach(
         prepareForNavigation: prepareForNavigation,
-        isSaving: () => saving.value,
+        isSaving: () => session.saving,
       );
       return panelController.detach;
-    }, [controller]);
+    }, [controller, session]);
 
     Widget readOnlyField(String label, String value) {
       return InputDecorator(
@@ -344,6 +171,13 @@ class MetadataPanel extends HookConsumerWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
+      );
+    }
+
+    void onTextFieldChanged() {
+      session.scheduleDebouncedSave(
+        validateForm: validateForm,
+        readTextFieldValues: captureTextFieldValues,
       );
     }
 
@@ -361,8 +195,8 @@ class MetadataPanel extends HookConsumerWidget {
         validator: field.required_
             ? (v) => (v == null || v.trim().isEmpty) ? '必填' : null
             : null,
-        onChanged: (_) => scheduleDebouncedSave(),
-        onEditingComplete: () => unawaited(performSave()),
+        onChanged: (_) => onTextFieldChanged(),
+        onEditingComplete: () => unawaited(saveNow()),
       );
     }
 
@@ -382,17 +216,13 @@ class MetadataPanel extends HookConsumerWidget {
           if (parsed < min || parsed > max) return '范围 $min–$max';
           return null;
         },
-        onChanged: (_) => scheduleDebouncedSave(),
-        onEditingComplete: () => unawaited(performSave()),
+        onChanged: (_) => onTextFieldChanged(),
+        onEditingComplete: () => unawaited(saveNow()),
       );
     }
 
     Widget dropdownField(MetadataFieldSpecFrb field) {
-      final current = metadata.value!;
-      final value = metadataFieldDisplayValue(
-        metadata: current,
-        fieldId: field.id,
-      );
+      final value = session.displayValueForField(field.id);
       final selected = value.isEmpty ? null : value;
 
       return DropdownButtonFormField<String>(
@@ -405,13 +235,8 @@ class MetadataPanel extends HookConsumerWidget {
           ...field.options.map((o) => DropdownMenuItem(value: o, child: Text(o))),
         ],
         onChanged: (next) {
-          metadata.value = metadataWithDropdownField(
-            metadata: current,
-            fieldId: field.id,
-            value: next,
-          );
-          markPendingChanges(true);
-          unawaited(performSave());
+          session.patchDropdownField(fieldId: field.id, value: next);
+          unawaited(saveNow());
         },
       );
     }
@@ -436,13 +261,13 @@ class MetadataPanel extends HookConsumerWidget {
                           tooltip: '清空',
                           onPressed: () {
                             controller.clear();
-                            scheduleDebouncedSave();
+                            onTextFieldChanged();
                           },
                           icon: const Icon(Icons.clear),
                         ),
                 ),
-                onChanged: (_) => scheduleDebouncedSave(),
-                onEditingComplete: () => unawaited(performSave()),
+                onChanged: (_) => onTextFieldChanged(),
+                onEditingComplete: () => unawaited(saveNow()),
               );
             },
           ),
@@ -451,12 +276,12 @@ class MetadataPanel extends HookConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final preset in schema.ageRatingPresets)
+              for (final preset in session.schema.ageRatingPresets)
                 ActionChip(
                   label: Text(preset),
                   onPressed: () {
                     controller.text = preset;
-                    scheduleDebouncedSave();
+                    onTextFieldChanged();
                   },
                 ),
             ],
@@ -483,29 +308,32 @@ class MetadataPanel extends HookConsumerWidget {
     }
 
     List<Widget> sectionFields() {
-      if (sectionIndex.value >= schema.sections.length) {
+      if (sectionIndex.value >= session.schema.sections.length) {
         return [];
       }
-      return schema.sections[sectionIndex.value].fields
+      return session.schema.sections[sectionIndex.value].fields
           .map(fieldWidget)
           .toList();
     }
 
-    if (loading.value) {
+    if (session.loading) {
       return const AppPageLoading(message: '正在加载元数据…');
     }
 
-    if (metadata.value == null) {
+    if (session.metadata == null) {
       return AppPageErrorState(
         title: '无法加载元数据',
-        message: loadError.value,
-        action: AppButton(onPressed: loadMetadata, child: const Text('重试')),
+        message: session.loadError,
+        action: AppButton(
+          onPressed: () => unawaited(session.load()),
+          child: const Text('重试'),
+        ),
       );
     }
 
     final padding = AppSpacing.pagePadding(context);
     final sectionLabels =
-        schema.sections.map((section) => section.label).toList();
+        session.schema.sections.map((section) => section.label).toList();
 
     Widget headerRow() {
       final theme = Theme.of(context);
@@ -517,7 +345,7 @@ class MetadataPanel extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  schema.editorTitle,
+                  session.schema.editorTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -533,7 +361,7 @@ class MetadataPanel extends HookConsumerWidget {
               ],
             ),
           ),
-          if (schema.editable && saving.value) ...[
+          if (session.schema.editable && session.saving) ...[
             const SizedBox(width: 12),
             SizedBox(
               width: 16,
@@ -555,13 +383,13 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    if (!schema.editable) {
+    if (!session.schema.editable) {
       return Padding(
         padding: padding,
         child: AppEmptyState(
           icon: Icons.description_outlined,
           title: '当前格式不支持编辑',
-          subtitle: schema.pdfMessage ??
+          subtitle: session.schema.pdfMessage ??
               '请在「项目属性」中将 Export 格式改为 CBZ 或 EPUB 后再编辑元数据。',
         ),
       );
@@ -582,14 +410,14 @@ class MetadataPanel extends HookConsumerWidget {
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
               sliver: SliverToBoxAdapter(child: headerRow()),
             ),
-            if (importSnapshot.value != null)
+            if (session.importSnapshot != null)
               SliverPadding(
                 padding:
                     EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
                 sliver: SliverToBoxAdapter(
                   child: ImportMetadataPreview(
-                    snapshot: importSnapshot.value!,
-                    inferredImportKind: inferredImportKind.value,
+                    snapshot: session.importSnapshot!,
+                    inferredImportKind: session.inferredImportKind,
                     exportFormatLabel: exportFormatLabel(exportFormat),
                   ),
                 ),
@@ -615,13 +443,13 @@ class MetadataPanel extends HookConsumerWidget {
                 ),
               ),
             ),
-            if (sectionIndex.value < schema.sections.length)
+            if (sectionIndex.value < session.schema.sections.length)
               SliverPadding(
                 padding:
                     EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
                 sliver: SliverToBoxAdapter(
                   child: Text(
-                    schema.sections[sectionIndex.value].label,
+                    session.schema.sections[sectionIndex.value].label,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: Theme.of(context).colorScheme.onSurface,
@@ -629,15 +457,15 @@ class MetadataPanel extends HookConsumerWidget {
                   ),
                 ),
               ),
-            if (saveError.value != null)
+            if (session.saveError != null)
               SliverPadding(
                 padding:
                     EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
                 sliver: SliverToBoxAdapter(
                   child: AppInlineErrorBanner(
-                    message: '保存失败：${saveError.value}',
-                    onRetry: () => unawaited(performSave()),
-                    onDismiss: () => saveError.value = null,
+                    message: '保存失败：${session.saveError}',
+                    onRetry: () => unawaited(saveNow()),
+                    onDismiss: session.clearSaveError,
                     padding: EdgeInsets.zero,
                   ),
                 ),

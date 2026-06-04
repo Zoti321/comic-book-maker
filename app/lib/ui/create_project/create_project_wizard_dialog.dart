@@ -1,7 +1,7 @@
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/create_project/create_project_draft.dart';
 import 'package:comic_book_maker/ui/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/library_import_flow.dart';
+import 'package:comic_book_maker/application/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/side_tab_dialog_shell.dart';
@@ -54,7 +54,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
     }
 
     Future<void> pickArchive(ImportArchiveFormat format) async {
-      final path = await pickLibraryImportSourcePath(format);
+      final path = await ArchiveImportRunner().pickSourcePath(format);
       if (path == null) return;
 
       final next = draft.value.copyWith();
@@ -263,7 +263,7 @@ class _ImportTab extends StatelessWidget {
       CreateProjectImageImport(:final sourcePaths) =>
         '${sourcePaths.length} 张 Page Image',
       CreateProjectArchiveImport(:final format, :final sourcePath) =>
-        '${libraryImportDisplayName(format)}：$sourcePath',
+        '${ArchiveImportRunner.displayName(format)}：$sourcePath',
     };
   }
 }

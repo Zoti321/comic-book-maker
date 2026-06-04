@@ -1,5 +1,5 @@
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/export_workflow_resolver.dart';
+import 'package:comic_book_maker/application/export_workflow_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 

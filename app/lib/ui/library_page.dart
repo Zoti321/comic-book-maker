@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/application/library_operations.dart';
 import 'package:comic_book_maker/providers/library_provider.dart';
 import 'package:comic_book_maker/router/app_routes.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
@@ -18,26 +19,17 @@ class LibraryPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final projects = ref.watch(libraryProjectsProvider);
+    final library = ref.read(libraryOperationsProvider);
     final error = useState<String?>(null);
-
-    void reloadProjects() {
-      try {
-        ref.read(libraryProjectsProvider.notifier).reload();
-        error.value = null;
-      } catch (e) {
-        error.value = e.toString();
-      }
-    }
 
     Future<void> openProject(ProjectSummary project) async {
       try {
-        touchProject(projectId: project.id);
+        library.recordProjectOpened(projectId: project.id);
         if (!context.mounted) return;
         await context.push(
           AppRoutes.projectEditorPath(project.id),
           extra: project,
         );
-        reloadProjects();
       } catch (e) {
         error.value = e.toString();
       }
@@ -47,11 +39,10 @@ class LibraryPage extends HookConsumerWidget {
       error.value = null;
 
       try {
-        final created = await runCreateProjectWizard(context: context);
-        if (!context.mounted) return;
-        if (created != null) {
-          reloadProjects();
-        }
+        await runCreateProjectWizard(
+          context: context,
+          library: library,
+        );
       } catch (e) {
         if (!context.mounted) return;
         error.value = e.toString();
@@ -72,8 +63,7 @@ class LibraryPage extends HookConsumerWidget {
       if (confirmed != true || !context.mounted) return;
 
       try {
-        deleteProject(projectId: project.id);
-        reloadProjects();
+        library.removeProject(projectId: project.id);
       } catch (e) {
         error.value = e.toString();
       }

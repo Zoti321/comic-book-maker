@@ -1,22 +1,34 @@
-# 将 app/lib/providers 同步到 codegen 工作区并运行 build_runner，再把 .g.dart 拷回。
+# 在独立工作区运行 riverpod_generator；providers 通过目录联接指向 app/lib/providers（单一源）。
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$AppProviders = Join-Path $Root "..\..\lib\providers"
+$AppProviders = (Resolve-Path (Join-Path $Root "..\..\lib\providers")).Path
 $CodegenProviders = Join-Path $Root "lib\providers"
-$CodegenLib = Join-Path $Root "lib"
 
-New-Item -ItemType Directory -Force -Path $CodegenProviders | Out-Null
-Copy-Item (Join-Path $AppProviders "library_provider.dart") $CodegenProviders -Force
-Copy-Item (Join-Path $AppProviders "export_path_provider.dart") $CodegenProviders -Force
-Copy-Item (Join-Path $AppProviders "project_workspace_provider.dart") $CodegenProviders -Force
-Copy-Item (Join-Path $AppProviders "project_workspace_state.dart") $CodegenProviders -Force
+function Remove-ProvidersLinkOrDirectory {
+  param([string]$Path)
+  if (-not (Test-Path -LiteralPath $Path)) {
+    return
+  }
+  $item = Get-Item -LiteralPath $Path -Force
+  if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+    cmd /c rmdir "$Path" 2>$null
+    if (Test-Path -LiteralPath $Path) {
+      Remove-Item -LiteralPath $Path -Force
+    }
+  } else {
+    Remove-Item -LiteralPath $Path -Recurse -Force
+  }
+}
+
+# 迁移：删除历史上复制到 codegen 工作区的实体目录，避免与 app 源文件分叉。
+Remove-ProvidersLinkOrDirectory -Path $CodegenProviders
+New-Item -ItemType Junction -Path $CodegenProviders -Target $AppProviders | Out-Null
 
 Push-Location $Root
 try {
   dart pub get
   dart run build_runner build --delete-conflicting-outputs
-  Copy-Item (Join-Path $CodegenProviders "*.g.dart") $AppProviders -Force
-  Write-Host "Generated files copied to $AppProviders"
+  Write-Host "Generated *.g.dart written to $AppProviders (via junction)"
 } finally {
   Pop-Location
 }

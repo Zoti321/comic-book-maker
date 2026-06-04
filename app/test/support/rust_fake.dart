@@ -2,117 +2,44 @@ import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/src/rust/frb_generated.dart';
 
-import 'metadata_clone.dart';
-import 'metadata_editor_schema.dart';
+import 'in_memory_core_gateway.dart';
 
-/// 默认空库元数据（`widget_test` 等）。
-const Metadata kEmptyLibraryMetadata = Metadata(
-  title: '未命名',
-  coverPageIndex: 0,
-  pageCount: 0,
-);
+export 'in_memory_core_gateway.dart'
+    show InMemoryCoreGateway, kEmptyLibraryMetadata, kMetadataPanelFixture;
 
-/// `MetadataPanel` widget 测试用的预置元数据（projectId `p1`）。
-const Metadata kMetadataPanelFixture = Metadata(
-  title: '初始标题',
-  series: '初始系列',
-  issueNumber: '01',
-  volume: '1',
-  summary: '简介',
-  writer: '作者',
-  publisher: '出版社',
-  languageIso: 'zh-CN',
-  gtin: '123',
-  coverPageIndex: 0,
-  pageCount: 3,
-);
-
-/// 实现全部 [`RustLibApi`] 的 in-memory fake，供 widget / integration 测试共用。
+/// 将 [InMemoryCoreGateway] 适配为 FRB [`RustLibApi`]，供 widget / 仍直连 rust 的测试使用。
 class FakeRustLibApi extends RustLibApi {
-  FakeRustLibApi({
-    List<ProjectSummary>? projects,
-    Map<String, Metadata>? metadataByProjectId,
-    this.defaultMetadata = kEmptyLibraryMetadata,
-    this.defaultSettings = const ProjectSettings(
-      exportFormat: ExportFormatFrb.comicArchive,
-      inferredImportKind: InferredImportKindFrb.images,
-      deleteProjectAfterExport: false,
-      useDefaultExportDirectory: true,
-      exportDirectory: null,
-      comicArchiveContainer: ComicArchiveContainerFrb.zip,
-      useComicArchiveExtension: true,
-    ),
-    this.nextMetadataUpdateError,
-    List<PageSummary>? pages,
-  })  : projects = List.of(projects ?? []),
-        metadataByProjectId = Map.of(metadataByProjectId ?? {}),
-        pages = List.of(pages ?? []);
+  FakeRustLibApi([InMemoryCoreGateway? gateway])
+      : _gateway = gateway ?? InMemoryCoreGateway.emptyLibrary();
 
-  /// 空漫画库（无项目）。
-  factory FakeRustLibApi.emptyLibrary() => FakeRustLibApi();
+  final InMemoryCoreGateway _gateway;
 
-  /// 元数据面板测试：`p1` 带 fixture 元数据。
-  factory FakeRustLibApi.metadataPanel() => FakeRustLibApi(
-        metadataByProjectId: const {'p1': kMetadataPanelFixture},
-      );
+  factory FakeRustLibApi.emptyLibrary() =>
+      FakeRustLibApi(InMemoryCoreGateway.emptyLibrary());
 
-  static PageSummary get _editorPage => PageSummary(
-        id: 'page-1',
-        sortIndex: 0,
-        assetPath: 'assets/page-1.png',
-        absolutePath: r'C:\temp\page-1.png',
-      );
+  factory FakeRustLibApi.metadataPanel() =>
+      FakeRustLibApi(InMemoryCoreGateway.metadataPanel());
 
-  /// 项目编辑页：库内一个项目 + 元数据 fixture + 可导出设置。
-  factory FakeRustLibApi.editorProject() {
-    final project = ProjectSummary(
-      id: 'p1',
-      title: '测试项目',
-      updatedAtMs: DateTime.utc(2024, 1, 1).millisecondsSinceEpoch,
-      coverThumbnailPath: null,
-    );
-    return FakeRustLibApi(
-      projects: [project],
-      metadataByProjectId: const {
-        'p1': Metadata(
-          title: '初始标题',
-          series: '初始系列',
-          issueNumber: '01',
-          volume: '1',
-          summary: '简介',
-          writer: '作者',
-          publisher: '出版社',
-          languageIso: 'zh-CN',
-          gtin: '123',
-          coverPageIndex: 0,
-          pageCount: 1,
-        ),
-      },
-      pages: [_editorPage],
-      defaultSettings: const ProjectSettings(
-        exportFormat: ExportFormatFrb.comicArchive,
-        inferredImportKind: InferredImportKindFrb.images,
-        deleteProjectAfterExport: false,
-        useDefaultExportDirectory: false,
-        exportDirectory: r'C:\temp\comic-exports',
-        comicArchiveContainer: ComicArchiveContainerFrb.zip,
-        useComicArchiveExtension: true,
-      ),
-    );
-  }
+  factory FakeRustLibApi.editorProject() =>
+      FakeRustLibApi(InMemoryCoreGateway.editorProject());
 
-  final List<ProjectSummary> projects;
-  final Map<String, Metadata> metadataByProjectId;
-  final List<PageSummary> pages;
-  final Metadata defaultMetadata;
-  ProjectSettings defaultSettings;
-  Object? nextMetadataUpdateError;
-  bool failMetadataUpdates = false;
-  int metadataUpdateCallCount = 0;
-  void Function()? onMetadataUpdate;
-
-  Metadata metadataFor(String projectId) =>
-      metadataByProjectId[projectId] ?? defaultMetadata;
+  List<ProjectSummary> get projects => _gateway.projects;
+  Map<String, Metadata> get metadataByProjectId => _gateway.metadataByProjectId;
+  List<PageSummary> get pages => _gateway.pages;
+  Metadata get defaultMetadata => _gateway.defaultMetadata;
+  ProjectSettings get defaultSettings => _gateway.defaultSettings;
+  set defaultSettings(ProjectSettings value) => _gateway.defaultSettings = value;
+  Object? get nextMetadataUpdateError => _gateway.nextMetadataUpdateError;
+  set nextMetadataUpdateError(Object? value) =>
+      _gateway.nextMetadataUpdateError = value;
+  bool get failMetadataUpdates => _gateway.failMetadataUpdates;
+  set failMetadataUpdates(bool value) => _gateway.failMetadataUpdates = value;
+  int get metadataUpdateCallCount => _gateway.metadataUpdateCallCount;
+  set metadataUpdateCallCount(int value) =>
+      _gateway.metadataUpdateCallCount = value;
+  void Function()? get onMetadataUpdate => _gateway.onMetadataUpdate;
+  set onMetadataUpdate(void Function()? value) =>
+      _gateway.onMetadataUpdate = value;
 
   @override
   String crateApiSimpleCorePing() => 'mock';
@@ -127,45 +54,40 @@ class FakeRustLibApi extends RustLibApi {
   void crateApiSimpleInitLibrary({required String appDataDir}) {}
 
   @override
-  ProjectSummary crateApiSimpleCreateProject({String? title}) {
-    final project = ProjectSummary(
-      id: 'project-${projects.length + 1}',
-      title: title ?? '未命名',
-      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
-      coverThumbnailPath: null,
-    );
-    projects.add(project);
-    return project;
-  }
+  ProjectSummary crateApiSimpleCreateProject({String? title}) =>
+      _gateway.createProject(title: title);
 
   @override
-  List<ProjectSummary> crateApiSimpleListProjects() => List.of(projects);
+  List<ProjectSummary> crateApiSimpleListProjects() => _gateway.listProjects();
 
   @override
-  void crateApiSimpleTouchProject({required String projectId}) {}
+  void crateApiSimpleTouchProject({required String projectId}) =>
+      _gateway.touchProject(projectId: projectId);
 
   @override
-  void crateApiSimpleDeleteProject({required String projectId}) {
-    projects.removeWhere((p) => p.id == projectId);
-    metadataByProjectId.remove(projectId);
-  }
+  void crateApiSimpleDeleteProject({required String projectId}) =>
+      _gateway.deleteProject(projectId: projectId);
 
   @override
   List<PageSummary> crateApiSimpleListPages({required String projectId}) =>
-      List.of(pages);
+      _gateway.listPages(projectId: projectId);
 
   @override
   List<PageSummary> crateApiSimpleAddPageImages({
     required String projectId,
     required List<String> sourcePaths,
   }) =>
-      [];
+      _gateway.addPageImages(
+        projectId: projectId,
+        sourcePaths: sourcePaths,
+      );
 
   @override
   void crateApiSimpleDeletePage({
     required String projectId,
     required String pageId,
-  }) {}
+  }) =>
+      _gateway.deletePage(projectId: projectId, pageId: pageId);
 
   @override
   PageSummary crateApiSimpleReplacePageImage({
@@ -173,11 +95,10 @@ class FakeRustLibApi extends RustLibApi {
     required String pageId,
     required String sourcePath,
   }) =>
-      PageSummary(
-        id: pageId,
-        sortIndex: 0,
-        assetPath: 'assets/$pageId.png',
-        absolutePath: '/tmp/$pageId.png',
+      _gateway.replacePageImage(
+        projectId: projectId,
+        pageId: pageId,
+        sourcePath: sourcePath,
       );
 
   @override
@@ -185,40 +106,41 @@ class FakeRustLibApi extends RustLibApi {
     required String projectId,
     required List<String> orderedPageIds,
   }) =>
-      [];
+      _gateway.reorderPages(
+        projectId: projectId,
+        orderedPageIds: orderedPageIds,
+      );
 
   @override
   ProjectSettings crateApiSimpleGetProjectSettings({required String projectId}) =>
-      defaultSettings;
+      _gateway.getProjectSettings(projectId: projectId);
 
   @override
   ProjectSettings crateApiSimpleUpdateProjectExportFormat({
     required String projectId,
     required ExportFormatFrb exportFormat,
-  }) =>
-      ProjectSettings(
-        exportFormat: exportFormat,
-        inferredImportKind: defaultSettings.inferredImportKind,
-        deleteProjectAfterExport: defaultSettings.deleteProjectAfterExport,
-        useDefaultExportDirectory: defaultSettings.useDefaultExportDirectory,
-        exportDirectory: defaultSettings.exportDirectory,
-        comicArchiveContainer: defaultSettings.comicArchiveContainer,
-        useComicArchiveExtension: defaultSettings.useComicArchiveExtension,
-      );
+  }) {
+    final s = _gateway.defaultSettings;
+    _gateway.defaultSettings = ProjectSettings(
+      exportFormat: exportFormat,
+      inferredImportKind: s.inferredImportKind,
+      deleteProjectAfterExport: s.deleteProjectAfterExport,
+      useDefaultExportDirectory: s.useDefaultExportDirectory,
+      exportDirectory: s.exportDirectory,
+      comicArchiveContainer: s.comicArchiveContainer,
+      useComicArchiveExtension: s.useComicArchiveExtension,
+    );
+    return _gateway.defaultSettings;
+  }
 
   @override
   ProjectSettings crateApiSimpleUpdateProjectSettings({
     required String projectId,
     required ProjectSettingsUpdate update,
   }) =>
-      ProjectSettings(
-        exportFormat: update.exportFormat,
-        inferredImportKind: defaultSettings.inferredImportKind,
-        deleteProjectAfterExport: update.deleteProjectAfterExport,
-        useDefaultExportDirectory: update.useDefaultExportDirectory,
-        exportDirectory: update.exportDirectory,
-        comicArchiveContainer: update.comicArchiveContainer,
-        useComicArchiveExtension: update.useComicArchiveExtension,
+      _gateway.updateProjectSettings(
+        projectId: projectId,
+        update: update,
       );
 
   @override
@@ -226,120 +148,105 @@ class FakeRustLibApi extends RustLibApi {
     required String projectId,
     required InferredImportKindFrb inferredImportKind,
   }) =>
-      ProjectSettings(
-        exportFormat: defaultSettings.exportFormat,
+      _gateway.changeProjectInferredImportKind(
+        projectId: projectId,
         inferredImportKind: inferredImportKind,
-        deleteProjectAfterExport: defaultSettings.deleteProjectAfterExport,
-        useDefaultExportDirectory: defaultSettings.useDefaultExportDirectory,
-        exportDirectory: defaultSettings.exportDirectory,
-        comicArchiveContainer: defaultSettings.comicArchiveContainer,
-        useComicArchiveExtension: defaultSettings.useComicArchiveExtension,
       );
 
   @override
   ImportMetadataSnapshotFrb crateApiSimpleGetImportMetadataSnapshot({
     required String projectId,
   }) =>
-      const ImportMetadataSnapshotFrb(
-        kind: ImportMetadataKindFrb.none,
-        xml: null,
-      );
+      _gateway.getImportMetadataSnapshot(projectId: projectId);
 
   @override
   AppendImportResult crateApiSimpleAppendCbz({
     required String projectId,
     required String sourcePath,
   }) =>
-      const AppendImportResult(warnings: [], addedPageCount: 0);
+      _gateway.appendCbz(projectId: projectId, sourcePath: sourcePath);
 
   @override
   AppendImportResult crateApiSimpleAppendCbr({
     required String projectId,
     required String sourcePath,
   }) =>
-      const AppendImportResult(warnings: [], addedPageCount: 0);
+      _gateway.appendCbr(projectId: projectId, sourcePath: sourcePath);
 
   @override
   AppendImportResult crateApiSimpleAppendEpub({
     required String projectId,
     required String sourcePath,
   }) =>
-      const AppendImportResult(warnings: [], addedPageCount: 0);
+      _gateway.appendEpub(projectId: projectId, sourcePath: sourcePath);
 
   @override
   ImportCbzResult crateApiSimpleImportCbz({required String sourcePath}) =>
-      ImportCbzResult(
-        project: ProjectSummary(
-          id: 'imported-1',
-          title: 'Imported',
-          updatedAtMs: DateTime.now().millisecondsSinceEpoch,
-          coverThumbnailPath: null,
-        ),
-        warnings: const [],
-      );
+      _gateway.importCbz(sourcePath: sourcePath);
 
   @override
   ImportCbzResult crateApiSimpleImportCbr({required String sourcePath}) =>
-      crateApiSimpleImportCbz(sourcePath: sourcePath);
+      _gateway.importCbr(sourcePath: sourcePath);
 
   @override
   ImportCbzResult crateApiSimpleImportEpub({required String sourcePath}) =>
-      crateApiSimpleImportCbz(sourcePath: sourcePath);
+      _gateway.importEpub(sourcePath: sourcePath);
 
   @override
   Future<void> crateApiSimpleExportCbz({
     required String projectId,
     required String destinationPath,
     required bool deleteProjectAfterExport,
-  }) async {}
+  }) =>
+      _gateway.exportCbz(
+        projectId: projectId,
+        destinationPath: destinationPath,
+        deleteProjectAfterExport: deleteProjectAfterExport,
+      );
 
   @override
   Future<void> crateApiSimpleExportEpub({
     required String projectId,
     required String destinationPath,
     required bool deleteProjectAfterExport,
-  }) async {}
+  }) =>
+      _gateway.exportEpub(
+        projectId: projectId,
+        destinationPath: destinationPath,
+        deleteProjectAfterExport: deleteProjectAfterExport,
+      );
 
   @override
   Metadata crateApiMetadataGetProjectMetadata({required String projectId}) =>
-      metadataFor(projectId);
+      _gateway.getProjectMetadata(projectId: projectId);
 
   @override
   Metadata crateApiMetadataUpdateProjectMetadata({
     required String projectId,
     required Metadata metadata,
-  }) {
-    metadataUpdateCallCount++;
-    if (failMetadataUpdates) {
-      throw Exception('磁盘写入失败');
-    }
-    if (nextMetadataUpdateError != null) {
-      final error = nextMetadataUpdateError!;
-      nextMetadataUpdateError = null;
-      if (error is Exception) throw error;
-      throw Exception(error.toString());
-    }
-    onMetadataUpdate?.call();
-    metadataByProjectId[projectId] = metadata;
-    return metadata;
-  }
+  }) =>
+      _gateway.updateProjectMetadata(
+        projectId: projectId,
+        metadata: metadata,
+      );
 
   @override
-  Future<Metadata> crateApiMetadataMetadataDefault() async => defaultMetadata;
+  Future<Metadata> crateApiMetadataMetadataDefault() async =>
+      _gateway.defaultMetadata;
 
   @override
   Metadata crateApiMetadataMetadataWithPageCount({
     required Metadata metadata,
     required int pageCount,
   }) =>
-      mockMetadataWithPageCount(metadata: metadata, pageCount: pageCount);
+      _gateway.metadataWithPageCount(metadata: metadata, pageCount: pageCount);
 
   @override
   Metadata crateApiMetadataMetadataWithCoverPageIndex({
     required Metadata metadata,
     required int coverPageIndex,
   }) =>
-      mockMetadataWithCoverPageIndex(
+      _gateway.metadataWithCoverPageIndex(
         metadata: metadata,
         coverPageIndex: coverPageIndex,
       );
@@ -350,7 +257,7 @@ class FakeRustLibApi extends RustLibApi {
     required String fieldId,
     String? value,
   }) =>
-      mockMetadataWithDropdownField(
+      _gateway.metadataWithDropdownField(
         metadata: metadata,
         fieldId: fieldId,
         value: value,
@@ -360,14 +267,14 @@ class FakeRustLibApi extends RustLibApi {
   MetadataEditorSchemaFrb crateApiMetadataGetMetadataEditorSchema({
     required ExportFormatFrb exportFormat,
   }) =>
-      metadataEditorSchemaFixture(exportFormat);
+      _gateway.getMetadataEditorSchema(exportFormat: exportFormat);
 
   @override
   String crateApiMetadataMetadataFieldDisplayValue({
     required Metadata metadata,
     required String fieldId,
   }) =>
-      mockMetadataFieldDisplayValue(metadata: metadata, fieldId: fieldId);
+      _gateway.metadataFieldDisplayValue(metadata: metadata, fieldId: fieldId);
 
   @override
   Metadata crateApiMetadataMergeMetadataFromForm({
@@ -376,7 +283,8 @@ class FakeRustLibApi extends RustLibApi {
     required List<MetadataFieldValueFrb> fieldValues,
     required int pageCount,
   }) =>
-      mockMergeMetadataFromForm(
+      _gateway.mergeMetadataFromForm(
+        exportFormat: exportFormat,
         base: base,
         fieldValues: fieldValues,
         pageCount: pageCount,

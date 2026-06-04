@@ -9,6 +9,94 @@ part of 'library_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(coreGateway)
+final coreGatewayProvider = CoreGatewayProvider._();
+
+final class CoreGatewayProvider
+    extends $FunctionalProvider<CoreGateway, CoreGateway, CoreGateway>
+    with $Provider<CoreGateway> {
+  CoreGatewayProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'coreGatewayProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$coreGatewayHash();
+
+  @$internal
+  @override
+  $ProviderElement<CoreGateway> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  CoreGateway create(Ref ref) {
+    return coreGateway(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CoreGateway value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CoreGateway>(value),
+    );
+  }
+}
+
+String _$coreGatewayHash() => r'deb76800fd27fa5ddc04cc4abe5fbbf024c9518b';
+
+@ProviderFor(libraryOperations)
+final libraryOperationsProvider = LibraryOperationsProvider._();
+
+final class LibraryOperationsProvider
+    extends
+        $FunctionalProvider<
+          LibraryOperations,
+          LibraryOperations,
+          LibraryOperations
+        >
+    with $Provider<LibraryOperations> {
+  LibraryOperationsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'libraryOperationsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$libraryOperationsHash();
+
+  @$internal
+  @override
+  $ProviderElement<LibraryOperations> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LibraryOperations create(Ref ref) {
+    return libraryOperations(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LibraryOperations value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LibraryOperations>(value),
+    );
+  }
+}
+
+String _$libraryOperationsHash() => r'9cb3568c602802dbc2d1a489f3236167a2e95f26';
+
 @ProviderFor(LibraryProjects)
 final libraryProjectsProvider = LibraryProjectsProvider._();
 
@@ -41,7 +129,7 @@ final class LibraryProjectsProvider
   }
 }
 
-String _$libraryProjectsHash() => r'479f3fe33bbc1031f80fa6a86cdda469d1b29197';
+String _$libraryProjectsHash() => r'7bb8d6e752398c052aa253c3bc2c076d54be0e7e';
 
 abstract class _$LibraryProjects extends $Notifier<List<ProjectSummary>> {
   List<ProjectSummary> build();

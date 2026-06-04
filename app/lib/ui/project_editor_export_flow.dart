@@ -1,10 +1,11 @@
+import 'package:comic_book_maker/application/archive_export_runner.dart';
+import 'package:comic_book_maker/application/export_workflow_resolver.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/providers/library_provider.dart';
 import 'package:comic_book_maker/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/router/app_routes.dart';
 import 'package:comic_book_maker/ui/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/export_workflow_resolver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,7 +16,7 @@ void leaveProjectEditorAfterDeletedExport({
   required WidgetRef ref,
   required String projectId,
 }) {
-  ref.read(libraryProjectsProvider.notifier).reload();
+  ref.read(libraryOperationsProvider).refreshLibraryCatalog();
   ref.invalidate(projectWorkspaceProvider(projectId));
   if (context.mounted) {
     context.go(AppRoutes.projects);
@@ -81,22 +82,17 @@ Future<void> runProjectExport({
     if (confirmed != true || !context.mounted) return;
   }
 
+  final exportRunner = ArchiveExportRunner();
+
   try {
     await runAppBlockingOperation(
       context: context,
       message: '正在导出 ${target.formatLabel}…',
-      operation: () {
-        if (target.exportComicArchive) {
-          return workspaceNotifier.exportCbz(
-            destinationPath: target.destinationPath,
-            deleteProjectAfterExport: deleteAfterExport,
-          );
-        }
-        return workspaceNotifier.exportEpub(
-          destinationPath: target.destinationPath,
-          deleteProjectAfterExport: deleteAfterExport,
-        );
-      },
+      operation: () => exportRunner.exportProject(
+        projectId: workspace.projectId,
+        target: target,
+        deleteProjectAfterExport: deleteAfterExport,
+      ),
     );
   } catch (e) {
     if (!context.mounted) return;
