@@ -1,8 +1,8 @@
-import 'package:comic_book_maker/application/core_gateway.dart';
-import 'package:comic_book_maker/application/metadata_editing_session.dart';
+import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/in_memory_core_gateway.dart';
+import 'support/data/repositories/in_memory_core_gateway.dart';
 
 Map<String, String> _textFieldValues(MetadataEditingSession session) {
   final values = <String, String>{};

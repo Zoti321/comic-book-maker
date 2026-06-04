@@ -1,5 +1,5 @@
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/comic_archive_export_controls.dart';
+import 'package:comic_book_maker/ui/features/settings/comic_archive_export_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

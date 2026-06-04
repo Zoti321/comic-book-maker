@@ -1,11 +1,11 @@
 import 'package:comic_book_maker/main.dart';
-import 'package:comic_book_maker/router/app_router.dart';
-import 'package:comic_book_maker/router/app_routes.dart';
+import 'package:comic_book_maker/ui/core/router/app_router.dart';
+import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/rust_fake.dart';
+import 'support/frb/rust_fake.dart';
 
 void main() {
   late FakeRustLibApi fake;

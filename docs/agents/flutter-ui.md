@@ -1,11 +1,29 @@
 # Flutter UI 约定
 
+## 目录与 FRB 边界
+
+Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-boundary.md`** 为准（迁移计划：`.scratch/flutter-architecture/`）。
+
+要点：
+
+- **目标树**：`data/repositories/`（`CoreGateway`）→ `domain/use_cases/` → `ui/core/` + `ui/features/{library,create_project,project_editor,settings}/`。
+- **Provider 放置**（见 ADR-0007 §4）：
+  - **全局** `lib/providers/`：`coreGatewayProvider`、`exportPathProvider`（Library、Project 编辑、Settings 共用）
+  - **Library** `ui/features/library/providers/`：`libraryOperationsProvider`、`libraryProjectsProvider`
+  - **Project 编辑** `ui/features/project_editor/providers/`：`projectWorkspaceProvider` family、`ProjectWorkspaceState`
+  - `create_project` / `settings` 无独立 Notifier 文件；设置页仅读 `exportPathProvider`
+- **FRB 生成物**：仅 `app/lib/src/rust/`（`flutter_rust_bridge.yaml` 的 `dart_output`）；**禁止**在 `ui/`、`providers/` 中 `import package:comic_book_maker/src/rust/...`（`main.dart` 初始化与 `data/repositories` 实现除外）。
+- **Rust API**：手写入口在 `core/src/api/`（`rust_input: crate::api`），与 FRB 官方目录约定一致。
+- **新增 Core 能力**：改 Rust API → FRB codegen → 扩展 `CoreGateway`，勿在 Widget 直调 FRB。
+
+验收（架构迁移完成后）：`rg 'src/rust' app/lib/ui app/lib/providers` 无匹配。本地/CI 可跑 `scripts/check-frb-ui-isolation.ps1`。
+
 ## 组件库
 
-使用 **Material 3** + 自封装 **`design_system`**（`app/lib/ui/design_system/`），不再使用 `shadcn_ui`。
+使用 **Material 3** + 自封装 **`design_system`**（`app/lib/ui/core/design_system/`），不再使用 `shadcn_ui`。
 
-- 根应用：`MaterialApp.router` + `go_router`（见 `app/lib/main.dart`）
-- 主题：`AppTheme.light()`；间距 / 圆角 / 排版见 `app/lib/ui/theme/app_tokens.dart`
+- 根应用：`MaterialApp.router` + `go_router`（见 `app/lib/main.dart`、`app/lib/ui/core/router/`）
+- 主题：`AppTheme.light()`；间距 / 圆角 / 排版见 `app/lib/ui/core/theme/app_tokens.dart`
 - 页面与 feature **禁止** 直接 import 第三方 UI 库；控件通过 `design_system` 暴露：
   - `AppButton`、`AppIconButton`、`AppTextField`、`AppCard`、`AppCheckbox`
   - `AppInlineErrorBanner`、`AppEmptyState`、`AppPageLoading`、`AppPageErrorState`
@@ -14,7 +32,7 @@
   - `showAppBottomSheet`、`showAppFeatureDialog`
   - Import / Export / Append 见 `import_archive_sheet.dart`、`export_archive_dialog.dart`、`append_archive_sheet.dart`
 
-侧栏在 `app/lib/ui/shell/sidebar/` 自封装（`Sidebar`、`SidebarMenuButton`、`SidebarInset` 等）；色板：`AppSidebarTheme`。
+侧栏在 `app/lib/ui/core/shell/sidebar/` 自封装（`Sidebar`、`SidebarMenuButton`、`SidebarInset` 等）；色板：`AppSidebarTheme`。
 
 布局仍可用 `Scaffold`、`CustomScrollView`、`TabBar` / `TabBarView`。
 
@@ -53,7 +71,7 @@ class MyFeature extends _$MyFeature {
 
 ### 生成命令
 
-因 `flutter_test` 与 `riverpod_generator` 的 `analyzer` 约束冲突，**在 app 根目录直接跑 `build_runner` 可能失败**。请使用独立工作区（**只改** `app/lib/providers/`，勿维护 `tool/riverpod_codegen/lib/providers/` 拷贝）：
+因 `flutter_test` 与 `riverpod_generator` 的 `analyzer` 约束冲突，**在 app 根目录直接跑 `build_runner` 可能失败**。请使用独立工作区（**只改**上表三处应用内源目录，勿维护 `tool/riverpod_codegen/lib/*` 下的拷贝）：
 
 ```powershell
 # Windows
@@ -65,7 +83,7 @@ class MyFeature extends _$MyFeature {
 ./app/tool/riverpod_codegen/run_codegen.sh
 ```
 
-脚本将 `tool/riverpod_codegen/lib/providers` 联接 / 链接到 `app/lib/providers/`，在同一目录运行 `build_runner`，`*.g.dart` 直接写入 `app/lib/providers/`。
+脚本将 `tool/riverpod_codegen/lib/{global_providers,library_feature_providers,project_editor_feature_providers}` 分别联接 / 链接到上述三处源目录，运行 `build_runner` 后 `*.g.dart` 写入对应应用路径（详见 `app/tool/riverpod_codegen/README.md`）。
 
 ### 提交与 lint
 
@@ -164,23 +182,29 @@ class MyFeature extends _$MyFeature {
 
 CBZ 默认导出目录存于 `shared_preferences`（`exportPathProvider`）。未配置时导出对话框提供「导出成功后设为默认导出目录」；已配置则直接写入该目录并在对话框中提示完整目标路径。可在设置页更改或清除。
 
-## Widget / FRB 测试 fake
+## 测试 support 目录（镜像 `lib/` 分层）
 
-Widget 测试不加载 Rust 动态库，通过 `RustLib.initMock` 注入 fake。全项目共用 **`app/test/support/rust_fake.dart`**：
+`app/test/support/` 与生产代码分层对应，测试文件按用途 import：
 
-- **`FakeRustLibApi`** — 实现完整 `RustLibApi`；可变状态：`projects`、`metadataByProjectId`
-- **`initRustTestFake([fake])`** — 在 `setUp` / `setUpAll` 中调用
-- 工厂：
-  - `FakeRustLibApi.emptyLibrary()` — 空库
-  - `FakeRustLibApi.metadataPanel()` — `p1` + fixture 元数据
-  - `FakeRustLibApi.editorProject()` — 库内单项目，用于编辑页 Tab 测试
-- 元数据 schema / patch 行为委托 `test/support/metadata_editor_schema.dart` 与 `metadata_clone.dart`
+| 路径 | 用途 | 典型消费者 |
+| --- | --- | --- |
+| `data/repositories/in_memory_core_gateway.dart` | 实现 [`CoreGateway`](../../app/lib/data/repositories/core_gateway.dart) 的内存 fake | `library_operations_test`、`metadata_editing_session_test`、`archive_import_runner_test` |
+| `frb/rust_fake.dart` | **`FakeRustLibApi`**（完整 `RustLibApi`）+ **`initRustTestFake`**；re-export `InMemoryCoreGateway` 与 fixture 常量 | Widget / 导航测试（仍经 `RustLib.initMock`） |
+| `metadata/metadata_editor_schema.dart`、`metadata_clone.dart` | 元数据 schema / patch 行为（FRB DTO） | 由 `InMemoryCoreGateway` 内部使用 |
+| `ui/features/project_editor/metadata_panel_harness.dart` | `pumpMetadataPanel`（`MaterialApp` + `AppTheme.light()`） | `metadata_panel_test` |
 
-**禁止**在各测试文件内再复制整份 `_MockRustLibApi`；仅需定制时构造 `FakeRustLibApi(...)` 或改 `metadataByProjectId`。
+**Domain / use case 单测**：直接 `import package:comic_book_maker/domain/use_cases/...`，注入 `InMemoryCoreGateway` 作为 `CoreGateway`（见 `library_operations_test.dart`、`export_workflow_resolver_test.dart`）。
 
-- `MetadataPanel` pump：`test/support/metadata_panel_harness.dart`（`MaterialApp` + `AppTheme.light()`）
+**Widget 测试**：不加载 Rust 动态库；在 `setUp` / `setUpAll` 调用 `initRustTestFake()`。工厂：
+
+- `FakeRustLibApi.emptyLibrary()` — 空库
+- `FakeRustLibApi.metadataPanel()` — `p1` + fixture 元数据
+- `FakeRustLibApi.editorProject()` — 库内单项目，用于编辑页 Tab 测试
+
+**禁止**在各测试文件内再复制整份 `_MockRustLibApi`；仅需定制时构造 `FakeRustLibApi(InMemoryCoreGateway(...))` 或改 gateway / `metadataByProjectId`。
+
 - 全应用 pump：`ProviderScope` + `ComicBookMakerApp`（见 `test/widget_test.dart`）
 
-新增 FRB API 后：先更新 `FakeRustLibApi`，再改各测试；跑 `flutter test` 确认 mock 编译通过。
+新增 FRB API 后：先更新 `FakeRustLibApi`（`test/support/frb/rust_fake.dart`），再改各测试；跑 `flutter test` 确认 mock 编译通过。
 
 验收：`rg shadcn_ui app` 应无匹配（`app/lib`、`app/test`）。

@@ -1,20 +1,34 @@
 #!/usr/bin/env bash
-# 在独立工作区运行 riverpod_generator；providers 通过符号链接指向 app/lib/providers（单一源）。
+# 在独立工作区运行 riverpod_generator；通过符号链接指向 app 内各 provider 源目录（单一源）。
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-APP_PROVIDERS="$(cd "$ROOT/../../lib/providers" && pwd)"
-CODEGEN_PROVIDERS="$ROOT/lib/providers"
+APP_LIB="$(cd "$ROOT/../../lib" && pwd)"
+CODEGEN_LIB="$ROOT/lib"
 
-if [[ -e "$CODEGEN_PROVIDERS" || -L "$CODEGEN_PROVIDERS" ]]; then
-  if [[ -L "$CODEGEN_PROVIDERS" ]]; then
-    rm "$CODEGEN_PROVIDERS"
-  else
-    rm -rf "$CODEGEN_PROVIDERS"
+declare -a LINKS=(
+  "global_providers:$APP_LIB/providers"
+  "library_feature_providers:$APP_LIB/ui/features/library/providers"
+  "project_editor_feature_providers:$APP_LIB/ui/features/project_editor/providers"
+)
+
+mkdir -p "$CODEGEN_LIB"
+for existing in "$CODEGEN_LIB"/*; do
+  if [[ -e "$existing" || -L "$existing" ]]; then
+    if [[ -L "$existing" ]]; then
+      rm "$existing"
+    else
+      rm -rf "$existing"
+    fi
   fi
-fi
-ln -s "$APP_PROVIDERS" "$CODEGEN_PROVIDERS"
+done
+
+for pair in "${LINKS[@]}"; do
+  name="${pair%%:*}"
+  target="${pair#*:}"
+  ln -s "$target" "$CODEGEN_LIB/$name"
+done
 
 cd "$ROOT"
 dart pub get
 dart run build_runner build --delete-conflicting-outputs
-echo "Generated *.g.dart written to $APP_PROVIDERS (via symlink)"
+echo "Generated *.g.dart written under app provider source dirs (via symlinks)"

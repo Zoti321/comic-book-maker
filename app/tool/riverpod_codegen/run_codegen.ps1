@@ -1,10 +1,22 @@
-# 在独立工作区运行 riverpod_generator；providers 通过目录联接指向 app/lib/providers（单一源）。
+# 在独立工作区运行 riverpod_generator；通过目录联接指向 app 内各 provider 源目录（单一源）。
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$AppProviders = (Resolve-Path (Join-Path $Root "..\..\lib\providers")).Path
-$CodegenProviders = Join-Path $Root "lib\providers"
+$AppLib = (Resolve-Path (Join-Path $Root "..\..\lib")).Path
+$CodegenLib = Join-Path $Root "lib"
 
-function Remove-ProvidersLinkOrDirectory {
+$ProviderRoots = @(
+  @{ LinkName = "global_providers"; Target = Join-Path $AppLib "providers" },
+  @{
+    LinkName = "library_feature_providers"
+    Target = Join-Path $AppLib "ui\features\library\providers"
+  },
+  @{
+    LinkName = "project_editor_feature_providers"
+    Target = Join-Path $AppLib "ui\features\project_editor\providers"
+  }
+)
+
+function Remove-LinkOrDirectory {
   param([string]$Path)
   if (-not (Test-Path -LiteralPath $Path)) {
     return
@@ -20,15 +32,26 @@ function Remove-ProvidersLinkOrDirectory {
   }
 }
 
-# 迁移：删除历史上复制到 codegen 工作区的实体目录，避免与 app 源文件分叉。
-Remove-ProvidersLinkOrDirectory -Path $CodegenProviders
-New-Item -ItemType Junction -Path $CodegenProviders -Target $AppProviders | Out-Null
+# 迁移：删除历史上复制到 codegen 工作区的实体目录或旧单一路径联接。
+if (Test-Path -LiteralPath $CodegenLib) {
+  Get-ChildItem -LiteralPath $CodegenLib -Force | ForEach-Object {
+    Remove-LinkOrDirectory -Path $_.FullName
+  }
+} else {
+  New-Item -ItemType Directory -Path $CodegenLib | Out-Null
+}
+
+foreach ($entry in $ProviderRoots) {
+  $linkPath = Join-Path $CodegenLib $entry.LinkName
+  Remove-LinkOrDirectory -Path $linkPath
+  New-Item -ItemType Junction -Path $linkPath -Target $entry.Target | Out-Null
+}
 
 Push-Location $Root
 try {
   dart pub get
   dart run build_runner build --delete-conflicting-outputs
-  Write-Host "Generated *.g.dart written to $AppProviders (via junction)"
+  Write-Host "Generated *.g.dart written under app provider source dirs (via junctions)"
 } finally {
   Pop-Location
 }

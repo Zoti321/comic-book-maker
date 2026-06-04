@@ -1,5 +1,5 @@
-import 'package:comic_book_maker/router/app_routes.dart';
-import 'package:comic_book_maker/ui/project_editor_export_flow.dart';
+import 'package:comic_book_maker/ui/core/router/app_routes.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_export_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

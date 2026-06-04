@@ -1,4 +1,4 @@
-import 'package:comic_book_maker/ui/design_system/app_blocking_loading.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_blocking_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

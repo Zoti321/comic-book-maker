@@ -1,10 +1,10 @@
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/metadata_panel.dart';
-import 'package:comic_book_maker/ui/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
+import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'support/metadata_panel_harness.dart';
-import 'support/rust_fake.dart';
+import 'support/ui/features/project_editor/metadata_panel_harness.dart';
+import 'support/frb/rust_fake.dart';
 
 void main() {
   late FakeRustLibApi fake;

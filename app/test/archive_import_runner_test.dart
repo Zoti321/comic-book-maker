@@ -1,9 +1,9 @@
-import 'package:comic_book_maker/application/archive_import_runner.dart';
-import 'package:comic_book_maker/application/core_gateway.dart';
-import 'package:comic_book_maker/ui/design_system/import_archive_sheet.dart';
+import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
+import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'support/in_memory_core_gateway.dart';
+import 'support/data/repositories/in_memory_core_gateway.dart';
 
 void main() {
   late InMemoryCoreGateway gateway;
