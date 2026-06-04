@@ -1,6 +1,4 @@
-import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/design_system/app_dialog.dart';
-import 'package:comic_book_maker/ui/design_system/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 
 export 'app_blocking_loading.dart';
@@ -36,11 +34,6 @@ Future<void> showAppOperationFailure(
   );
 }
 
-/// 轻量成功反馈（追加页数等）。
-void showAppOperationSuccessSnackBar(BuildContext context, String message) {
-  showAppToast(context, message);
-}
-
 /// 导出成功：Dialog 展示完整路径（避免 SnackBar + Dialog 混用）。
 Future<void> showAppExportSuccessDialog(
   BuildContext context, {
@@ -59,62 +52,33 @@ Future<void> showAppExportSuccessDialog(
   );
 }
 
-/// 追加/导入完成：有警告用 Dialog，否则 SnackBar。
+/// 追加/导入完成：仅在有警告时用 Dialog；成功时 UI 已反映页数变化。
 Future<void> showAppAppendImportOutcome(
   BuildContext context, {
   required int addedPageCount,
   required List<String> warnings,
 }) async {
-  if (warnings.isNotEmpty) {
-    await showAppAlertDialog(
-      context: context,
-      title: '追加完成（有警告）',
-      description: Text(
-        '已追加 $addedPageCount 页。\n\n${warnings.join('\n')}',
-      ),
-    );
-    return;
-  }
-  showAppOperationSuccessSnackBar(context, '已追加 $addedPageCount 页');
+  if (warnings.isEmpty) return;
+
+  await showAppAlertDialog(
+    context: context,
+    title: '追加完成（有警告）',
+    description: Text(
+      '已追加 $addedPageCount 页。\n\n${warnings.join('\n')}',
+    ),
+  );
 }
 
-/// 漫画库导入 / 新建成功：有警告先 Dialog；SnackBar 可自动消失，并提供「打开项目」。
+/// 漫画库导入完成：仅在有警告时用 Dialog；成功时项目已出现在列表中。
 Future<void> showAppLibraryImportOutcome(
   BuildContext context, {
-  required ProjectSummary project,
   required List<String> warnings,
-  required VoidCallback onOpenProject,
-  String? successMessage,
 }) async {
-  if (warnings.isNotEmpty) {
-    await showAppAlertDialog(
-      context: context,
-      title: '导入完成（有警告）',
-      description: Text(warnings.join('\n')),
-    );
-    if (!context.mounted) return;
-  }
+  if (warnings.isEmpty) return;
 
-  if (!context.mounted) return;
-
-  final messenger = ScaffoldMessenger.of(context);
-  final message = successMessage ?? '已导入「${project.title}」';
-
-  messenger.clearSnackBars();
-  messenger.showSnackBar(
-    SnackBar(
-      content: Text(message),
-      duration: const Duration(seconds: 4),
-      behavior: SnackBarBehavior.floating,
-      showCloseIcon: true,
-      closeIconColor: Theme.of(context).colorScheme.onInverseSurface,
-      action: SnackBarAction(
-        label: '打开项目',
-        onPressed: () {
-          messenger.hideCurrentSnackBar();
-          onOpenProject();
-        },
-      ),
-    ),
+  await showAppAlertDialog(
+    context: context,
+    title: '导入完成（有警告）',
+    description: Text(warnings.join('\n')),
   );
 }

@@ -42,8 +42,11 @@ class FakeRustLibApi extends RustLibApi {
       comicArchiveContainer: ComicArchiveContainerFrb.zip,
       useComicArchiveExtension: true,
     ),
+    this.nextMetadataUpdateError,
+    List<PageSummary>? pages,
   })  : projects = List.of(projects ?? []),
-        metadataByProjectId = Map.of(metadataByProjectId ?? {});
+        metadataByProjectId = Map.of(metadataByProjectId ?? {}),
+        pages = List.of(pages ?? []);
 
   /// 空漫画库（无项目）。
   factory FakeRustLibApi.emptyLibrary() => FakeRustLibApi();
@@ -53,7 +56,14 @@ class FakeRustLibApi extends RustLibApi {
         metadataByProjectId: const {'p1': kMetadataPanelFixture},
       );
 
-  /// 项目编辑页：库内一个项目 + 元数据 fixture。
+  static PageSummary get _editorPage => PageSummary(
+        id: 'page-1',
+        sortIndex: 0,
+        assetPath: 'assets/page-1.png',
+        absolutePath: r'C:\temp\page-1.png',
+      );
+
+  /// 项目编辑页：库内一个项目 + 元数据 fixture + 可导出设置。
   factory FakeRustLibApi.editorProject() {
     final project = ProjectSummary(
       id: 'p1',
@@ -63,14 +73,43 @@ class FakeRustLibApi extends RustLibApi {
     );
     return FakeRustLibApi(
       projects: [project],
-      metadataByProjectId: const {'p1': kMetadataPanelFixture},
+      metadataByProjectId: const {
+        'p1': Metadata(
+          title: '初始标题',
+          series: '初始系列',
+          issueNumber: '01',
+          volume: '1',
+          summary: '简介',
+          writer: '作者',
+          publisher: '出版社',
+          languageIso: 'zh-CN',
+          gtin: '123',
+          coverPageIndex: 0,
+          pageCount: 1,
+        ),
+      },
+      pages: [_editorPage],
+      defaultSettings: const ProjectSettings(
+        exportFormat: ExportFormatFrb.comicArchive,
+        inferredImportKind: InferredImportKindFrb.images,
+        deleteProjectAfterExport: false,
+        useDefaultExportDirectory: false,
+        exportDirectory: r'C:\temp\comic-exports',
+        comicArchiveContainer: ComicArchiveContainerFrb.zip,
+        useComicArchiveExtension: true,
+      ),
     );
   }
 
   final List<ProjectSummary> projects;
   final Map<String, Metadata> metadataByProjectId;
+  final List<PageSummary> pages;
   final Metadata defaultMetadata;
-  final ProjectSettings defaultSettings;
+  ProjectSettings defaultSettings;
+  Object? nextMetadataUpdateError;
+  bool failMetadataUpdates = false;
+  int metadataUpdateCallCount = 0;
+  void Function()? onMetadataUpdate;
 
   Metadata metadataFor(String projectId) =>
       metadataByProjectId[projectId] ?? defaultMetadata;
@@ -112,7 +151,8 @@ class FakeRustLibApi extends RustLibApi {
   }
 
   @override
-  List<PageSummary> crateApiSimpleListPages({required String projectId}) => [];
+  List<PageSummary> crateApiSimpleListPages({required String projectId}) =>
+      List.of(pages);
 
   @override
   List<PageSummary> crateApiSimpleAddPageImages({
@@ -269,6 +309,17 @@ class FakeRustLibApi extends RustLibApi {
     required String projectId,
     required Metadata metadata,
   }) {
+    metadataUpdateCallCount++;
+    if (failMetadataUpdates) {
+      throw Exception('磁盘写入失败');
+    }
+    if (nextMetadataUpdateError != null) {
+      final error = nextMetadataUpdateError!;
+      nextMetadataUpdateError = null;
+      if (error is Exception) throw error;
+      throw Exception(error.toString());
+    }
+    onMetadataUpdate?.call();
     metadataByProjectId[projectId] = metadata;
     return metadata;
   }

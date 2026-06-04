@@ -110,9 +110,14 @@ Metadata mockMergeMetadataFromForm({
   required int pageCount,
 }) {
   var title = base.title;
+  String? volume = base.volume;
   for (final entry in fieldValues) {
     if (entry.fieldId == 'title' && entry.value.trim().isNotEmpty) {
       title = entry.value.trim();
+    }
+    if (entry.fieldId == 'volume') {
+      final trimmed = entry.value.trim();
+      volume = trimmed.isEmpty ? null : trimmed;
     }
   }
   return Metadata(
@@ -120,7 +125,7 @@ Metadata mockMergeMetadataFromForm({
     series: base.series,
     issueNumber: base.issueNumber,
     seriesCount: base.seriesCount,
-    volume: base.volume,
+    volume: volume,
     alternateSeries: base.alternateSeries,
     alternateNumber: base.alternateNumber,
     alternateCount: base.alternateCount,

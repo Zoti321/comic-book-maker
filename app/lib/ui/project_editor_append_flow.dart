@@ -41,8 +41,6 @@ Future<void> runGalleryAddPageImages({
       message: '正在添加图片…',
       operation: () => workspaceNotifier.addPageImages(sourcePaths),
     );
-    if (!context.mounted) return;
-    showAppOperationSuccessSnackBar(context, '已添加 ${sourcePaths.length} 张图片');
   } catch (e) {
     if (!context.mounted) return;
     await showAppOperationFailure(
@@ -116,8 +114,6 @@ Future<void> _appendImages(
       message: '正在添加图片…',
       operation: () => workspaceNotifier.addPageImages(sourcePaths),
     );
-    if (!context.mounted) return;
-    showAppOperationSuccessSnackBar(context, '已添加 ${sourcePaths.length} 张图片');
   } catch (e) {
     if (!context.mounted) return;
     await showAppOperationFailure(

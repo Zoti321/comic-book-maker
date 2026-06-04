@@ -40,11 +40,19 @@ void main() {
     });
   });
 
-  group('project editor', () {
+    group('project editor', () {
     setUp(() {
       final editor = FakeRustLibApi.editorProject();
-      fake.projects.addAll(editor.projects);
-      fake.metadataByProjectId.addAll(editor.metadataByProjectId);
+      fake.projects
+        ..clear()
+        ..addAll(editor.projects);
+      fake.metadataByProjectId
+        ..clear()
+        ..addAll(editor.metadataByProjectId);
+      fake.pages
+        ..clear()
+        ..addAll(editor.pages);
+      fake.defaultSettings = editor.defaultSettings;
     });
 
     testWidgets('shows image and metadata tabs', (WidgetTester tester) async {
@@ -66,7 +74,8 @@ void main() {
       expect(find.text('图片'), findsOneWidget);
       expect(find.text('元数据'), findsOneWidget);
       expect(find.byTooltip('项目属性'), findsOneWidget);
-      expect(find.text('0 页'), findsOneWidget);
+      expect(find.text('0 页'), findsNothing);
+      expect(find.text('1 页'), findsNWidgets(2));
       expect(find.text('添加页面'), findsOneWidget);
 
       await tester.tap(find.text('元数据'));

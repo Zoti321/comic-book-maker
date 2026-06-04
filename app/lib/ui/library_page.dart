@@ -51,14 +51,6 @@ class LibraryPage extends HookConsumerWidget {
         if (!context.mounted) return;
         if (created != null) {
           reloadProjects();
-          if (!context.mounted) return;
-          await showAppLibraryImportOutcome(
-            context,
-            project: created,
-            warnings: const [],
-            successMessage: '已创建「${created.title}」',
-            onOpenProject: () => openProject(created),
-          );
         }
       } catch (e) {
         if (!context.mounted) return;
@@ -82,8 +74,6 @@ class LibraryPage extends HookConsumerWidget {
       try {
         deleteProject(projectId: project.id);
         reloadProjects();
-        if (!context.mounted) return;
-        showAppToast(context, '已删除「${project.title}」');
       } catch (e) {
         error.value = e.toString();
       }

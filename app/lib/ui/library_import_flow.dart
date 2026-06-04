@@ -60,7 +60,6 @@ Future<LibraryImportRetry?> runLibraryArchiveImport({
   required ImportArchiveFormat format,
   required String sourcePath,
   required VoidCallback onProjectsReloaded,
-  required void Function(ProjectSummary project) onOpenProject,
 }) async {
   final displayName = libraryImportDisplayName(format);
 
@@ -77,9 +76,7 @@ Future<LibraryImportRetry?> runLibraryArchiveImport({
 
     await showAppLibraryImportOutcome(
       context,
-      project: imported.project,
       warnings: imported.warnings,
-      onOpenProject: () => onOpenProject(imported.project),
     );
     return null;
   } catch (e) {

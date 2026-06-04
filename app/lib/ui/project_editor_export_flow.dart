@@ -9,8 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// 导出并删除后离开编辑页：须用 [GoRouter.go] 而非 [BuildContext.pop]，
-/// 否则 [ProjectEditorPage] 在元数据未保存时 [PopScope.canPop] 为 false 会拦截 pop。
+/// 导出并删除后离开编辑页：使用 [GoRouter.go] 替换路由栈。
 void leaveProjectEditorAfterDeletedExport({
   required BuildContext context,
   required WidgetRef ref,
@@ -29,8 +28,14 @@ Future<void> runProjectExport({
   required WidgetRef ref,
   required ProjectWorkspaceState workspace,
   required ProjectWorkspace workspaceNotifier,
+  Future<bool> Function()? prepareMetadataForExport,
 }) async {
   if (workspace.exporting || workspace.pages.isEmpty) return;
+
+  if (prepareMetadataForExport != null) {
+    final ready = await prepareMetadataForExport();
+    if (!ready || !context.mounted) return;
+  }
 
   final settings = workspace.settings;
   final globalExportDirectory = ref.read(exportPathProvider).value;

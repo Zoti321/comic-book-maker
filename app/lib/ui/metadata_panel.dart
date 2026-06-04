@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/layout/responsive.dart';
@@ -5,12 +7,39 @@ import 'package:comic_book_maker/ui/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/theme/app_theme.dart';
-import 'package:comic_book_maker/ui/widgets/metadata_unsaved_banner.dart';
 import 'package:comic_book_maker/ui/widgets/section_chip_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+const _metadataAutosaveDebounce = Duration(milliseconds: 600);
+const _saveIdlePollInterval = Duration(milliseconds: 16);
+
+/// 供项目编辑页在切 Tab / 返回前 flush 元数据自动保存。
+class MetadataPanelController {
+  Future<bool> Function()? _prepareForNavigation;
+  bool Function()? _isSaving;
+
+  /// Flush 待写入改动；返回 `true` 表示可以离开元数据 Tab。
+  Future<bool> prepareForNavigation() async =>
+      await (_prepareForNavigation?.call() ?? Future.value(true));
+
+  bool get isSaving => _isSaving?.call() ?? false;
+
+  void attach({
+    required Future<bool> Function() prepareForNavigation,
+    required bool Function() isSaving,
+  }) {
+    _prepareForNavigation = prepareForNavigation;
+    _isSaving = isSaving;
+  }
+
+  void detach() {
+    _prepareForNavigation = null;
+    _isSaving = null;
+  }
+}
 
 class MetadataPanel extends HookConsumerWidget {
   const MetadataPanel({
@@ -18,18 +47,16 @@ class MetadataPanel extends HookConsumerWidget {
     required this.projectId,
     required this.pageCount,
     required this.exportFormat,
+    this.controller,
     this.onSaved,
-    this.onDirtyChanged,
-    this.discardGeneration = 0,
     this.scrollController,
   });
 
   final String projectId;
   final int pageCount;
   final ExportFormatFrb exportFormat;
+  final MetadataPanelController? controller;
   final ValueChanged<Metadata>? onSaved;
-  final ValueChanged<bool>? onDirtyChanged;
-  final int discardGeneration;
   final ScrollController? scrollController;
 
   @override
@@ -49,6 +76,7 @@ class MetadataPanel extends HookConsumerWidget {
     final inferredImportKind = useState<InferredImportKindFrb?>(null);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final controllers = useRef(<String, TextEditingController>{});
+    final debounceTimer = useRef<Timer?>(null);
 
     void syncController(String key, String value) {
       final field = controllers.value.putIfAbsent(
@@ -69,15 +97,47 @@ class MetadataPanel extends HookConsumerWidget {
       };
     }
 
-    void applyMetadata(Metadata value) {
+    TextEditingController fieldController(String key) =>
+        controllers.value.putIfAbsent(key, TextEditingController.new);
+
+    void markPendingChanges(bool value) {
+      if (dirty.value == value) return;
+      dirty.value = value;
+    }
+
+    Future<void> waitForSaveIdle() async {
+      while (saving.value) {
+        await Future<void>.delayed(_saveIdlePollInterval);
+      }
+    }
+
+    bool hasPendingSave() =>
+        debounceTimer.value != null || dirty.value;
+
+    void cancelDebouncedSave() {
+      debounceTimer.value?.cancel();
+      debounceTimer.value = null;
+    }
+
+    void applyMetadata(
+      Metadata value, {
+      Map<String, String>? submittedTextFieldValues,
+    }) {
       final withPageCount = metadataWithPageCount(
         metadata: value,
         pageCount: pageCount,
       );
       metadata.value = withPageCount;
+      var hasConcurrentEdits = false;
       for (final section in schema.sections) {
         for (final field in section.fields) {
           if (usesTextController(field.kind)) {
+            final controller = fieldController(field.id);
+            final submitted = submittedTextFieldValues?[field.id];
+            if (submitted != null && controller.text != submitted) {
+              hasConcurrentEdits = true;
+              continue;
+            }
             syncController(
               field.id,
               metadataFieldDisplayValue(
@@ -88,18 +148,22 @@ class MetadataPanel extends HookConsumerWidget {
           }
         }
       }
+      if (hasConcurrentEdits) {
+        markPendingChanges(true);
+      }
     }
 
-    TextEditingController fieldController(String key) =>
-        controllers.value.putIfAbsent(key, TextEditingController.new);
-
-    void setDirty(bool value) {
-      if (dirty.value == value) return;
-      dirty.value = value;
-      onDirtyChanged?.call(value);
+    Map<String, String> captureSubmittedTextFieldValues() {
+      final values = <String, String>{};
+      for (final section in schema.sections) {
+        for (final field in section.fields) {
+          if (usesTextController(field.kind)) {
+            values[field.id] = fieldController(field.id).text;
+          }
+        }
+      }
+      return values;
     }
-
-    void markDirty() => setDirty(true);
 
     Future<void> loadMetadata() async {
       loading.value = true;
@@ -114,7 +178,7 @@ class MetadataPanel extends HookConsumerWidget {
         inferredImportKind.value =
             getProjectSettings(projectId: projectId).inferredImportKind;
         loading.value = false;
-        setDirty(false);
+        markPendingChanges(false);
       } catch (e) {
         loading.value = false;
         loadError.value = e.toString();
@@ -127,12 +191,6 @@ class MetadataPanel extends HookConsumerWidget {
     }, [projectId]);
 
     useEffect(() {
-      if (discardGeneration == 0) return null;
-      loadMetadata();
-      return null;
-    }, [discardGeneration]);
-
-    useEffect(() {
       sectionIndex.value = 0;
       return null;
     }, [exportFormat]);
@@ -140,7 +198,10 @@ class MetadataPanel extends HookConsumerWidget {
     useEffect(() {
       final current = metadata.value;
       if (current != null && current.pageCount != pageCount) {
-        applyMetadata(current);
+        metadata.value = metadataWithPageCount(
+          metadata: current,
+          pageCount: pageCount,
+        );
       }
       try {
         importSnapshot.value =
@@ -151,6 +212,7 @@ class MetadataPanel extends HookConsumerWidget {
 
     useEffect(() {
       return () {
+        cancelDebouncedSave();
         for (final c in controllers.value.values) {
           c.dispose();
         }
@@ -205,29 +267,73 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Future<void> save() async {
-      if (!formKey.currentState!.validate()) return;
+    late final Future<bool> Function() performSave;
+    late final void Function() scheduleDebouncedSave;
+
+    scheduleDebouncedSave = () {
+      markPendingChanges(true);
+      cancelDebouncedSave();
+      debounceTimer.value = Timer(_metadataAutosaveDebounce, () {
+        unawaited(performSave());
+      });
+    };
+
+    performSave = () async {
+      cancelDebouncedSave();
+      await waitForSaveIdle();
+      if (metadata.value == null) return true;
+      if (!hasPendingSave() && saveError.value == null) return true;
+      if (!formKey.currentState!.validate()) return false;
 
       saving.value = true;
       saveError.value = null;
+
+      final submittedTextFieldValues = captureSubmittedTextFieldValues();
 
       try {
         final saved = updateProjectMetadata(
           projectId: projectId,
           metadata: buildMetadataFromForm(),
         );
-        applyMetadata(saved);
-        saving.value = false;
-        setDirty(false);
-        onSaved?.call(saved);
-        if (context.mounted) {
-          showAppOperationSuccessSnackBar(context, '元数据已保存');
+        applyMetadata(
+          saved,
+          submittedTextFieldValues: submittedTextFieldValues,
+        );
+        if (dirty.value) {
+          scheduleDebouncedSave();
+        } else {
+          markPendingChanges(false);
         }
+        onSaved?.call(saved);
+        return true;
       } catch (e) {
-        saving.value = false;
         saveError.value = e.toString();
+        return false;
+      } finally {
+        saving.value = false;
       }
+    };
+
+    Future<bool> prepareForNavigation() async {
+      await waitForSaveIdle();
+      if (hasPendingSave()) {
+        final saved = await performSave();
+        if (!saved) return false;
+        await waitForSaveIdle();
+      }
+      return saveError.value == null;
     }
+
+    useEffect(() {
+      final panelController = controller;
+      if (panelController == null) return null;
+
+      panelController.attach(
+        prepareForNavigation: prepareForNavigation,
+        isSaving: () => saving.value,
+      );
+      return panelController.detach;
+    }, [controller]);
 
     Widget readOnlyField(String label, String value) {
       return InputDecorator(
@@ -255,7 +361,8 @@ class MetadataPanel extends HookConsumerWidget {
         validator: field.required_
             ? (v) => (v == null || v.trim().isEmpty) ? '必填' : null
             : null,
-        onChanged: (_) => markDirty(),
+        onChanged: (_) => scheduleDebouncedSave(),
+        onEditingComplete: () => unawaited(performSave()),
       );
     }
 
@@ -275,7 +382,8 @@ class MetadataPanel extends HookConsumerWidget {
           if (parsed < min || parsed > max) return '范围 $min–$max';
           return null;
         },
-        onChanged: (_) => markDirty(),
+        onChanged: (_) => scheduleDebouncedSave(),
+        onEditingComplete: () => unawaited(performSave()),
       );
     }
 
@@ -302,7 +410,8 @@ class MetadataPanel extends HookConsumerWidget {
             fieldId: field.id,
             value: next,
           );
-          markDirty();
+          markPendingChanges(true);
+          unawaited(performSave());
         },
       );
     }
@@ -327,12 +436,13 @@ class MetadataPanel extends HookConsumerWidget {
                           tooltip: '清空',
                           onPressed: () {
                             controller.clear();
-                            markDirty();
+                            scheduleDebouncedSave();
                           },
                           icon: const Icon(Icons.clear),
                         ),
                 ),
-                onChanged: (_) => markDirty(),
+                onChanged: (_) => scheduleDebouncedSave(),
+                onEditingComplete: () => unawaited(performSave()),
               );
             },
           ),
@@ -346,7 +456,7 @@ class MetadataPanel extends HookConsumerWidget {
                   label: Text(preset),
                   onPressed: () {
                     controller.text = preset;
-                    markDirty();
+                    scheduleDebouncedSave();
                   },
                 ),
             ],
@@ -397,69 +507,50 @@ class MetadataPanel extends HookConsumerWidget {
     final sectionLabels =
         schema.sections.map((section) => section.label).toList();
 
-    Widget headerRow(BoxConstraints headerConstraints) {
-      final compactHeader = headerConstraints.maxWidth < 300;
+    Widget headerRow() {
+      final theme = Theme.of(context);
+
       return Row(
         children: [
           Flexible(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        schema.editorTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (schema.editable && dirty.value) ...[
-                      const SizedBox(width: 8),
-                      _DirtyLabel(color: Theme.of(context).colorScheme.primary),
-                    ],
-                  ],
+                Text(
+                  schema.editorTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   'Export：${exportFormatLabel(exportFormat)}',
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-          if (!schema.editable)
-            const SizedBox.shrink()
-          else if (compactHeader)
-            AppIconButton(
-              variant: AppIconButtonVariant.tonal,
-              onPressed: saving.value || !dirty.value ? null : save,
-              icon: saving.value
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.save_outlined),
-            )
-          else
-            AppButton(
-              variant: AppButtonVariant.secondary,
-              onPressed: saving.value || !dirty.value ? null : save,
-              icon: saving.value
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.save_outlined, size: 18),
-              child: Text(saving.value ? '保存中' : '保存'),
+          if (schema.editable && saving.value) ...[
+            const SizedBox(width: 12),
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
             ),
+            const SizedBox(width: 8),
+            Text(
+              '保存中…',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
         ],
       );
     }
@@ -489,11 +580,7 @@ class MetadataPanel extends HookConsumerWidget {
           slivers: [
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-              sliver: SliverToBoxAdapter(
-                child: LayoutBuilder(
-                  builder: (context, constraints) => headerRow(constraints),
-                ),
-              ),
+              sliver: SliverToBoxAdapter(child: headerRow()),
             ),
             if (importSnapshot.value != null)
               SliverPadding(
@@ -504,17 +591,6 @@ class MetadataPanel extends HookConsumerWidget {
                     snapshot: importSnapshot.value!,
                     inferredImportKind: inferredImportKind.value,
                     exportFormatLabel: exportFormatLabel(exportFormat),
-                  ),
-                ),
-              ),
-            if (schema.editable && dirty.value)
-              SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-                sliver: SliverToBoxAdapter(
-                  child: MetadataUnsavedBanner(
-                    saving: saving.value,
-                    onSave: save,
                   ),
                 ),
               ),
@@ -560,7 +636,9 @@ class MetadataPanel extends HookConsumerWidget {
                 sliver: SliverToBoxAdapter(
                   child: AppInlineErrorBanner(
                     message: '保存失败：${saveError.value}',
+                    onRetry: () => unawaited(performSave()),
                     onDismiss: () => saveError.value = null,
+                    padding: EdgeInsets.zero,
                   ),
                 ),
               ),
@@ -569,7 +647,6 @@ class MetadataPanel extends HookConsumerWidget {
               sliver: SliverToBoxAdapter(
                 child: Form(
                   key: formKey,
-                  onChanged: markDirty,
                   child: ResponsiveFormGrid(children: sectionFields()),
                 ),
               ),
@@ -578,33 +655,6 @@ class MetadataPanel extends HookConsumerWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _DirtyLabel extends StatelessWidget {
-  const _DirtyLabel({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        child: Text(
-          '未保存',
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-      ),
     );
   }
 }

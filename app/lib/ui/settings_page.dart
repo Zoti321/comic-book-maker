@@ -25,8 +25,9 @@ class SettingsPage extends HookConsumerWidget {
       savingExportPath.value = true;
       try {
         await ref.read(exportPathProvider.notifier).setDirectory(selected);
+      } catch (error) {
         if (context.mounted) {
-          showAppToast(context, '已更新默认导出目录');
+          showAppToast(context, '更新默认导出目录失败：$error');
         }
       } finally {
         savingExportPath.value = false;
@@ -37,8 +38,9 @@ class SettingsPage extends HookConsumerWidget {
       savingExportPath.value = true;
       try {
         await ref.read(exportPathProvider.notifier).clear();
+      } catch (error) {
         if (context.mounted) {
-          showAppToast(context, '已清除默认导出目录');
+          showAppToast(context, '清除默认导出目录失败：$error');
         }
       } finally {
         savingExportPath.value = false;

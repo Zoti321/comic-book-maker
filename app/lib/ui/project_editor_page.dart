@@ -7,7 +7,6 @@ import 'package:comic_book_maker/ui/import_kind_picker_rules.dart';
 import 'package:comic_book_maker/ui/project_editor_append_flow.dart';
 import 'package:comic_book_maker/ui/project_editor_app_bar.dart';
 import 'package:comic_book_maker/ui/project_editor_export_flow.dart';
-import 'package:comic_book_maker/ui/metadata_unsaved_guard.dart';
 import 'package:comic_book_maker/ui/project_editor_tab_switcher.dart';
 import 'package:comic_book_maker/ui/project_properties_dialog.dart';
 import 'package:comic_book_maker/ui/theme/app_theme.dart';
@@ -29,8 +28,7 @@ class ProjectEditorPage extends HookConsumerWidget {
         ref.read(projectWorkspaceProvider(project.id).notifier);
 
     final selectedTab = useState(ProjectEditorTab.images);
-    final metadataDirty = useState(false);
-    final metadataDiscardGeneration = useState(0);
+    final metadataController = useMemoized(MetadataPanelController.new);
 
     useEffect(() {
       Future.microtask(() {
@@ -46,6 +44,7 @@ class ProjectEditorPage extends HookConsumerWidget {
           ref: ref,
           workspace: workspace,
           workspaceNotifier: workspaceNotifier,
+          prepareMetadataForExport: metadataController.prepareForNavigation,
         );
 
     Future<void> appendFromSource() => runProjectAppendImport(
@@ -102,12 +101,6 @@ class ProjectEditorPage extends HookConsumerWidget {
     Future<void> setCoverPage(PageSummary page) async {
       try {
         await workspaceNotifier.setCoverPage(page.sortIndex);
-        if (context.mounted) {
-          showAppOperationSuccessSnackBar(
-            context,
-            '已设为封面（第 ${page.sortIndex + 1} 页）',
-          );
-        }
       } catch (_) {}
     }
 
@@ -145,43 +138,31 @@ class ProjectEditorPage extends HookConsumerWidget {
       final exportFormat =
           workspace.settings?.exportFormat ?? ExportFormatFrb.comicArchive;
       return MetadataPanel(
-        key: ValueKey(
-          '$exportFormat-${workspace.pages.length}-${metadataDiscardGeneration.value}',
-        ),
+        key: ValueKey(exportFormat),
         projectId: workspace.projectId,
         pageCount: workspace.pages.length,
         exportFormat: exportFormat,
-        discardGeneration: metadataDiscardGeneration.value,
-        onDirtyChanged: (dirty) => metadataDirty.value = dirty,
+        controller: metadataController,
         onSaved: workspaceNotifier.applyMetadataSaved,
       );
     }
 
+    Future<bool> leaveMetadataTabIfNeeded() async {
+      if (selectedTab.value != ProjectEditorTab.metadata) return true;
+      return metadataController.prepareForNavigation();
+    }
+
     Future<void> selectTab(ProjectEditorTab tab) async {
       if (tab == selectedTab.value) return;
-      if (metadataDirty.value &&
-          selectedTab.value == ProjectEditorTab.metadata) {
-        final discard = await confirmDiscardMetadataEdits(context);
-        if (!context.mounted) return;
-        if (!discard) return;
-        metadataDirty.value = false;
-        metadataDiscardGeneration.value++;
-      }
+      if (!await leaveMetadataTabIfNeeded()) return;
+      if (!context.mounted) return;
       selectedTab.value = tab;
     }
 
     Future<void> onBackPressed() async {
-      if (!metadataDirty.value) {
-        if (context.mounted) context.pop();
-        return;
-      }
-      final discard = await confirmDiscardMetadataEdits(context);
+      if (!await leaveMetadataTabIfNeeded()) return;
       if (!context.mounted) return;
-      if (discard) {
-        metadataDirty.value = false;
-        metadataDiscardGeneration.value++;
-        context.pop();
-      }
+      context.pop();
     }
 
     void openProjectProperties() {
@@ -200,7 +181,7 @@ class ProjectEditorPage extends HookConsumerWidget {
     final pagePadding = AppSpacing.pagePadding(context);
 
     return PopScope(
-      canPop: !metadataDirty.value,
+      canPop: selectedTab.value != ProjectEditorTab.metadata,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         await onBackPressed();
@@ -237,7 +218,6 @@ class ProjectEditorPage extends HookConsumerWidget {
                   children: [
                     ProjectEditorTabSwitcher(
                       selectedTab: selectedTab.value,
-                      metadataDirty: metadataDirty.value,
                       onTabSelected: selectTab,
                       trailing: AppIconButton(
                         tooltip: '项目属性',
