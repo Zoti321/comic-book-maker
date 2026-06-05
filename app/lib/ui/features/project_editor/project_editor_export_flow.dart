@@ -23,6 +23,20 @@ void leaveProjectEditorAfterDeletedExport({
   }
 }
 
+/// 读取全局默认导出目录：若 provider 首次仍在加载，则等待初始化完成一次。
+Future<String?> readReadyGlobalExportDirectory(
+  AsyncValue<String?> current, {
+  required Future<String?> Function() awaitLoaded,
+}) async {
+  if (current.hasValue) return current.value;
+  if (!current.isLoading) return null;
+  try {
+    return await awaitLoaded();
+  } catch (_) {
+    return null;
+  }
+}
+
 /// 按项目工作流设置执行 Export（路径与导出后删除均来自 [ProjectSettings]）。
 Future<void> runProjectExport({
   required BuildContext context,
@@ -39,7 +53,10 @@ Future<void> runProjectExport({
   }
 
   final settings = workspace.settings;
-  final globalExportDirectory = ref.read(exportPathProvider).value;
+  final globalExportDirectory = await readReadyGlobalExportDirectory(
+    ref.read(exportPathProvider),
+    awaitLoaded: () => ref.read(exportPathProvider.future),
+  );
   final safeTitle =
       workspace.project.title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
 
