@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/src/rust/frb_generated.dart';
@@ -9,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await configureDesktopWindow();
   await RustLib.init();
 
   final appDir = await getApplicationSupportDirectory();

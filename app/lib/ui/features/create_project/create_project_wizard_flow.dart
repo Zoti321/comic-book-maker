@@ -2,6 +2,7 @@ import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_draft.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:flutter/material.dart';
 
 /// 打开新建项目向导；成功返回新 [ProjectSummary]，取消返回 `null`。
@@ -12,6 +13,7 @@ Future<ProjectSummary?> runCreateProjectWizard({
   final draft = await showAppFeatureDialog<CreateProjectDraft>(
     context: context,
     barrierDismissible: false,
+    maxWidth: sideTabFeatureDialogMaxWidth(context),
     builder: (dialogContext) => const CreateProjectWizardDialog(),
   );
   if (draft == null || !context.mounted || !draft.canCreate) {

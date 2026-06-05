@@ -7,6 +7,7 @@ Future<T?> showAppFeatureDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = true,
+  double? maxWidth,
 }) {
   return showDialog<T>(
     context: context,
@@ -19,7 +20,9 @@ Future<T?> showAppFeatureDialog<T>({
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: appSheetMaxWidth + 40),
+            constraints: BoxConstraints(
+              maxWidth: maxWidth ?? appSheetMaxWidth + 40,
+            ),
             child: dialog,
           ),
         ),
@@ -66,7 +69,7 @@ class AppDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(title),
-      content: content,
+      content: SizedBox(width: double.maxFinite, child: content),
       actions: actions,
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
     );
