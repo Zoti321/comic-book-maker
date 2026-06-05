@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
 import 'package:flutter/material.dart';
 
 String libraryImportDisplayName(ImportArchiveFormat format) =>

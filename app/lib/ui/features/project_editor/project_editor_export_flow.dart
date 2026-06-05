@@ -42,6 +42,7 @@ Future<void> runProjectExport({
   required BuildContext context,
   required WidgetRef ref,
   required ProjectWorkspaceState workspace,
+  required String projectId,
   required ProjectWorkspace workspaceNotifier,
   Future<bool> Function()? prepareMetadataForExport,
 }) async {
@@ -49,7 +50,16 @@ Future<void> runProjectExport({
 
   if (prepareMetadataForExport != null) {
     final ready = await prepareMetadataForExport();
-    if (!ready || !context.mounted) return;
+    if (!context.mounted) return;
+    if (!ready) {
+      await showAppOperationFailure(
+        context,
+        title: '无法导出',
+        message: '元数据未保存成功，请先修正表单错误后重试。',
+        nextStepHint: '检查元数据 Tab 中的红色校验提示。',
+      );
+      return;
+    }
   }
 
   final settings = workspace.settings;
@@ -57,6 +67,7 @@ Future<void> runProjectExport({
     ref.read(exportPathProvider),
     awaitLoaded: () => ref.read(exportPathProvider.future),
   );
+
   final safeTitle =
       workspace.project.title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
 
@@ -85,6 +96,7 @@ Future<void> runProjectExport({
 
   final deleteAfterExport = settings.deleteProjectAfterExport;
   if (deleteAfterExport) {
+    if (!context.mounted) return;
     final confirmed = await showAppConfirmDialog(
       context: context,
       title: '导出并删除项目',
@@ -101,10 +113,13 @@ Future<void> runProjectExport({
 
   final exportRunner = ArchiveExportRunner();
 
+  if (!context.mounted) return;
+
   try {
-    await runAppBlockingOperation(
+    await runAppDismissibleBackgroundOperation(
       context: context,
       message: '正在导出 ${target.formatLabel}…',
+      dismissHint: '可点击空白处关闭，导出将在后台继续',
       operation: () => exportRunner.exportProject(
         projectId: workspace.projectId,
         target: target,
@@ -124,9 +139,8 @@ Future<void> runProjectExport({
 
   if (!context.mounted) return;
 
-  await showAppExportSuccessDialog(
+  showAppExportSuccessSnackBar(
     context,
-    destinationPath: target.destinationPath,
     deletedProject: deleteAfterExport,
   );
 
@@ -136,7 +150,7 @@ Future<void> runProjectExport({
     leaveProjectEditorAfterDeletedExport(
       context: context,
       ref: ref,
-      projectId: workspace.projectId,
+      projectId: projectId,
     );
   }
 }

@@ -35,6 +35,7 @@ class ProjectWorkspaceState {
 
   bool get canExport =>
       settings != null &&
+      pages.isNotEmpty &&
       !exporting &&
       !savingExportFormat &&
       settings!.exportFormat != ExportFormatFrb.pdf;

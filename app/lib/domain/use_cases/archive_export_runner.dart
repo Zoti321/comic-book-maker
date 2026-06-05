@@ -14,11 +14,22 @@ class ArchiveExportRunner {
     required bool deleteProjectAfterExport,
   }) {
     if (target.exportComicArchive) {
-      return _gateway.exportCbz(
-        projectId: projectId,
-        destinationPath: target.destinationPath,
-        deleteProjectAfterExport: deleteProjectAfterExport,
-      );
+      switch (target.comicArchiveContainer) {
+        case ComicArchiveContainerFrb.rar:
+          return _gateway.exportCbr(
+            projectId: projectId,
+            destinationPath: target.destinationPath,
+            deleteProjectAfterExport: deleteProjectAfterExport,
+          );
+        case ComicArchiveContainerFrb.zip:
+        case ComicArchiveContainerFrb.sevenZip:
+        case null:
+          return _gateway.exportCbz(
+            projectId: projectId,
+            destinationPath: target.destinationPath,
+            deleteProjectAfterExport: deleteProjectAfterExport,
+          );
+      }
     }
     return _gateway.exportEpub(
       projectId: projectId,

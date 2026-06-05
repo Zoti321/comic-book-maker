@@ -20,9 +20,7 @@ pub fn import_cbr(library: &mut Library, source_path: &str) -> Result<ImportArch
         return Err(format!("CBR file not found: {source_path}"));
     }
 
-    if !Archive::new(&path).is_archive() {
-        return Err("不是有效的 RAR/CBR 归档".to_string());
-    }
+    ensure_readable_cbr_archive(&path)?;
 
     let fallback_title = fallback_title_from_path(&path);
     let extract_root = temp_extract_dir()?;
@@ -46,9 +44,7 @@ pub fn append_cbr(
         return Err(format!("CBR file not found: {source_path}"));
     }
 
-    if !Archive::new(&path).is_archive() {
-        return Err("不是有效的 RAR/CBR 归档".to_string());
-    }
+    ensure_readable_cbr_archive(&path)?;
 
     let fallback_title = fallback_title_from_path(&path);
     let extract_root = temp_extract_dir()?;
@@ -147,6 +143,24 @@ fn import_cbr_from_extracted(
             Ok((metadata, staged, warnings, snapshot))
         },
     )
+}
+
+/// `unrar-ng` 的 `is_archive()` 对部分 RAR5 写入器（含 `rars`）产物返回 false，但仍可解压。
+fn ensure_readable_cbr_archive(path: &Path) -> Result<(), String> {
+    Archive::new(path)
+        .as_first_part()
+        .open_for_processing()
+        .map_err(|error| {
+            let message = error.to_string();
+            if message.to_ascii_lowercase().contains("password") {
+                return "CBR 已加密，当前不支持密码保护的归档".to_string();
+            }
+            if message.trim().is_empty() {
+                return "不是有效的 RAR/CBR 归档".to_string();
+            }
+            format!("不是有效的 RAR/CBR 归档: {message}")
+        })?;
+    Ok(())
 }
 
 fn temp_extract_dir() -> Result<PathBuf, String> {

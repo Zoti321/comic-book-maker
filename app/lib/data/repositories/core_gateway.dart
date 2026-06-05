@@ -109,6 +109,11 @@ abstract class CoreGateway {
     required String destinationPath,
     required bool deleteProjectAfterExport,
   });
+  Future<void> exportCbr({
+    required String projectId,
+    required String destinationPath,
+    required bool deleteProjectAfterExport,
+  });
   Future<void> exportEpub({
     required String projectId,
     required String destinationPath,
@@ -321,6 +326,18 @@ class FrbCoreGateway implements CoreGateway {
     required bool deleteProjectAfterExport,
   }) =>
       simple_api.exportCbz(
+        projectId: projectId,
+        destinationPath: destinationPath,
+        deleteProjectAfterExport: deleteProjectAfterExport,
+      );
+
+  @override
+  Future<void> exportCbr({
+    required String projectId,
+    required String destinationPath,
+    required bool deleteProjectAfterExport,
+  }) =>
+      simple_api.exportCbr(
         projectId: projectId,
         destinationPath: destinationPath,
         deleteProjectAfterExport: deleteProjectAfterExport,

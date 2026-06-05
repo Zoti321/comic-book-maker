@@ -131,7 +131,11 @@ class _ContainerMenuAnchor extends StatelessWidget {
   String _menuItemLabel(ComicArchiveContainerFrb container) {
     final name = comicArchiveContainerLabel(container);
     if (comicArchiveContainerSelectable(container)) {
-      return '$name（可用，对应现有 CBZ Export）';
+      return switch (container) {
+        ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
+        ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',
+        ComicArchiveContainerFrb.sevenZip => '$name（可用）',
+      };
     }
     return '$name（尚未实现）';
   }

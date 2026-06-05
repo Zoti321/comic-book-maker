@@ -37,6 +37,8 @@ class FakeRustLibApi extends RustLibApi {
   int get metadataUpdateCallCount => _gateway.metadataUpdateCallCount;
   set metadataUpdateCallCount(int value) =>
       _gateway.metadataUpdateCallCount = value;
+  int get exportCallCount => _gateway.exportCallCount;
+  set exportCallCount(int value) => _gateway.exportCallCount = value;
   void Function()? get onMetadataUpdate => _gateway.onMetadataUpdate;
   set onMetadataUpdate(void Function()? value) =>
       _gateway.onMetadataUpdate = value;
@@ -199,6 +201,18 @@ class FakeRustLibApi extends RustLibApi {
     required bool deleteProjectAfterExport,
   }) =>
       _gateway.exportCbz(
+        projectId: projectId,
+        destinationPath: destinationPath,
+        deleteProjectAfterExport: deleteProjectAfterExport,
+      );
+
+  @override
+  Future<void> crateApiSimpleExportCbr({
+    required String projectId,
+    required String destinationPath,
+    required bool deleteProjectAfterExport,
+  }) =>
+      _gateway.exportCbr(
         projectId: projectId,
         destinationPath: destinationPath,
         deleteProjectAfterExport: deleteProjectAfterExport,

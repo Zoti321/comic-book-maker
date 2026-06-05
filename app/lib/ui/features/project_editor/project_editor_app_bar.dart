@@ -143,7 +143,7 @@ class _ExportButton extends StatelessWidget {
         child: AppButton(
           onPressed: workspace.canExport ? onPressed : null,
           icon: const Icon(Icons.upload_outlined, size: 18),
-          child: Text('导出 ${_exportShortLabel(exportFormat)}'),
+          child: const Text('导出'),
         ),
       );
     }
@@ -159,11 +159,3 @@ class _ExportButton extends StatelessWidget {
 
 /// 编辑页 Tab（与 [IndexedStack] / 分段按钮顺序一致）。
 enum ProjectEditorTab { images, metadata }
-
-String _exportShortLabel(ExportFormatFrb format) {
-  return switch (format) {
-    ExportFormatFrb.comicArchive => 'CBZ',
-    ExportFormatFrb.epub => 'EPUB',
-    ExportFormatFrb.pdf => 'PDF',
-  };
-}

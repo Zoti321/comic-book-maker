@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/ui/core/design_system/app_dialog.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_snack_bar.dart';
 import 'package:flutter/material.dart';
 
 export 'app_blocking_loading.dart';
@@ -50,6 +51,16 @@ Future<void> showAppExportSuccessDialog(
     description: Text(body),
     actionLabel: deletedProject ? '返回漫画库' : '知道了',
   );
+}
+
+/// 导出成功：轻量 SnackBar 反馈（可关闭 loading 后台导出场景）。
+void showAppExportSuccessSnackBar(
+  BuildContext context, {
+  required bool deletedProject,
+}) {
+  final message =
+      deletedProject ? '项目已导出并已删除' : '导出完成';
+  showAppSnackBar(context, message);
 }
 
 /// 追加/导入完成：仅在有警告时用 Dialog；成功时 UI 已反映页数变化。

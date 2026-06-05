@@ -42,6 +42,7 @@ class ProjectEditorPage extends HookConsumerWidget {
           context: context,
           ref: ref,
           workspace: workspace,
+          projectId: project.id,
           workspaceNotifier: workspaceNotifier,
           prepareMetadataForExport: metadataController.prepareForNavigation,
         );

@@ -112,8 +112,8 @@ void main() {
       );
     });
 
-    test('blocks unimplemented archive container', () {
-      final block = resolveExportBlock(
+    test('resolves RAR comic archive to cbr path', () {
+      final target = resolveExportTarget(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -121,6 +121,46 @@ void main() {
           useDefaultExportDirectory: true,
           exportDirectory: null,
           comicArchiveContainer: ComicArchiveContainerFrb.rar,
+          useComicArchiveExtension: true,
+        ),
+        globalExportDirectory: '/tmp',
+        safeTitle: 'RAR Comic',
+      );
+
+      expect(target, isNotNull);
+      expect(target!.destinationPath, p.join('/tmp', 'RAR Comic.cbr'));
+      expect(target.formatLabel, 'CBR');
+      expect(target.comicArchiveContainer, ComicArchiveContainerFrb.rar);
+    });
+
+    test('resolves RAR without comic extension to rar path', () {
+      final target = resolveExportTarget(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.comicArchive,
+          inferredImportKind: InferredImportKindFrb.comicArchive,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: true,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.rar,
+          useComicArchiveExtension: false,
+        ),
+        globalExportDirectory: '/tmp',
+        safeTitle: 'Archive',
+      );
+
+      expect(target!.destinationPath, p.join('/tmp', 'Archive.rar'));
+      expect(target.formatLabel, 'RAR');
+    });
+
+    test('blocks unimplemented 7Z archive container', () {
+      final block = resolveExportBlock(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.comicArchive,
+          inferredImportKind: InferredImportKindFrb.comicArchive,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: true,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
           useComicArchiveExtension: true,
         ),
         globalExportDirectory: '/tmp',

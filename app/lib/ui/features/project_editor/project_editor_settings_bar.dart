@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 String exportFormatLabel(ExportFormatFrb format) {
   return switch (format) {
     ExportFormatFrb.epub => 'EPUB',
-    ExportFormatFrb.comicArchive => '漫画压缩包 (CBZ)',
+    ExportFormatFrb.comicArchive => '漫画压缩包',
     ExportFormatFrb.pdf => 'PDF（尚未实现）',
   };
 }

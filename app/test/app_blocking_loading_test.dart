@@ -47,4 +47,49 @@ void main() {
     expect(completed, isTrue);
     expect(find.text('正在创建项目…'), findsNothing);
   });
+
+  testWidgets('runAppDismissibleBackgroundOperation runs operation', (
+    WidgetTester tester,
+  ) async {
+    var completed = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: Center(
+                child: FilledButton(
+                  onPressed: () async {
+                    await runAppDismissibleBackgroundOperation<void>(
+                      context: context,
+                      message: '正在导出 CBR…',
+                      dismissHint: '可关闭',
+                      operation: () async {
+                        await Future<void>.delayed(
+                          const Duration(milliseconds: 20),
+                        );
+                        completed = true;
+                      },
+                    );
+                  },
+                  child: const Text('run'),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('run'));
+    await tester.pump();
+    expect(find.text('正在导出 CBR…'), findsOneWidget);
+
+    for (var i = 0; i < 20 && !completed; i++) {
+      await tester.pump(const Duration(milliseconds: 25));
+    }
+    expect(completed, isTrue);
+    expect(find.text('正在导出 CBR…'), findsNothing);
+  });
 }

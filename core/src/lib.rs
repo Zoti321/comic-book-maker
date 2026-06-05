@@ -12,6 +12,7 @@ pub mod import_epub;
 pub mod import_shared;
 pub mod import_metadata_snapshot;
 pub mod export_cbz;
+pub mod export_cbr;
 pub mod export_epub;
 pub mod natural_sort;
 pub mod page_image;

@@ -4,6 +4,7 @@ import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/frb/rust_fake.dart';
 
@@ -11,6 +12,7 @@ void main() {
   late FakeRustLibApi fake;
 
   setUpAll(() {
+    SharedPreferences.setMockInitialValues({});
     fake = FakeRustLibApi.emptyLibrary();
     initRustTestFake(fake);
   });
@@ -69,7 +71,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('测试项目'), findsOneWidget);
-      expect(find.text('导出 CBZ'), findsOneWidget);
+      expect(find.text('导出'), findsOneWidget);
       expect(find.text('添加图片'), findsOneWidget);
       expect(find.text('图片'), findsOneWidget);
       expect(find.text('元数据'), findsOneWidget);

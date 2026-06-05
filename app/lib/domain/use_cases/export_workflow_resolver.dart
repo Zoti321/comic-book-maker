@@ -7,11 +7,13 @@ class ResolvedExportTarget {
     required this.destinationPath,
     required this.formatLabel,
     required this.exportComicArchive,
+    this.comicArchiveContainer,
   });
 
   final String destinationPath;
   final String formatLabel;
   final bool exportComicArchive;
+  final ComicArchiveContainerFrb? comicArchiveContainer;
 }
 
 /// Why export cannot proceed before calling Core.
@@ -69,7 +71,7 @@ ExportWorkflowBlock? resolveExportBlock({
       title: '无法导出',
       message:
           '「${comicArchiveContainerLabel(settings.comicArchiveContainer)}」容器 Export 尚未实现。',
-      nextStepHint: '请在项目属性中将压缩算法改为 ZIP，或等待后续版本支持。',
+      nextStepHint: '请在项目属性中将压缩算法改为 ZIP 或 RAR，或等待后续版本支持。',
     );
   }
 
@@ -123,12 +125,18 @@ ResolvedExportTarget? resolveExportTarget({
     destinationPath: p.join(directory, fileName),
     formatLabel: formatLabel,
     exportComicArchive: exportComicArchive,
+    comicArchiveContainer:
+        exportComicArchive ? settings.comicArchiveContainer : null,
   );
 }
 
 /// Whether Core can Export with the selected comic archive container.
 bool isComicArchiveContainerImplemented(ProjectSettings settings) {
-  return settings.comicArchiveContainer == ComicArchiveContainerFrb.zip;
+  return switch (settings.comicArchiveContainer) {
+    ComicArchiveContainerFrb.zip => true,
+    ComicArchiveContainerFrb.rar => true,
+    ComicArchiveContainerFrb.sevenZip => false,
+  };
 }
 
 /// File extension (no dot) for the comic archive export file name.
@@ -148,10 +156,14 @@ String comicArchiveExportFileName(ProjectSettings settings, String safeTitle) {
 }
 
 String comicArchiveExportFormatLabel(ProjectSettings settings) {
-  if (settings.comicArchiveContainer != ComicArchiveContainerFrb.zip) {
-    return comicArchiveContainerLabel(settings.comicArchiveContainer);
-  }
-  return settings.useComicArchiveExtension ? 'CBZ' : 'ZIP';
+  return switch (settings.comicArchiveContainer) {
+    ComicArchiveContainerFrb.zip =>
+      settings.useComicArchiveExtension ? 'CBZ' : 'ZIP',
+    ComicArchiveContainerFrb.rar =>
+      settings.useComicArchiveExtension ? 'CBR' : 'RAR',
+    ComicArchiveContainerFrb.sevenZip =>
+      comicArchiveContainerLabel(settings.comicArchiveContainer),
+  };
 }
 
 String comicArchiveContainerLabel(ComicArchiveContainerFrb container) {
@@ -163,7 +175,11 @@ String comicArchiveContainerLabel(ComicArchiveContainerFrb container) {
 }
 
 bool comicArchiveContainerSelectable(ComicArchiveContainerFrb container) {
-  return container == ComicArchiveContainerFrb.zip;
+  return switch (container) {
+    ComicArchiveContainerFrb.zip => true,
+    ComicArchiveContainerFrb.rar => true,
+    ComicArchiveContainerFrb.sevenZip => false,
+  };
 }
 
 String? _resolveExportDirectory({

@@ -142,6 +142,16 @@ pub fn export_cbz(
 }
 
 #[flutter_rust_bridge::frb]
+pub fn export_cbr(
+    project_id: String,
+    destination_path: String,
+    delete_project_after_export: bool,
+) -> Result<()> {
+    Library::export_cbr(&project_id, &destination_path, delete_project_after_export)
+        .map_err(|error| anyhow::anyhow!(error))
+}
+
+#[flutter_rust_bridge::frb]
 pub fn export_epub(
     project_id: String,
     destination_path: String,

@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1502040966;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1353468547;
 
 // Section: executor
 
@@ -342,6 +342,47 @@ fn wire__crate__api__simple__delete_project_impl(
                     Ok(output_ok)
                 })(),
             )
+        },
+    )
+}
+fn wire__crate__api__simple__export_cbr_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "export_cbr",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_project_id = <String>::sse_decode(&mut deserializer);
+            let api_destination_path = <String>::sse_decode(&mut deserializer);
+            let api_delete_project_after_export = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::simple::export_cbr(
+                            api_project_id,
+                            api_destination_path,
+                            api_delete_project_after_export,
+                        )?;
+                        Ok(output_ok)
+                    })(),
+                )
+            }
         },
     )
 }
@@ -1762,10 +1803,11 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        10 => wire__crate__api__simple__export_cbz_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__simple__export_epub_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__metadata__metadata_default_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__simple__export_cbr_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__simple__export_cbz_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__simple__export_epub_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__metadata__metadata_default_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1791,50 +1833,50 @@ fn pde_ffi_dispatcher_sync_impl(
         7 => wire__crate__api__simple__create_project_impl(ptr, rust_vec_len, data_len),
         8 => wire__crate__api__simple__delete_page_impl(ptr, rust_vec_len, data_len),
         9 => wire__crate__api__simple__delete_project_impl(ptr, rust_vec_len, data_len),
-        12 => {
+        13 => {
             wire__crate__api__simple__get_import_metadata_snapshot_impl(ptr, rust_vec_len, data_len)
         }
-        13 => {
+        14 => {
             wire__crate__api__metadata__get_metadata_editor_schema_impl(ptr, rust_vec_len, data_len)
         }
-        14 => wire__crate__api__metadata__get_project_metadata_impl(ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__simple__get_project_settings_impl(ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__simple__import_cbr_impl(ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__simple__import_cbz_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__simple__import_epub_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__simple__init_library_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__simple__list_pages_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__simple__list_projects_impl(ptr, rust_vec_len, data_len),
-        24 => {
+        15 => wire__crate__api__metadata__get_project_metadata_impl(ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__simple__get_project_settings_impl(ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__simple__import_cbr_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__simple__import_cbz_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__simple__import_epub_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__simple__init_library_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__simple__list_pages_impl(ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__simple__list_projects_impl(ptr, rust_vec_len, data_len),
+        25 => {
             wire__crate__api__metadata__merge_metadata_from_form_impl(ptr, rust_vec_len, data_len)
         }
-        26 => wire__crate__api__metadata__metadata_field_display_value_impl(
+        27 => wire__crate__api__metadata__metadata_field_display_value_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        27 => wire__crate__api__metadata__metadata_with_cover_page_index_impl(
+        28 => wire__crate__api__metadata__metadata_with_cover_page_index_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        28 => wire__crate__api__metadata__metadata_with_dropdown_field_impl(
+        29 => wire__crate__api__metadata__metadata_with_dropdown_field_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        29 => {
+        30 => {
             wire__crate__api__metadata__metadata_with_page_count_impl(ptr, rust_vec_len, data_len)
         }
-        30 => wire__crate__api__simple__reorder_pages_impl(ptr, rust_vec_len, data_len),
-        31 => wire__crate__api__simple__replace_page_image_impl(ptr, rust_vec_len, data_len),
-        32 => wire__crate__api__simple__touch_project_impl(ptr, rust_vec_len, data_len),
-        33 => {
+        31 => wire__crate__api__simple__reorder_pages_impl(ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__simple__replace_page_image_impl(ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__simple__touch_project_impl(ptr, rust_vec_len, data_len),
+        34 => {
             wire__crate__api__simple__update_project_export_format_impl(ptr, rust_vec_len, data_len)
         }
-        34 => wire__crate__api__metadata__update_project_metadata_impl(ptr, rust_vec_len, data_len),
-        35 => wire__crate__api__simple__update_project_settings_impl(ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__metadata__update_project_metadata_impl(ptr, rust_vec_len, data_len),
+        36 => wire__crate__api__simple__update_project_settings_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

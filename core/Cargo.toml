@@ -17,6 +17,7 @@ zip = { version = "2.2", default-features = false, features = ["deflate"] }
 quick-xml = "0.37.5"
 natord = "1.0.9"
 unrar-ng = "0.7"
+rars = "0.2.0"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

@@ -1,5 +1,4 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/src/rust/api/simple.dart';
 
 import '../../metadata/metadata_clone.dart';
 import '../../metadata/metadata_editor_schema.dart';
@@ -107,6 +106,7 @@ class InMemoryCoreGateway implements CoreGateway {
   Object? nextMetadataUpdateError;
   bool failMetadataUpdates = false;
   int metadataUpdateCallCount = 0;
+  int exportCallCount = 0;
   void Function()? onMetadataUpdate;
 
   Metadata metadataFor(String projectId) =>
@@ -337,6 +337,15 @@ class InMemoryCoreGateway implements CoreGateway {
 
   @override
   Future<void> exportCbz({
+    required String projectId,
+    required String destinationPath,
+    required bool deleteProjectAfterExport,
+  }) async {
+    exportCallCount++;
+  }
+
+  @override
+  Future<void> exportCbr({
     required String projectId,
     required String destinationPath,
     required bool deleteProjectAfterExport,

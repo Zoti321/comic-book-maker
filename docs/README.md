@@ -18,6 +18,7 @@
 | 0005 | 不做桌面 Archive 文件关联 |
 | 0006 | Material 3 `design_system`，弃用 shadcn |
 | 0007 | Flutter 分层目录与 FRB 边界（已落地） |
+| 0008 | CBR Export：`rars`、rar50、往返测试门槛 |
 
 ## Agent 约定
 
@@ -34,7 +35,8 @@
 
 | 路径 | 用途 |
 | --- | --- |
-| [`third-party/unrar.md`](third-party/unrar.md) | CBR 解压所用 unrar 许可与来源说明 |
+| [`third-party/unrar.md`](third-party/unrar.md) | CBR 解压（`unrar-ng`）许可与来源说明 |
+| [`third-party/rars.md`](third-party/rars.md) | CBR 导出（`rars`）许可与 Import/Export 分工 |
 
 ## 项目进度（2026-06）
 

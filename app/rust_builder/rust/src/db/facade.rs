@@ -131,6 +131,20 @@ impl Library {
         })
     }
 
+    pub(crate) fn export_cbr(
+        project_id: &str,
+        destination_path: &str,
+        delete_project_after_export: bool,
+    ) -> Result<(), String> {
+        Self::with_library(|library| {
+            crate::export_cbr::export_cbr(library, project_id, destination_path)?;
+            if delete_project_after_export {
+                library.delete_project_inner(project_id)?;
+            }
+            Ok(())
+        })
+    }
+
     pub(crate) fn export_epub(
         project_id: &str,
         destination_path: &str,

@@ -1,10 +1,10 @@
 import 'package:comic_book_maker/main.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
-import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/frb/rust_fake.dart';
 
@@ -29,6 +29,7 @@ late FakeRustLibApi fake;
 
 void main() {
   setUpAll(() {
+    SharedPreferences.setMockInitialValues({});
     fake = FakeRustLibApi.editorProject();
     initRustTestFake(fake);
   });
@@ -44,6 +45,7 @@ void main() {
     fake.pages.addAll(FakeRustLibApi.editorProject().pages);
     fake.defaultSettings = FakeRustLibApi.editorProject().defaultSettings;
     fake.metadataUpdateCallCount = 0;
+    fake.exportCallCount = 0;
     fake.nextMetadataUpdateError = null;
     fake.failMetadataUpdates = false;
     appRouter.go(AppRoutes.projects);
@@ -117,11 +119,15 @@ void main() {
 
     expect(fake.metadataUpdateCallCount, 0);
 
-    await tester.tap(find.text('导出 CBZ'));
+    final exportButton = find.text('导出');
+    await tester.ensureVisible(exportButton);
+    await tester.tap(exportButton);
     await tester.pumpAndSettle();
 
     expect(fake.metadataUpdateCallCount, greaterThanOrEqualTo(1));
     expect(fake.metadataByProjectId['p1']?.volume, '55');
+    expect(fake.exportCallCount, 1);
     expect(find.text('导出完成'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
   });
 }
