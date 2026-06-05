@@ -5,4 +5,4 @@
 
 在 Windows / macOS 注册 `.cbz`、`.cbr` 文件类型，双击系统文件时启动应用并走 Import，已明确不做。用户通过 Library 内 Import 入口完成导入即可；不实现 OS 级文件关联、启动参数与「从外部文件唤起」的专用流程。
 
-**相关：** `.scratch/mvp/issues/10-library-shell-file-association.md`（壳层、Import 入口、最近打开排序仍已完成）。
+**相关：** Library 壳层、应用内 Import 入口与列表排序已实现；仅 OS 级文件关联按本 ADR 不做。

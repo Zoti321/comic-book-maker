@@ -55,7 +55,12 @@ flutter run -d windows   # 或其他已连接设备
 - FRB 配置：`app/flutter_rust_bridge.yaml`（`rust_root: ../core/`）
 - Rust crate 名：`comic_book_maker_core`（`core/Cargo.toml`）
 - Flutter 通过 `app/rust_builder/`（cargokit）在构建时编译 Rust；Windows/Linux 经 `rust_builder/rust` 联接访问 `core/`
+- Riverpod codegen：在 `app/` 根目录直接跑 `build_runner` 可能因 `analyzer` 冲突失败，请用 `app/tool/riverpod_codegen/run_codegen.ps1`（见该目录 `README.md`）
+- 领域术语：`CONTEXT.md`；架构决策：`docs/adr/`；Agent 约定：`docs/agents/`
 
-## MVP 任务
+## 测试
 
-见 `.scratch/mvp/issues/`。
+```powershell
+cd app
+flutter test
+```

@@ -2,7 +2,7 @@
 
 ## 目录与 FRB 边界
 
-Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-boundary.md`** 为准（迁移计划：`.scratch/flutter-architecture/`）。
+Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-boundary.md`** 为准（分层迁移已完成）。
 
 要点：
 

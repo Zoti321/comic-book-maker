@@ -2,7 +2,7 @@
 
 `app/lib/` 长期以 `ui/` 平铺 feature 文件、`application/` 承载编排逻辑，与 [Flutter 应用架构指南](https://docs.flutter.dev/app-architecture/guide) 的 UI / Data / Domain 分层不一致；同时大量 Widget 与 Riverpod Provider 直接 `import` FRB 生成代码，导致 UI 与 Core API 强耦合、测试 fake 维护成本高。FRB 官方约定生成物位于 `lib/src/rust/`、Rust 面向 Flutter 的 API 位于 `{rust_root}/src/api/`（见 [FRB Directory structure](https://cjycode.com/flutter_rust_bridge/guides/miscellaneous/directory)），本仓库已采用该路径，不应为「对齐 data 文件夹名」而搬迁生成目录。
 
-本 ADR 与 ADR-0001（Rust Core + Flutter UI）、ADR-0004（`app/` + `core/` monorepo）、ADR-0006（`design_system`）兼容；实施切片见 `.scratch/flutter-architecture/`。
+本 ADR 与 ADR-0001（Rust Core + Flutter UI）、ADR-0004（`app/` + `core/` monorepo）、ADR-0006（`design_system`）兼容；分层迁移已按本 ADR 落地。
 
 ## 决策
 
@@ -77,5 +77,5 @@ app/lib/
 ## 后果
 
 - **正面**：UI 与 Core 解耦；Repository 接缝可测；目录与 Agent 文档、官方架构指南一致。
-- **负面**：迁移期存在旧路径垫片；须更新 import 与 `docs/agents/flutter-ui.md`。
-- **验收**：`docs/adr/0007-*.md` 存在；flutter-ui.md 引用本 ADR；后续 issue 02–10 按 `.scratch/flutter-architecture/` 落地。
+- **负面**：迁移期曾存在旧路径垫片（已清理）；后续改动须继续遵守 FRB 隔离与 Provider 放置规则。
+- **验收**（已完成）：`docs/adr/0007-*.md` 存在；`flutter-ui.md` 引用本 ADR；`app/lib/ui/` 根目录无 `.dart` 垫片；`rg 'src/rust' app/lib/ui app/lib/providers` 无匹配。
