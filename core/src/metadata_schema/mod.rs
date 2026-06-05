@@ -281,6 +281,8 @@ const OPF_METADATA: &[MetadataFieldSpec] = &[
     multiline_field!("summary", "简介"),
     text_field!("web", "来源链接 / Source"),
     text_field!("gtin", "标识符 (GTIN/ISBN)"),
+    text_field!("characters", "角色（逗号分隔）"),
+    text_field!("tags", "标签（逗号分隔）"),
 ];
 
 const OPF_FIXED_LAYOUT: &[MetadataFieldSpec] = &[
@@ -525,6 +527,12 @@ pub fn merge_form_values(
             ),
             web: optional_trimmed(values.get("web").map(String::as_str).unwrap_or("")),
             gtin: optional_trimmed(values.get("gtin").map(String::as_str).unwrap_or("")),
+            characters: normalize_comma_separated_tags(
+                values.get("characters").map(String::as_str).unwrap_or(""),
+            ),
+            tags: normalize_comma_separated_tags(
+                values.get("tags").map(String::as_str).unwrap_or(""),
+            ),
             cover_page_index,
             page_count,
             ..base.clone()
@@ -733,6 +741,20 @@ mod tests {
         assert_eq!(merged.series.as_deref(), Some("Series A"));
         assert_eq!(merged.black_and_white, base.black_and_white);
         assert_eq!(merged.penciller, base.penciller);
+    }
+
+    #[test]
+    fn epub_merge_writes_characters_and_tags() {
+        let base = sample_base();
+        let mut values = HashMap::new();
+        values.insert("title".to_string(), "EPUB Title".to_string());
+        values.insert("characters".to_string(), "角色A, 角色B".to_string());
+        values.insert("tags".to_string(), "标签A, 标签B".to_string());
+
+        let merged =
+            merge_form_values(&base, ExportFormat::Epub, &values, 3).expect("merge epub");
+        assert_eq!(merged.characters.as_deref(), Some("角色A,角色B"));
+        assert_eq!(merged.tags.as_deref(), Some("标签A,标签B"));
     }
 
     #[test]

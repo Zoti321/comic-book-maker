@@ -14,6 +14,7 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
 use crate::import::archive_path::{is_comicinfo_entry, normalize_archive_path};
+use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::normalize_extension;
 
 pub const EPUB_MIMETYPE: &str = "application/epub+zip";
@@ -25,6 +26,8 @@ pub struct ParsedOpfMetadata {
     pub publisher: Option<String>,
     pub description: Option<String>,
     pub language: Option<String>,
+    pub characters: Option<String>,
+    pub tags: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -131,6 +134,26 @@ fn manifest_attrs(event: &quick_xml::events::BytesStart<'_>) -> Option<(String, 
     }
 }
 
+fn meta_name_content_attrs(
+    event: &quick_xml::events::BytesStart<'_>,
+) -> Option<(String, String)> {
+    let mut name = None;
+    let mut content = None;
+    for attr in event.attributes().flatten() {
+        let key = String::from_utf8_lossy(attr.key.as_ref());
+        let value = String::from_utf8_lossy(&attr.value).into_owned();
+        match key.as_ref() {
+            "name" => name = Some(value),
+            "content" => content = Some(value),
+            _ => {}
+        }
+    }
+    match (name, content) {
+        (Some(name), Some(content)) if !content.trim().is_empty() => Some((name, content)),
+        _ => None,
+    }
+}
+
 fn itemref_id(event: &quick_xml::events::BytesStart<'_>) -> Option<String> {
     for attr in event.attributes().flatten() {
         if attr.key.as_ref() == b"idref" {
@@ -180,6 +203,15 @@ fn parse_opf(
                     "itemref" if in_spine => {
                         if let Some(idref) = itemref_id(&event) {
                             spine_ids.push(idref);
+                        }
+                    }
+                    "meta" if in_metadata => {
+                        if let Some((name, content)) = meta_name_content_attrs(&event) {
+                            match name.as_str() {
+                                "characters" => metadata.characters = Some(content),
+                                "tags" => metadata.tags = Some(content),
+                                _ => {}
+                            }
                         }
                     }
                     tag if in_metadata => {
@@ -420,6 +452,11 @@ pub fn metadata_from_opf(
         publisher: opf.publisher.clone(),
         summary: opf.description.clone(),
         language_iso: opf.language.clone(),
+        characters: opf
+            .characters
+            .as_deref()
+            .and_then(normalize_comma_separated_tags),
+        tags: opf.tags.as_deref().and_then(normalize_comma_separated_tags),
         page_count,
         ..Default::default()
     }
@@ -631,11 +668,14 @@ fn build_content_opf(
         r#"<?xml version="1.0" encoding="utf-8"?>
 <package version="3.0" unique-identifier="{}" xmlns="http://www.idpf.org/2007/opf">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-    <dc:identifier id="{}"{}>{}</dc:identifier>
-    <dc:title>{}</dc:title>
-    <dc:language>{}</dc:language>
 "#,
         escape_xml(&identifier_id),
+    );
+
+    append_comic_rendition_metadata(&mut opf, original_resolution);
+
+    opf.push_str(&format!(
+        "    <dc:identifier id=\"{}\"{}>{}</dc:identifier>\n    <dc:title>{}</dc:title>\n    <dc:language>{}</dc:language>\n",
         escape_xml(&identifier_id),
         identifier_scheme
             .as_deref()
@@ -644,7 +684,7 @@ fn build_content_opf(
         escape_xml(&identifier_value),
         escape_xml(&metadata.title),
         escape_xml(language),
-    );
+    ));
 
     append_dc_element(&mut opf, "creator", metadata.writer.as_deref());
     append_dc_element(&mut opf, "publisher", metadata.publisher.as_deref());
@@ -653,9 +693,26 @@ fn build_content_opf(
     append_dc_element(&mut opf, "number", metadata.issue_number.as_deref());
     append_dc_element(&mut opf, "source", metadata.web.as_deref());
     append_meta_name_content(&mut opf, "comic:volume", metadata.volume.as_deref());
+    append_meta_name_content(
+        &mut opf,
+        "characters",
+        metadata
+            .characters
+            .as_deref()
+            .and_then(normalize_comma_separated_tags)
+            .as_deref(),
+    );
+    append_meta_name_content(
+        &mut opf,
+        "tags",
+        metadata
+            .tags
+            .as_deref()
+            .and_then(normalize_comma_separated_tags)
+            .as_deref(),
+    );
     opf.push_str(r#"    <meta name="cover" content="cover_img"/>"#);
     opf.push('\n');
-    append_comic_rendition_metadata(&mut opf, original_resolution);
 
     opf.push_str(
         r#"  </metadata>
@@ -951,6 +1008,26 @@ mod tests {
         assert!(section.contains("<metadata"));
         assert!(section.contains("<dc:title>Test</dc:title>"));
     }
+
+    #[test]
+    fn parse_opf_reads_characters_and_tags_meta() {
+        let opf = r#"<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>Test</dc:title>
+    <meta name="characters" content="角色A,角色B"/>
+    <meta name="tags" content="标签A,标签B"/>
+  </metadata>
+  <manifest></manifest>
+  <spine></spine>
+</package>"#;
+
+        let (metadata, _, _) = parse_opf(opf).expect("parse");
+        assert_eq!(metadata.title.as_deref(), Some("Test"));
+        assert_eq!(metadata.characters.as_deref(), Some("角色A,角色B"));
+        assert_eq!(metadata.tags.as_deref(), Some("标签A,标签B"));
+    }
+
     use std::io::Cursor;
     use std::path::PathBuf;
     use zip::write::SimpleFileOptions;

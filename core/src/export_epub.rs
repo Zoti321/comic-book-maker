@@ -120,6 +120,8 @@ mod tests {
   <Web>https://example.com</Web>
   <GTIN>9781234567890</GTIN>
   <Summary>Summary</Summary>
+  <Characters>角色A,角色B</Characters>
+  <Tags>标签A,标签B</Tags>
   <PageCount>2</PageCount>
 </ComicInfo>"#;
 
@@ -165,14 +167,28 @@ mod tests {
         assert!(opf.contains("type=\"cover\""));
         assert!(!opf.contains("ComicInfo"));
         assert_eq!(opf.matches("idref=\"Page_cover\"").count(), 1);
-        assert!(opf.contains(r#"<meta property="rendition:layout">pre-paginated</meta>"#));
+        let layout_pos = opf
+            .find(r#"<meta property="rendition:layout">pre-paginated</meta>"#)
+            .expect("rendition:layout meta");
+        let title_pos = opf.find("<dc:title>").expect("dc:title");
+        assert!(
+            layout_pos < title_pos,
+            "comic layout metadata should precede Dublin Core title"
+        );
         assert!(opf.contains(r#"<meta property="rendition:spread">landscape</meta>"#));
         assert!(opf.contains(r#"<meta name="book-type" content="comic"/>"#));
         assert!(opf.contains(r#"<meta name="fixed-layout" content="true"/>"#));
         assert!(opf.contains(r#"<meta name="original-resolution" content="8x12"/>"#));
+        assert!(opf.contains(r#"<meta name="characters" content="角色A,角色B"/>"#));
+        assert!(opf.contains(r#"<meta name="tags" content="标签A,标签B"/>"#));
 
         let reimport = import_epub(&mut library, &export_path.to_string_lossy()).expect("reimport");
         assert_eq!(reimport.title, "Export EPUB");
+        let reimport_metadata = library
+            .get_project_metadata_inner(&reimport.project_id)
+            .expect("reimport metadata");
+        assert_eq!(reimport_metadata.characters.as_deref(), Some("角色A,角色B"));
+        assert_eq!(reimport_metadata.tags.as_deref(), Some("标签A,标签B"));
 
         let reimported_pages = library
             .list_pages_inner(&reimport.project_id)
