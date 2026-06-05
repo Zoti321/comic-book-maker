@@ -8,6 +8,7 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
 use crate::db::{Library, MetadataRecord, PageRecord};
+use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::{cbz_zip_entry_name, normalize_extension};
 
 pub fn export_cbz(
@@ -77,7 +78,11 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     append_optional_element_always(&mut xml, "Penciller", metadata.penciller.as_deref());
     append_optional_element_always(&mut xml, "Publisher", metadata.publisher.as_deref());
     append_optional_element_always(&mut xml, "Genre", metadata.genre.as_deref());
-    append_optional_element_always(&mut xml, "Tags", metadata.tags.as_deref());
+    let normalized_tags = metadata
+        .tags
+        .as_deref()
+        .and_then(normalize_comma_separated_tags);
+    append_optional_element_always(&mut xml, "Tags", normalized_tags.as_deref());
     append_element_always(
         &mut xml,
         "PageCount",

@@ -4,6 +4,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -62,6 +63,7 @@ class MetadataPanel extends HookConsumerWidget {
     final sectionIndex = useState(0);
     final formKey = useMemoized(GlobalKey<FormState>.new);
     final controllers = useRef(<String, TextEditingController>{});
+    final focusNodes = useRef(<String, FocusNode>{});
 
     final session = useMemoized(
       () => MetadataEditingSession(
@@ -97,15 +99,27 @@ class MetadataPanel extends HookConsumerWidget {
           c.dispose();
         }
         controllers.value.clear();
+        for (final node in focusNodes.value.values) {
+          node.dispose();
+        }
+        focusNodes.value.clear();
       };
     }, const []);
 
     TextEditingController fieldController(String key) =>
         controllers.value.putIfAbsent(key, TextEditingController.new);
 
+    FocusNode focusNodeFor(String key) =>
+        focusNodes.value.putIfAbsent(key, FocusNode.new);
+
     void syncController(String key, String value) {
+      if (focusNodeFor(key).hasFocus) return;
       final field = fieldController(key);
-      if (field.text != value) field.text = value;
+      if (field.value.text == value) return;
+      field.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
     }
 
     Map<String, String> captureTextFieldValues() {
@@ -181,12 +195,23 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
+    Widget tagsField(MetadataFieldSpecFrb field) {
+      return MetadataTagsInput(
+        controller: fieldController(field.id),
+        focusNode: focusNodeFor(field.id),
+        label: field.label,
+        onChanged: onTextFieldChanged,
+        onEditingComplete: () => unawaited(saveNow()),
+      );
+    }
+
     Widget textField(
       MetadataFieldSpecFrb field, {
       int maxLines = 1,
     }) {
       return TextFormField(
         controller: fieldController(field.id),
+        focusNode: focusNodeFor(field.id),
         decoration: InputDecoration(
           labelText: field.label,
           alignLabelWithHint: maxLines > 1,
@@ -205,6 +230,7 @@ class MetadataPanel extends HookConsumerWidget {
       final max = field.intMax ?? 9999;
       return TextFormField(
         controller: fieldController(field.id),
+        focusNode: focusNodeFor(field.id),
         decoration: InputDecoration(labelText: field.label),
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -252,6 +278,7 @@ class MetadataPanel extends HookConsumerWidget {
             builder: (context, value, _) {
               return TextFormField(
                 controller: controller,
+                focusNode: focusNodeFor(field.id),
                 decoration: InputDecoration(
                   labelText: field.label,
                   hintText: '可选择预设或手动输入',
@@ -292,6 +319,7 @@ class MetadataPanel extends HookConsumerWidget {
 
     Widget fieldWidget(MetadataFieldSpecFrb field) {
       return switch (field.kind) {
+        MetadataFieldKindFrb.text when field.id == 'tags' => tagsField(field),
         MetadataFieldKindFrb.text => textField(field),
         MetadataFieldKindFrb.multilineText => textField(field, maxLines: 5),
         MetadataFieldKindFrb.integer => intField(field),

@@ -422,6 +422,21 @@ fn optional_trimmed(value: &str) -> Option<String> {
     }
 }
 
+/// ComicInfo `<Tags>`：逗号分隔，逗号后不含空格（如 `a,b` 而非 `a, b`）。
+pub fn normalize_comma_separated_tags(raw: &str) -> Option<String> {
+    let parts: Vec<String> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .map(ToString::to_string)
+        .collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(","))
+    }
+}
+
 fn parse_optional_int(value: &str) -> Option<i32> {
     let trimmed = value.trim();
     if trimmed.is_empty() {
@@ -594,7 +609,9 @@ pub fn merge_form_values(
             ),
             imprint: optional_trimmed(values.get("imprint").map(String::as_str).unwrap_or("")),
             genre: optional_trimmed(values.get("genre").map(String::as_str).unwrap_or("")),
-            tags: optional_trimmed(values.get("tags").map(String::as_str).unwrap_or("")),
+            tags: normalize_comma_separated_tags(
+                values.get("tags").map(String::as_str).unwrap_or(""),
+            ),
             web: optional_trimmed(values.get("web").map(String::as_str).unwrap_or("")),
             language_iso: optional_trimmed(
                 values
@@ -737,5 +754,17 @@ mod tests {
         let schema = editor_schema(ExportFormat::Pdf);
         assert!(!schema.editable);
         assert!(schema.pdf_message.is_some());
+    }
+
+    #[test]
+    fn normalize_comma_separated_tags_strips_spaces_after_commas() {
+        assert_eq!(
+            normalize_comma_separated_tags("肉便器, 群交").as_deref(),
+            Some("肉便器,群交")
+        );
+        assert_eq!(
+            normalize_comma_separated_tags("  a , b , ").as_deref(),
+            Some("a,b")
+        );
     }
 }
