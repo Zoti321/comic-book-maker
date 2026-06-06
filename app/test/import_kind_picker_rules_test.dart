@@ -1,5 +1,5 @@
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_kind_picker_rules.dart';
+import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

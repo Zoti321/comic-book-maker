@@ -1,31 +1,46 @@
+import 'package:comic_book_maker/domain/models/create_project_draft.dart';
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
+import 'package:comic_book_maker/domain/use_cases/create_project_workflow.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_draft.dart';
-import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
 
 export 'package:comic_book_maker/data/repositories/core_gateway.dart'
     show ImportCbzResult, Metadata, ProjectSummary;
-export 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart'
+export 'package:comic_book_maker/domain/models/create_project_command.dart'
+    show CreateProjectCommand, CreateProjectValidationException;
+export 'package:comic_book_maker/domain/models/create_project_draft.dart'
+    show CreateProjectDraft;
+export 'package:comic_book_maker/domain/models/create_project_import_source.dart'
+    show
+        CreateProjectArchiveImport,
+        CreateProjectImageImport,
+        CreateProjectImportSource;
+export 'package:comic_book_maker/domain/models/import_archive_format.dart'
     show ImportArchiveFormat;
+export 'package:comic_book_maker/domain/use_cases/create_project_workflow.dart'
+    show CreateProjectWorkflow;
 
-/// ????????Create Project?Import??????????????
+/// 漫画库编排：Create Project、Import、目录变更通知。
 class LibraryOperations {
   LibraryOperations({
     CoreGateway? gateway,
     void Function()? onLibraryChanged,
+    CreateProjectWorkflow? createProject,
   })  : _gateway = gateway ?? const FrbCoreGateway(),
+        _createProject = createProject ??
+            CreateProjectWorkflow(gateway: gateway ?? const FrbCoreGateway()),
         _archiveImport = ArchiveImportRunner(
           gateway: gateway ?? const FrbCoreGateway(),
         ),
         _onLibraryChanged = onLibraryChanged;
 
   final CoreGateway _gateway;
+  final CreateProjectWorkflow _createProject;
   final ArchiveImportRunner _archiveImport;
   final void Function()? _onLibraryChanged;
 
   List<ProjectSummary> listProjects() => _gateway.listProjects();
 
-  /// ?? Project ????????????????
+  /// 打开 Project 时更新 Library Database 中的最近访问时间。
   void recordProjectOpened({required String projectId}) {
     _gateway.touchProject(projectId: projectId);
     _notifyLibraryChanged();
@@ -38,8 +53,9 @@ class LibraryOperations {
 
   void refreshLibraryCatalog() => _notifyLibraryChanged();
 
+  /// 从向导 [CreateProjectDraft] 执行 Create Project 事务。
   Future<ProjectSummary> createFromDraft(CreateProjectDraft draft) async {
-    final created = await _createFromDraft(draft);
+    final created = _createProject.createFromDraft(draft);
     _notifyLibraryChanged();
     return created;
   }
@@ -69,109 +85,4 @@ class LibraryOperations {
       ),
     );
   }
-
-  Future<ProjectSummary> _createFromDraft(CreateProjectDraft draft) async {
-    final settingsUpdate = draft.toSettingsUpdate();
-    final title = draft.effectiveTitle;
-    final source = draft.importSource!;
-
-    switch (source) {
-      case CreateProjectImageImport(:final sourcePaths):
-        final project = _gateway.createProject(title: title);
-        _gateway.addPageImages(
-          projectId: project.id,
-          sourcePaths: sourcePaths,
-        );
-        _gateway.updateProjectSettings(
-          projectId: project.id,
-          update: settingsUpdate,
-        );
-        return _projectWithTitle(project, title);
-
-      case CreateProjectArchiveImport(:final format, :final sourcePath):
-        final imported = await _performArchiveImport(
-          format: format,
-          sourcePath: sourcePath,
-        );
-        _gateway.updateProjectSettings(
-          projectId: imported.project.id,
-          update: settingsUpdate,
-        );
-        if (title != null && title != imported.project.title) {
-          await _renameProjectTitle(imported.project.id, title);
-          return ProjectSummary(
-            id: imported.project.id,
-            title: title,
-            updatedAtMs: imported.project.updatedAtMs,
-            coverThumbnailPath: imported.project.coverThumbnailPath,
-          );
-        }
-        return imported.project;
-    }
-  }
-
-  Future<void> _renameProjectTitle(String projectId, String title) async {
-    final metadata = _gateway.getProjectMetadata(projectId: projectId);
-    _gateway.updateProjectMetadata(
-      projectId: projectId,
-      metadata: Metadata(
-        title: title,
-        series: metadata.series,
-        issueNumber: metadata.issueNumber,
-        seriesCount: metadata.seriesCount,
-        volume: metadata.volume,
-        alternateSeries: metadata.alternateSeries,
-        alternateNumber: metadata.alternateNumber,
-        alternateCount: metadata.alternateCount,
-        summary: metadata.summary,
-        notes: metadata.notes,
-        year: metadata.year,
-        month: metadata.month,
-        day: metadata.day,
-        writer: metadata.writer,
-        penciller: metadata.penciller,
-        inker: metadata.inker,
-        colorist: metadata.colorist,
-        letterer: metadata.letterer,
-        coverArtist: metadata.coverArtist,
-        editor: metadata.editor,
-        translator: metadata.translator,
-        publisher: metadata.publisher,
-        imprint: metadata.imprint,
-        genre: metadata.genre,
-        tags: metadata.tags,
-        web: metadata.web,
-        languageIso: metadata.languageIso,
-        format: metadata.format,
-        blackAndWhite: metadata.blackAndWhite,
-        manga: metadata.manga,
-        characters: metadata.characters,
-        teams: metadata.teams,
-        locations: metadata.locations,
-        mainCharacterOrTeam: metadata.mainCharacterOrTeam,
-        scanInformation: metadata.scanInformation,
-        storyArc: metadata.storyArc,
-        storyArcNumber: metadata.storyArcNumber,
-        seriesGroup: metadata.seriesGroup,
-        ageRating: metadata.ageRating,
-        communityRating: metadata.communityRating,
-        review: metadata.review,
-        gtin: metadata.gtin,
-        coverPageIndex: metadata.coverPageIndex,
-        pageCount: metadata.pageCount,
-      ),
-    );
-  }
-}
-
-ProjectSummary _projectWithTitle(ProjectSummary project, String? title) {
-  if (title == null || title == project.title) {
-    return project;
-  }
-  return ProjectSummary(
-    id: project.id,
-    title: title,
-    updatedAtMs: project.updatedAtMs,
-    coverThumbnailPath: project.coverThumbnailPath,
-  );
 }

@@ -1,6 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/domain/use_cases/export_workflow_resolver.dart';
+import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:flutter/material.dart';
 
 /// 漫画压缩包 Export 的容器算法（二级菜单）与扩展名策略控件。

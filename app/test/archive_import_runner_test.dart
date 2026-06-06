@@ -1,6 +1,5 @@
-import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
+import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
@@ -51,7 +50,8 @@ void main() {
       sourcePath: r'C:\comic.cbr',
     );
 
-    expect(result.addedPageCount, 0);
+    expect(result.addedPageCount, 1);
+    expect(gateway.pages, hasLength(1));
     expect(result.warnings, isEmpty);
   });
 }

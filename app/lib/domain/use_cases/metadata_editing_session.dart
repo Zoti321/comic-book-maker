@@ -107,12 +107,10 @@ class MetadataEditingSession extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final loaded = _gateway.getProjectMetadata(projectId: projectId);
-      _metadata = _withPageCount(loaded);
-      _importSnapshot =
-          _gateway.getImportMetadataSnapshot(projectId: projectId);
-      _inferredImportKind =
-          _gateway.getProjectSettings(projectId: projectId).inferredImportKind;
+      final context = _gateway.loadMetadataEditingContext(projectId: projectId);
+      _metadata = _withPageCount(context.metadata);
+      _importSnapshot = context.importSnapshot;
+      _inferredImportKind = context.inferredImportKind;
       _loading = false;
       _dirty = false;
       _bumpFormSyncGeneration();

@@ -4,25 +4,26 @@ import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
-import 'support/frb/rust_fake.dart';
+import 'support/data/repositories/in_memory_core_gateway.dart';
 
 void main() {
-  late FakeRustLibApi fake;
-
-  setUpAll(() {
-    fake = FakeRustLibApi.metadataPanel();
-    initRustTestFake(fake);
-  });
+  late InMemoryCoreGateway gateway;
 
   setUp(() {
-    fake.metadataByProjectId['p1'] = kMetadataPanelFixture;
-    fake.metadataUpdateCallCount = 0;
-    fake.nextMetadataUpdateError = null;
-    fake.failMetadataUpdates = false;
-    fake.onMetadataUpdate = null;
+    gateway = InMemoryCoreGateway.metadataPanel();
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture;
+    gateway.metadataUpdateCallCount = 0;
+    gateway.nextMetadataUpdateError = null;
+    gateway.failMetadataUpdates = false;
+    gateway.onMetadataUpdate = null;
   });
+
   testWidgets('comic archive export format shows ComicInfo fields', (tester) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.comicArchive);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
 
     expect(find.text('导入元数据（只读）'), findsOneWidget);
     expect(
@@ -40,7 +41,11 @@ void main() {
   testWidgets('epub export format shows OPF and fixed-layout sections', (
     tester,
   ) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.epub);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.epub,
+    );
 
     expect(find.text('OPF Metadata'), findsWidgets);
     expect(find.text('标识符 (GTIN/ISBN)'), findsOneWidget);
@@ -56,7 +61,11 @@ void main() {
   testWidgets('pdf export format shows placeholder without editable form', (
     tester,
   ) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.pdf);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.pdf,
+    );
 
     expect(find.textContaining('PDF Export 尚未实现'), findsOneWidget);
     expect(find.text('保存'), findsNothing);
@@ -66,59 +75,71 @@ void main() {
   testWidgets('debounced edit persists metadata without manual save', (
     tester,
   ) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.comicArchive);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
 
     await tester.enterText(find.byType(TextFormField).last, '2');
     await tester.pump(const Duration(milliseconds: 500));
-    expect(fake.metadataUpdateCallCount, 0);
+    expect(gateway.metadataUpdateCallCount, 0);
 
     await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 1);
-    expect(fake.metadataByProjectId['p1']?.volume, '2');
+    expect(gateway.metadataUpdateCallCount, 1);
+    expect(gateway.metadataByProjectId['p1']?.volume, '2');
     expect(find.text('保存中…'), findsNothing);
   });
 
   testWidgets('validation failure skips autosave until field is valid', (
     tester,
   ) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.comicArchive);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
 
     await tester.enterText(find.byType(TextFormField).first, '');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 0);
+    expect(gateway.metadataUpdateCallCount, 0);
     expect(find.text('必填'), findsOneWidget);
 
     await tester.enterText(find.byType(TextFormField).first, '新标题');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 1);
-    expect(fake.metadataByProjectId['p1']?.title, '新标题');
+    expect(gateway.metadataUpdateCallCount, 1);
+    expect(gateway.metadataByProjectId['p1']?.title, '新标题');
   });
 
   testWidgets('save failure shows retry and persists on retry', (tester) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.comicArchive);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
 
-    fake.nextMetadataUpdateError = Exception('磁盘写入失败');
+    gateway.nextMetadataUpdateError = Exception('磁盘写入失败');
 
     await tester.enterText(find.byType(TextFormField).last, '9');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 1);
+    expect(gateway.metadataUpdateCallCount, 1);
     expect(find.textContaining('保存失败'), findsOneWidget);
     expect(find.text('重试'), findsOneWidget);
-    expect(fake.metadataByProjectId['p1']?.volume, '1');
+    expect(gateway.metadataByProjectId['p1']?.volume, '1');
 
     await tester.tap(find.text('重试'));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 2);
-    expect(fake.metadataByProjectId['p1']?.volume, '9');
+    expect(gateway.metadataUpdateCallCount, 2);
+    expect(gateway.metadataByProjectId['p1']?.volume, '9');
     expect(find.textContaining('保存失败'), findsNothing);
   });
 
@@ -130,6 +151,7 @@ void main() {
           body: SizedBox(
             height: 800,
             child: _MetadataPanelPageCountHarness(
+              gateway: gateway,
               exportFormat: ExportFormatFrb.comicArchive,
             ),
           ),
@@ -150,20 +172,24 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataUpdateCallCount, 1);
-    expect(fake.metadataByProjectId['p1']?.volume, '6');
+    expect(gateway.metadataUpdateCallCount, 1);
+    expect(gateway.metadataByProjectId['p1']?.volume, '6');
   });
 
   testWidgets('preserves field edits made while save result is applied', (
     tester,
   ) async {
-    await pumpMetadataPanel(tester, exportFormat: ExportFormatFrb.comicArchive);
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
 
     final volumeField = find.byType(TextFormField).last;
     final controller = tester.widget<TextFormField>(volumeField).controller!;
 
     await tester.enterText(volumeField, '12');
-    fake.onMetadataUpdate = () {
+    gateway.onMetadataUpdate = () {
       controller.text = '123';
       controller.selection = const TextSelection.collapsed(offset: 3);
     };
@@ -172,18 +198,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.text, '123');
-    expect(fake.metadataByProjectId['p1']?.volume, '12');
+    expect(gateway.metadataByProjectId['p1']?.volume, '12');
 
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(fake.metadataByProjectId['p1']?.volume, '123');
+    expect(gateway.metadataByProjectId['p1']?.volume, '123');
   });
 }
 
 class _MetadataPanelPageCountHarness extends StatefulWidget {
-  const _MetadataPanelPageCountHarness({required this.exportFormat});
+  const _MetadataPanelPageCountHarness({
+    required this.gateway,
+    required this.exportFormat,
+  });
 
+  final InMemoryCoreGateway gateway;
   final ExportFormatFrb exportFormat;
 
   @override
@@ -206,6 +236,7 @@ class _MetadataPanelPageCountHarnessState
             projectId: 'p1',
             pageCount: pageCount,
             exportFormat: widget.exportFormat,
+            gateway: widget.gateway,
           ),
         ),
         TextButton(

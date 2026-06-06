@@ -1,5 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_draft.dart';
+import 'package:comic_book_maker/domain/models/create_project_draft.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';

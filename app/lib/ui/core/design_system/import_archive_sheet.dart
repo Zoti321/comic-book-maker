@@ -1,8 +1,7 @@
+import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_button.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_sheet.dart';
 import 'package:flutter/material.dart';
-
-enum ImportArchiveFormat { cbz, cbr, epub }
 
 /// 导入漫画格式选择（底部 Sheet）。
 Future<ImportArchiveFormat?> showImportArchiveSheet(BuildContext context) {

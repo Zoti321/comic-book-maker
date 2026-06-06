@@ -1,6 +1,7 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 
-/// 项目编辑工作区的只读快照；变更经 [ProjectWorkspace] 提交到 Core。
+/// 项目编辑工作区的只读快照；变更经 [ProjectWorkspace] 与 [ProjectEditingSession] 提交到 Core。
 class ProjectWorkspaceState {
   const ProjectWorkspaceState({
     required this.project,
@@ -8,7 +9,6 @@ class ProjectWorkspaceState {
     this.settings,
     this.coverPageIndex = 0,
     this.error,
-    this.exporting = false,
     this.appendingImport = false,
     this.savingExportFormat = false,
     this.initialized = false,
@@ -19,26 +19,22 @@ class ProjectWorkspaceState {
   final ProjectSettings? settings;
   final int coverPageIndex;
   final String? error;
-  final bool exporting;
   final bool appendingImport;
   final bool savingExportFormat;
   final bool initialized;
 
   String get projectId => project.id;
 
-  bool get canAppendImport =>
-      settings != null &&
-      !appendingImport &&
-      !exporting &&
-      !savingExportFormat &&
-      settings!.inferredImportKind != InferredImportKindFrb.pdf;
+  bool get canAppendImport => canAppendImportForSettings(
+        settings,
+        operationInProgress: appendingImport || savingExportFormat,
+      );
 
-  bool get canExport =>
-      settings != null &&
-      pages.isNotEmpty &&
-      !exporting &&
-      !savingExportFormat &&
-      settings!.exportFormat != ExportFormatFrb.pdf;
+  bool get canExport => canExportProject(
+        settings: settings,
+        pageCount: pages.length,
+        operationInProgress: savingExportFormat,
+      );
 
   ProjectWorkspaceState copyWith({
     ProjectSummary? project,
@@ -47,7 +43,6 @@ class ProjectWorkspaceState {
     int? coverPageIndex,
     String? error,
     bool clearError = false,
-    bool? exporting,
     bool? appendingImport,
     bool? savingExportFormat,
     bool? initialized,
@@ -58,7 +53,6 @@ class ProjectWorkspaceState {
       settings: settings ?? this.settings,
       coverPageIndex: coverPageIndex ?? this.coverPageIndex,
       error: clearError ? null : (error ?? this.error),
-      exporting: exporting ?? this.exporting,
       appendingImport: appendingImport ?? this.appendingImport,
       savingExportFormat: savingExportFormat ?? this.savingExportFormat,
       initialized: initialized ?? this.initialized,

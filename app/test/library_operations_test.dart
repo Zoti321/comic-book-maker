@@ -1,5 +1,4 @@
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
@@ -59,6 +58,24 @@ void main() {
 
     expect(created.title, '未命名');
     expect(gateway.projects, hasLength(1));
+    expect(gateway.pages, hasLength(1));
+    expect(changeCount, 1);
+  });
+
+  test('createFromDraft with archive import and title', () async {
+    final library = operations();
+    final draft = CreateProjectDraft(projectTitle: '库漫画')
+      ..applyImportSource(
+        const CreateProjectArchiveImport(
+          format: ImportArchiveFormat.cbz,
+          sourcePath: r'C:\comic.cbz',
+        ),
+      );
+
+    final created = await library.createFromDraft(draft);
+
+    expect(created.title, '库漫画');
+    expect(gateway.metadataByProjectId[created.id]?.title, '库漫画');
     expect(changeCount, 1);
   });
 

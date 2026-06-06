@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/domain/use_cases/archive_export_runner.dart';
-import 'package:comic_book_maker/domain/use_cases/export_workflow_resolver.dart';
+import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
@@ -8,47 +7,33 @@ import 'support/data/repositories/in_memory_core_gateway.dart';
 class _RecordingCoreGateway extends InMemoryCoreGateway {
   _RecordingCoreGateway() : super();
 
-  String? lastExportApi;
+  bool? lastExportComicArchive;
+  ComicArchiveContainerFrb? lastComicArchiveContainer;
 
   @override
-  Future<void> exportCbz({
+  Future<void> exportArchive({
     required String projectId,
     required String destinationPath,
+    required bool exportComicArchive,
+    ComicArchiveContainerFrb? comicArchiveContainer,
     required bool deleteProjectAfterExport,
   }) async {
-    lastExportApi = 'cbz';
-  }
-
-  @override
-  Future<void> exportCbr({
-    required String projectId,
-    required String destinationPath,
-    required bool deleteProjectAfterExport,
-  }) async {
-    lastExportApi = 'cbr';
-  }
-
-  @override
-  Future<void> exportEpub({
-    required String projectId,
-    required String destinationPath,
-    required bool deleteProjectAfterExport,
-  }) async {
-    lastExportApi = 'epub';
+    lastExportComicArchive = exportComicArchive;
+    lastComicArchiveContainer = comicArchiveContainer;
   }
 }
 
 void main() {
   late _RecordingCoreGateway gateway;
-  late ArchiveExportRunner runner;
+  late ExportWorkflow workflow;
 
   setUp(() {
     gateway = _RecordingCoreGateway();
-    runner = ArchiveExportRunner(gateway: gateway);
+    workflow = ExportWorkflow(gateway: gateway);
   });
 
-  test('routes ZIP comic archive to exportCbz', () async {
-    await runner.exportProject(
+  test('routes ZIP comic archive to comic CBZ export', () async {
+    await workflow.execute(
       projectId: 'p1',
       target: const ResolvedExportTarget(
         destinationPath: '/tmp/out.cbz',
@@ -59,11 +44,12 @@ void main() {
       deleteProjectAfterExport: false,
     );
 
-    expect(gateway.lastExportApi, 'cbz');
+    expect(gateway.lastExportComicArchive, isTrue);
+    expect(gateway.lastComicArchiveContainer, ComicArchiveContainerFrb.zip);
   });
 
-  test('routes RAR comic archive to exportCbr', () async {
-    await runner.exportProject(
+  test('routes RAR comic archive to comic CBR export', () async {
+    await workflow.execute(
       projectId: 'p1',
       target: const ResolvedExportTarget(
         destinationPath: '/tmp/out.cbr',
@@ -74,11 +60,12 @@ void main() {
       deleteProjectAfterExport: false,
     );
 
-    expect(gateway.lastExportApi, 'cbr');
+    expect(gateway.lastExportComicArchive, isTrue);
+    expect(gateway.lastComicArchiveContainer, ComicArchiveContainerFrb.rar);
   });
 
-  test('routes EPUB to exportEpub', () async {
-    await runner.exportProject(
+  test('routes EPUB to EPUB export', () async {
+    await workflow.execute(
       projectId: 'p1',
       target: const ResolvedExportTarget(
         destinationPath: '/tmp/out.epub',
@@ -88,6 +75,7 @@ void main() {
       deleteProjectAfterExport: false,
     );
 
-    expect(gateway.lastExportApi, 'epub');
+    expect(gateway.lastExportComicArchive, isFalse);
+    expect(gateway.lastComicArchiveContainer, isNull);
   });
 }

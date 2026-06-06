@@ -2,7 +2,7 @@ import 'package:comic_book_maker/ui/features/project_editor/providers/project_wo
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_kind_picker_rules.dart';
+import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:comic_book_maker/ui/features/project_editor/pages/pages_panel.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

@@ -1,7 +1,5 @@
-import 'package:comic_book_maker/domain/use_cases/archive_export_runner.dart';
-import 'package:comic_book_maker/domain/use_cases/export_failure_presentation.dart';
-import 'package:comic_book_maker/domain/use_cases/export_preflight.dart';
-import 'package:comic_book_maker/domain/use_cases/export_workflow_resolver.dart';
+import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
+import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
@@ -48,8 +46,6 @@ Future<void> runProjectExport({
   required ProjectWorkspace workspaceNotifier,
   Future<bool> Function()? prepareMetadataForExport,
 }) async {
-  if (workspace.exporting || workspace.pages.isEmpty) return;
-
   if (prepareMetadataForExport != null) {
     final ready = await prepareMetadataForExport();
     if (!context.mounted) return;
@@ -64,62 +60,46 @@ Future<void> runProjectExport({
     }
   }
 
-  final settings = workspace.settings;
   final globalExportDirectory = await readReadyGlobalExportDirectory(
     ref.read(exportPathProvider),
     awaitLoaded: () => ref.read(exportPathProvider.future),
   );
 
-  final safeTitle =
-      workspace.project.title.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-
-  final block = resolveExportBlock(
-    settings: settings,
-    globalExportDirectory: globalExportDirectory,
-    safeTitle: safeTitle,
+  final workflow = ExportWorkflow(gateway: ref.read(coreGatewayProvider));
+  final plan = workflow.plan(
+    ExportWorkflowRequest(
+      projectTitle: workspace.project.title,
+      settings: workspace.settings,
+      globalExportDirectory: globalExportDirectory,
+      hasPages: workspace.pages.isNotEmpty,
+    ),
   );
-  if (block != null) {
-    if (!context.mounted) return;
-    await showAppOperationFailure(
-      context,
-      title: block.title,
-      message: block.message,
-      nextStepHint: block.nextStepHint,
-    );
-    return;
+
+  final ExportWorkflowReady readyPlan;
+  switch (plan) {
+    case ExportWorkflowBlocked(:final presentation):
+      if (!context.mounted) return;
+      await showAppOperationFailure(
+        context,
+        title: presentation.title,
+        message: presentation.message,
+        nextStepHint: presentation.nextStepHint,
+      );
+      return;
+    case ExportWorkflowReady ready:
+      readyPlan = ready;
   }
 
-  final target = resolveExportTarget(
-    settings: settings!,
-    globalExportDirectory: globalExportDirectory,
-    safeTitle: safeTitle,
-  );
-  if (target == null) return;
-
-  final preflight = checkExportPreflight(target.destinationPath);
-  if (preflight.isBlocked) {
-    if (!context.mounted) return;
-    final presentation = preflight.presentation!;
-    await showAppOperationFailure(
-      context,
-      title: presentation.title,
-      message: presentation.message,
-      nextStepHint: presentation.nextStepHint,
-    );
-    return;
-  }
-
-  final deleteAfterExport = settings.deleteProjectAfterExport;
-  final confirmed = await runExportConfirmations(
-    preflight: preflight,
-    deleteAfterExport: deleteAfterExport,
+  final confirmed = await workflow.runConfirmations(
+    needsOverwriteConfirmation: readyPlan.needsOverwriteConfirmation,
+    deleteAfterExport: readyPlan.deleteAfterExport,
     confirmOverwrite: () async {
       if (!context.mounted) return false;
       final result = await showAppConfirmDialog(
         context: context,
         title: '覆盖已有文件？',
         description: Text(
-          '目标位置已存在文件：\n${target.destinationPath}\n\n'
+          '目标位置已存在文件：\n${readyPlan.target.destinationPath}\n\n'
           '继续将覆盖该文件。',
         ),
         confirmLabel: '覆盖并导出',
@@ -133,8 +113,8 @@ Future<void> runProjectExport({
         context: context,
         title: '导出并删除项目',
         description: Text(
-          '将导出「${workspace.project.title}」为 ${target.formatLabel} 并保存至：\n'
-          '${target.destinationPath}\n\n'
+          '将导出「${workspace.project.title}」为 ${readyPlan.target.formatLabel} 并保存至：\n'
+          '${readyPlan.target.destinationPath}\n\n'
           '导出完成后，本地页面与元数据将被永久删除，此操作不可恢复。',
         ),
         confirmLabel: '导出并删除',
@@ -145,24 +125,20 @@ Future<void> runProjectExport({
   );
   if (!confirmed || !context.mounted) return;
 
-  final exportRunner = ArchiveExportRunner();
-
-  if (!context.mounted) return;
-
   try {
     await runAppDismissibleBackgroundOperation(
       context: context,
-      message: '正在导出 ${target.formatLabel}…',
+      message: readyPlan.progressMessage,
       dismissHint: '可点击空白处关闭，导出将在后台继续',
-      operation: () => exportRunner.exportProject(
+      operation: () => workflow.execute(
         projectId: workspace.projectId,
-        target: target,
-        deleteProjectAfterExport: deleteAfterExport,
+        target: readyPlan.target,
+        deleteProjectAfterExport: readyPlan.deleteAfterExport,
       ),
     );
   } catch (e) {
     if (!context.mounted) return;
-    final failure = presentationForExportFailure(e);
+    final failure = workflow.presentationForCaughtFailure(e);
     await showAppOperationFailure(
       context,
       title: failure?.title ?? '导出失败',
@@ -177,12 +153,12 @@ Future<void> runProjectExport({
 
   showAppExportSuccessSnackBar(
     context,
-    deletedProject: deleteAfterExport,
+    deletedProject: readyPlan.deleteAfterExport,
   );
 
   if (!context.mounted) return;
 
-  if (deleteAfterExport) {
+  if (readyPlan.deleteAfterExport) {
     leaveProjectEditorAfterDeletedExport(
       context: context,
       ref: ref,

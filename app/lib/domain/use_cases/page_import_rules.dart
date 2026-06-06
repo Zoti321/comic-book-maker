@@ -16,14 +16,14 @@ enum ImportKindPickerIntent {
   /// 图片 Tab 画廊末尾「添加页面」——始终仅 Page Image。
   galleryAddPage,
 
-  /// 编辑页「追加导入」（顶栏等）——跟随 `inferred_import_kind`。
+  /// 编辑页「追加导入」——跟随 `inferred_import_kind`。
   appendImport,
 
-  /// 缩略图菜单「替换」——始终仅 Page Image（Page Operation，与导入格式无关）。
+  /// 缩略图菜单「替换」——始终仅 Page Image（Page Operation）。
   replacePage,
 }
 
-/// 按导入格式与用途解析允许的扩展名；`null` 表示该入口不可用（由调用方展示说明）。
+/// 按 Import 格式与用途解析允许的扩展名；`null` 表示该入口不可用。
 List<String>? allowedExtensionsFor(
   InferredImportKindFrb kind,
   ImportKindPickerIntent intent,
@@ -36,7 +36,7 @@ List<String>? allowedExtensionsFor(
     ImportKindPickerIntent.replacePage => kPageImageExtensions,
     ImportKindPickerIntent.appendImport => switch (kind) {
         InferredImportKindFrb.images => kPageImageExtensions,
-        InferredImportKindFrb.comicArchive => null, // CBZ/CBR 由归档流程单独选择
+        InferredImportKindFrb.comicArchive => null,
         InferredImportKindFrb.epub => const ['epub'],
         InferredImportKindFrb.pdf => null,
       },
@@ -49,4 +49,23 @@ String appendImportBlockedReason(InferredImportKindFrb kind) {
     InferredImportKindFrb.pdf => 'PDF 导入尚未实现。',
     _ => '',
   };
+}
+
+bool canAppendImportForSettings(
+  ProjectSettings? settings, {
+  required bool operationInProgress,
+}) {
+  if (settings == null || operationInProgress) return false;
+  return settings.inferredImportKind != InferredImportKindFrb.pdf;
+}
+
+bool canExportProject({
+  required ProjectSettings? settings,
+  required int pageCount,
+  required bool operationInProgress,
+}) {
+  if (settings == null || pageCount == 0 || operationInProgress) {
+    return false;
+  }
+  return settings.exportFormat != ExportFormatFrb.pdf;
 }

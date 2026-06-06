@@ -1,8 +1,7 @@
+import 'package:comic_book_maker/domain/models/append_archive_format.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_button.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_sheet.dart';
 import 'package:flutter/material.dart';
-
-enum AppendArchiveFormat { cbz, cbr }
 
 /// 编辑页追加导入：选择 CBZ 或 CBR。
 Future<AppendArchiveFormat?> showAppendArchiveSheet(BuildContext context) {

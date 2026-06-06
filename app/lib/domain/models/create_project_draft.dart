@@ -1,28 +1,15 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
+import 'package:comic_book_maker/domain/models/create_project_command.dart';
+import 'package:comic_book_maker/domain/models/create_project_import_source.dart';
+import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 
-/// 新建向导中已选定的导入来源。
-sealed class CreateProjectImportSource {
-  const CreateProjectImportSource();
-}
+export 'package:comic_book_maker/domain/models/create_project_import_source.dart'
+    show
+        CreateProjectArchiveImport,
+        CreateProjectImageImport,
+        CreateProjectImportSource;
 
-final class CreateProjectImageImport extends CreateProjectImportSource {
-  const CreateProjectImageImport(this.sourcePaths);
-
-  final List<String> sourcePaths;
-}
-
-final class CreateProjectArchiveImport extends CreateProjectImportSource {
-  const CreateProjectArchiveImport({
-    required this.format,
-    required this.sourcePath,
-  });
-
-  final ImportArchiveFormat format;
-  final String sourcePath;
-}
-
-/// 新建项目向导表单状态。
+/// [Create Project](CONTEXT.md) 向导表单状态（可变；持久化须经 [CreateProjectCommand]）。
 class CreateProjectDraft {
   CreateProjectDraft({
     this.importSource,
@@ -75,6 +62,19 @@ class CreateProjectDraft {
   String? get effectiveTitle {
     final trimmed = projectTitle.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  /// 将已填写的向导状态转为 [CreateProjectCommand]。
+  CreateProjectCommand toCommand() {
+    final reason = createDisabledReason;
+    if (reason != null) {
+      throw CreateProjectValidationException(reason);
+    }
+    return CreateProjectCommand(
+      title: effectiveTitle,
+      importSource: importSource!,
+      settingsUpdate: toSettingsUpdate(),
+    );
   }
 
   ProjectSettingsUpdate toSettingsUpdate() {

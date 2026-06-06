@@ -3,7 +3,7 @@ import 'package:comic_book_maker/ui/features/project_editor/providers/project_wo
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_kind_picker_rules.dart';
+import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +12,7 @@ Future<void> runProjectAppendImport({
   required BuildContext context,
   required ProjectWorkspaceState workspace,
   required ProjectWorkspace workspaceNotifier,
+  required CoreGateway gateway,
 }) async {
   final kind = workspace.settings?.inferredImportKind;
   if (kind == null || !workspace.canAppendImport) return;
@@ -28,9 +29,9 @@ Future<void> runProjectAppendImport({
         nextStepHint: '请使用图片、CBZ/CBR 或 EPUB 作为导入来源，或在项目属性中更改导入格式。',
       );
     case InferredImportKindFrb.comicArchive:
-      await _appendArchive(context, workspace, workspaceNotifier);
+      await _appendArchive(context, workspace, workspaceNotifier, gateway);
     case InferredImportKindFrb.epub:
-      await _appendEpubArchive(context, workspace, workspaceNotifier);
+      await _appendEpubArchive(context, workspace, workspaceNotifier, gateway);
   }
 }
 
@@ -84,11 +85,12 @@ Future<void> _appendArchive(
   BuildContext context,
   ProjectWorkspaceState workspace,
   ProjectWorkspace workspaceNotifier,
+  CoreGateway gateway,
 ) async {
   final sheetFormat = await showAppendArchiveSheet(context);
   if (sheetFormat == null || !context.mounted) return;
 
-  final runner = ArchiveImportRunner();
+  final runner = ArchiveImportRunner(gateway: gateway);
   final format = ArchiveImportRunner.fromAppendFormat(sheetFormat);
 
   try {
@@ -98,14 +100,12 @@ Future<void> _appendArchive(
     final appendResult = await runAppBlockingOperation(
       context: context,
       message: runner.appendBlockingMessage(format),
-      operation: () async => runner.appendToProject(
-        projectId: workspace.projectId,
-        format: format,
+      operation: () => workspaceNotifier.appendArchive(
+        format: ArchiveImportRunner.archiveFormatKind(format),
         sourcePath: sourcePath,
       ),
     );
     if (!context.mounted) return;
-    workspaceNotifier.reloadPages();
     await showAppAppendImportOutcome(
       context,
       addedPageCount: appendResult.addedPageCount,
@@ -128,8 +128,9 @@ Future<void> _appendEpubArchive(
   BuildContext context,
   ProjectWorkspaceState workspace,
   ProjectWorkspace workspaceNotifier,
+  CoreGateway gateway,
 ) async {
-  final runner = ArchiveImportRunner();
+  final runner = ArchiveImportRunner(gateway: gateway);
   const format = ImportArchiveFormat.epub;
 
   try {
@@ -139,14 +140,12 @@ Future<void> _appendEpubArchive(
     final appendResult = await runAppBlockingOperation(
       context: context,
       message: runner.appendBlockingMessage(format),
-      operation: () async => runner.appendToProject(
-        projectId: workspace.projectId,
-        format: format,
+      operation: () => workspaceNotifier.appendArchive(
+        format: ArchiveImportRunner.archiveFormatKind(format),
         sourcePath: sourcePath,
       ),
     );
     if (!context.mounted) return;
-    workspaceNotifier.reloadPages();
     await showAppAppendImportOutcome(
       context,
       addedPageCount: appendResult.addedPageCount,

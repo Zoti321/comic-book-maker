@@ -1,15 +1,17 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/use_cases/project_editing_session.dart';
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
-import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/ui/core/project_settings_update.dart';
+import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'project_workspace_provider.g.dart';
 
-/// 单个项目编辑会话的 deep controller：经 [CoreGateway] 访问 Core。
+/// 单个 [Project](CONTEXT.md) 编辑工作区：状态由 [ProjectEditingSession] 协调。
 @Riverpod(keepAlive: false)
 class ProjectWorkspace extends _$ProjectWorkspace {
-  CoreGateway get _gateway => ref.read(coreGatewayProvider);
+  ProjectEditingSession get _session =>
+      ProjectEditingSession(gateway: ref.read(coreGatewayProvider));
 
   @override
   ProjectWorkspaceState build(String projectId) {
@@ -20,7 +22,7 @@ class ProjectWorkspace extends _$ProjectWorkspace {
     if (state.initialized && state.project.id == project.id) {
       return;
     }
-    state = _load(project);
+    state = _stateFromLoad(project);
   }
 
   void clearError() {
@@ -34,7 +36,10 @@ class ProjectWorkspace extends _$ProjectWorkspace {
   }
 
   void reloadPages() {
-    state = _withPages(state);
+    state = _withPageStructure(
+      state,
+      _session.refreshPageStructure(state.projectId),
+    );
   }
 
   Future<void> saveProjectSettings(ProjectSettingsUpdate update) async {
@@ -42,7 +47,7 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
     state = state.copyWith(savingExportFormat: true, clearError: true);
     try {
-      final settings = _gateway.updateProjectSettings(
+      final settings = _session.saveProjectSettings(
         projectId: state.projectId,
         update: update,
       );
@@ -71,11 +76,11 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
     state = state.copyWith(savingExportFormat: true, clearError: true);
     try {
-      final settings = _gateway.changeProjectInferredImportKind(
+      final settings = _session.changeInferredImportKind(
         projectId: state.projectId,
         inferredImportKind: inferredImportKind,
       );
-      state = _load(state.project).copyWith(
+      state = _stateFromLoad(state.project).copyWith(
         settings: settings,
         savingExportFormat: false,
       );
@@ -95,40 +100,34 @@ class ProjectWorkspace extends _$ProjectWorkspace {
     }
 
     try {
-      _gateway.addPageImages(
+      final structure = await _session.addPageImages(
         projectId: state.projectId,
         sourcePaths: sourcePaths,
       );
-      state = _withPages(state.copyWith(clearError: true));
+      state = _withPageStructure(state.copyWith(clearError: true), structure);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
     }
   }
 
-  Future<AppendImportResult> appendCbz(String sourcePath) {
-    return _runAppendImport(() => _gateway.appendCbz(
-          projectId: state.projectId,
-          sourcePath: sourcePath,
-        ));
-  }
-
-  Future<AppendImportResult> appendCbr(String sourcePath) {
-    return _runAppendImport(() => _gateway.appendCbr(
-          projectId: state.projectId,
-          sourcePath: sourcePath,
-        ));
-  }
-
-  Future<AppendImportResult> appendEpub(String sourcePath) {
-    return _runAppendImport(() => _gateway.appendEpub(
-          projectId: state.projectId,
-          sourcePath: sourcePath,
-        ));
+  Future<AppendImportResult> appendArchive({
+    required ArchiveFormatKind format,
+    required String sourcePath,
+  }) {
+    return _runAppendImport(() async {
+      final outcome = await _session.appendArchive(
+        projectId: state.projectId,
+        format: format,
+        sourcePath: sourcePath,
+      );
+      state = _withPageStructure(state, outcome.structure);
+      return outcome.result;
+    });
   }
 
   Future<AppendImportResult> _runAppendImport(
-    AppendImportResult Function() append,
+    Future<AppendImportResult> Function() append,
   ) async {
     if (state.appendingImport) {
       throw StateError('append import already in progress');
@@ -136,9 +135,7 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
     state = state.copyWith(appendingImport: true, clearError: true);
     try {
-      final result = append();
-      state = _withPages(state);
-      return result;
+      return await append();
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -149,12 +146,12 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
   Future<void> replacePage(String pageId, String sourcePath) async {
     try {
-      _gateway.replacePageImage(
+      final structure = await _session.replacePageImage(
         projectId: state.projectId,
         pageId: pageId,
         sourcePath: sourcePath,
       );
-      state = _withPages(state.copyWith(clearError: true));
+      state = _withPageStructure(state.copyWith(clearError: true), structure);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -163,8 +160,11 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
   Future<void> deletePage(String pageId) async {
     try {
-      _gateway.deletePage(projectId: state.projectId, pageId: pageId);
-      state = _withPages(state.copyWith(clearError: true));
+      final structure = await _session.deletePage(
+        projectId: state.projectId,
+        pageId: pageId,
+      );
+      state = _withPageStructure(state.copyWith(clearError: true), structure);
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -173,11 +173,15 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
   Future<void> reorderPages(List<String> orderedPageIds) async {
     try {
-      final pages = _gateway.reorderPages(
+      final structure = await _session.reorderPages(
         projectId: state.projectId,
         orderedPageIds: orderedPageIds,
       );
-      state = state.copyWith(pages: pages, clearError: true);
+      state = state.copyWith(
+        pages: structure.pages,
+        coverPageIndex: structure.coverPageIndex,
+        clearError: true,
+      );
     } catch (e) {
       state = state.copyWith(error: e.toString());
       rethrow;
@@ -185,50 +189,32 @@ class ProjectWorkspace extends _$ProjectWorkspace {
   }
 
   Future<void> movePageEarlier(PageSummary page) async {
-    final sorted = _sortedPages(state.pages);
-    final index = sorted.indexWhere((p) => p.id == page.id);
-    if (index <= 0) return;
-    final ids = sorted.map((p) => p.id).toList();
-    final previousId = ids[index - 1];
-    ids[index - 1] = ids[index];
-    ids[index] = previousId;
+    final ids = _session.pageIdsAfterSwap(
+      state.pages,
+      page.id,
+      moveEarlier: true,
+    );
     await reorderPages(ids);
   }
 
   Future<void> movePageLater(PageSummary page) async {
-    final sorted = _sortedPages(state.pages);
-    final index = sorted.indexWhere((p) => p.id == page.id);
-    if (index < 0 || index >= sorted.length - 1) return;
-    final ids = sorted.map((p) => p.id).toList();
-    final nextId = ids[index + 1];
-    ids[index + 1] = ids[index];
-    ids[index] = nextId;
+    final ids = _session.pageIdsAfterSwap(
+      state.pages,
+      page.id,
+      moveEarlier: false,
+    );
     await reorderPages(ids);
-  }
-
-  List<PageSummary> _sortedPages(List<PageSummary> pages) {
-    return List<PageSummary>.from(pages)
-      ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
   }
 
   Future<void> setCoverPage(int sortIndex) async {
     try {
-      final metadata = _gateway.getProjectMetadata(
+      final coverPageIndex = _session.setCoverPage(
         projectId: state.projectId,
-      );
-      final patched = _gateway.metadataWithCoverPageIndex(
-        metadata: _gateway.metadataWithPageCount(
-          metadata: metadata,
-          pageCount: state.pages.length,
-        ),
-        coverPageIndex: sortIndex,
-      );
-      final updated = _gateway.updateProjectMetadata(
-        projectId: state.projectId,
-        metadata: patched,
+        sortIndex: sortIndex,
+        pageCount: state.pages.length,
       );
       state = state.copyWith(
-        coverPageIndex: updated.coverPageIndex,
+        coverPageIndex: coverPageIndex,
         clearError: true,
       );
     } catch (e) {
@@ -238,74 +224,26 @@ class ProjectWorkspace extends _$ProjectWorkspace {
   }
 
   void applyMetadataSaved(Metadata metadata) {
+    final patch = _session.metadataWorkspacePatch(metadata);
     state = state.copyWith(
       project: ProjectSummary(
         id: state.projectId,
-        title: metadata.title,
+        title: patch.projectTitle,
         updatedAtMs: state.project.updatedAtMs,
         coverThumbnailPath: state.project.coverThumbnailPath,
       ),
-      coverPageIndex: metadata.coverPageIndex,
+      coverPageIndex: patch.coverPageIndex,
     );
   }
 
-  Future<void> exportCbz({
-    required String destinationPath,
-    required bool deleteProjectAfterExport,
-  }) {
-    return _runExport(() => _gateway.exportCbz(
-          projectId: state.projectId,
-          destinationPath: destinationPath,
-          deleteProjectAfterExport: deleteProjectAfterExport,
-        ));
-  }
-
-  Future<void> exportEpub({
-    required String destinationPath,
-    required bool deleteProjectAfterExport,
-  }) {
-    return _runExport(() => _gateway.exportEpub(
-          projectId: state.projectId,
-          destinationPath: destinationPath,
-          deleteProjectAfterExport: deleteProjectAfterExport,
-        ));
-  }
-
-  Future<void> _runExport(Future<void> Function() export) async {
-    if (state.exporting) return;
-    if (state.pages.isEmpty) {
-      state = state.copyWith(error: 'Export 需要至少一页');
-      return;
-    }
-
-    state = state.copyWith(exporting: true, clearError: true);
+  ProjectWorkspaceState _stateFromLoad(ProjectSummary project) {
     try {
-      await export();
-    } catch (e) {
-      state = state.copyWith(error: e.toString());
-      rethrow;
-    } finally {
-      state = state.copyWith(exporting: false);
-    }
-  }
-
-  ProjectWorkspaceState _load(ProjectSummary project) {
-    try {
-      final pages = _gateway.listPages(projectId: project.id);
-      final settings = _gateway.getProjectSettings(projectId: project.id);
-      var coverPageIndex = 0;
-      try {
-        coverPageIndex =
-            _gateway
-                .getProjectMetadata(projectId: project.id)
-                .coverPageIndex;
-      } catch (_) {}
-
+      final load = _session.loadEditor(project.id);
       return ProjectWorkspaceState(
         project: project,
-        pages: pages,
-        settings: settings,
-        coverPageIndex: coverPageIndex,
+        pages: load.pages,
+        settings: load.settings,
+        coverPageIndex: load.coverPageIndex,
         initialized: true,
       );
     } catch (e) {
@@ -317,24 +255,13 @@ class ProjectWorkspace extends _$ProjectWorkspace {
     }
   }
 
-  ProjectWorkspaceState _withPages(ProjectWorkspaceState current) {
-    try {
-      final pages = _gateway.listPages(projectId: current.projectId);
-      var coverPageIndex = current.coverPageIndex;
-      try {
-        coverPageIndex =
-            _gateway
-                .getProjectMetadata(projectId: current.projectId)
-                .coverPageIndex;
-      } catch (_) {
-        coverPageIndex = 0;
-      }
-      return current.copyWith(
-        pages: pages,
-        coverPageIndex: coverPageIndex,
-      );
-    } catch (e) {
-      return current.copyWith(error: e.toString());
-    }
+  ProjectWorkspaceState _withPageStructure(
+    ProjectWorkspaceState current,
+    ProjectPageStructure structure,
+  ) {
+    return current.copyWith(
+      pages: structure.pages,
+      coverPageIndex: structure.coverPageIndex,
+    );
   }
 }

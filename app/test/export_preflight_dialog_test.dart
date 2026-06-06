@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:comic_book_maker/domain/use_cases/export_preflight.dart';
+import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

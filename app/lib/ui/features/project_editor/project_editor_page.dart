@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
@@ -51,6 +52,7 @@ class ProjectEditorPage extends HookConsumerWidget {
           context: context,
           workspace: workspace,
           workspaceNotifier: workspaceNotifier,
+          gateway: ref.read(coreGatewayProvider),
         );
 
     Widget imagesTabContent() {

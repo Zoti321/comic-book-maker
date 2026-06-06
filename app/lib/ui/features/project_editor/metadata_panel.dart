@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
+import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
@@ -65,15 +66,16 @@ class MetadataPanel extends HookConsumerWidget {
     final controllers = useRef(<String, TextEditingController>{});
     final focusNodes = useRef(<String, FocusNode>{});
 
+    final effectiveGateway = gateway ?? ref.read(coreGatewayProvider);
     final session = useMemoized(
       () => MetadataEditingSession(
         projectId: projectId,
         exportFormat: exportFormat,
         pageCount: pageCount,
-        gateway: gateway ?? const FrbCoreGateway(),
+        gateway: effectiveGateway,
         onSaved: onSaved,
       ),
-      [projectId, exportFormat, gateway],
+      [projectId, exportFormat, effectiveGateway],
     );
 
     useListenable(session);

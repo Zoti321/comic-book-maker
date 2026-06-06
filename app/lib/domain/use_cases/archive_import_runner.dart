@@ -1,7 +1,12 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/append_archive_sheet.dart';
-import 'package:comic_book_maker/ui/core/design_system/import_archive_sheet.dart';
+import 'package:comic_book_maker/domain/models/append_archive_format.dart';
+import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 import 'package:file_picker/file_picker.dart';
+
+export 'package:comic_book_maker/domain/models/append_archive_format.dart'
+    show AppendArchiveFormat;
+export 'package:comic_book_maker/domain/models/import_archive_format.dart'
+    show ImportArchiveFormat;
 
 /// 归档导入：FilePicker + 按格式分发 [CoreGateway]（新建项目 / 追加页面共用）。
 class ArchiveImportRunner {
@@ -50,16 +55,23 @@ class ArchiveImportRunner {
     return sourcePath;
   }
 
+  static ArchiveFormatKind archiveFormatKind(ImportArchiveFormat format) {
+    return switch (format) {
+      ImportArchiveFormat.cbz => ArchiveFormatKind.cbz,
+      ImportArchiveFormat.cbr => ArchiveFormatKind.cbr,
+      ImportArchiveFormat.epub => ArchiveFormatKind.epub,
+    };
+  }
+
   /// 从归档创建新项目（漫画库导入 / 向导归档源）。
   ImportCbzResult importNewProject({
     required ImportArchiveFormat format,
     required String sourcePath,
   }) {
-    return switch (format) {
-      ImportArchiveFormat.cbz => _gateway.importCbz(sourcePath: sourcePath),
-      ImportArchiveFormat.cbr => _gateway.importCbr(sourcePath: sourcePath),
-      ImportArchiveFormat.epub => _gateway.importEpub(sourcePath: sourcePath),
-    };
+    return _gateway.importArchive(
+      format: archiveFormatKind(format),
+      sourcePath: sourcePath,
+    );
   }
 
   /// 向已有项目追加页面。
@@ -68,20 +80,11 @@ class ArchiveImportRunner {
     required ImportArchiveFormat format,
     required String sourcePath,
   }) {
-    return switch (format) {
-      ImportArchiveFormat.cbz => _gateway.appendCbz(
-          projectId: projectId,
-          sourcePath: sourcePath,
-        ),
-      ImportArchiveFormat.cbr => _gateway.appendCbr(
-          projectId: projectId,
-          sourcePath: sourcePath,
-        ),
-      ImportArchiveFormat.epub => _gateway.appendEpub(
-          projectId: projectId,
-          sourcePath: sourcePath,
-        ),
-    };
+    return _gateway.appendArchive(
+      projectId: projectId,
+      format: archiveFormatKind(format),
+      sourcePath: sourcePath,
+    );
   }
 
   String importBlockingMessage(ImportArchiveFormat format) =>
