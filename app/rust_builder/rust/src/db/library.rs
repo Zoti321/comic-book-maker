@@ -68,6 +68,24 @@ impl Library {
         operation(&mut library)
     }
 
+    pub(crate) fn with_library_export(
+        operation: impl FnOnce(&mut Library) -> Result<(), crate::export_error::ExportError>,
+    ) -> Result<(), crate::export_error::ExportError> {
+        use crate::export_error::{ExportError, ExportErrorKind};
+
+        let mutex = LIBRARY.get().ok_or(ExportError::new(
+            ExportErrorKind::ArchiveWriteFailed,
+            "library not initialized",
+        ))?;
+        let mut library = mutex
+            .lock()
+            .map_err(|_| ExportError::new(
+                ExportErrorKind::ArchiveWriteFailed,
+                "library lock poisoned",
+            ))?;
+        operation(&mut library)
+    }
+
     pub(crate) fn app_data_dir(&self) -> &PathBuf {
         &self.app_data_dir
     }

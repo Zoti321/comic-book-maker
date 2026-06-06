@@ -7,7 +7,9 @@ use rars::rar50::{CompressedEntry, Rar50Writer, StoredEntry, WriterOptions};
 use rars::{ArchiveReader, ArchiveVersion};
 
 use crate::db::Library;
+use crate::export_atomic::atomic_write_destination;
 use crate::export_cbz::metadata_to_comicinfo_xml;
+use crate::export_error::{ExportError, ExportErrorKind};
 use crate::page_image::{cbz_zip_entry_name, normalize_extension};
 
 const RAR50_FILE_ATTRIBUTES: u64 = 0x20;
@@ -17,22 +19,20 @@ pub fn export_cbr(
     library: &Library,
     project_id: &str,
     destination_path: &str,
-) -> Result<(), String> {
-    let pages = library.list_pages_inner(project_id)?;
+) -> Result<(), ExportError> {
+    let pages = library
+        .list_pages_inner(project_id)
+        .map_err(ExportError::from_library)?;
     if pages.is_empty() {
-        return Err("Export 需要至少一页".to_string());
+        return Err(ExportError::no_pages());
     }
 
-    let metadata = library.get_project_metadata_inner(project_id)?;
+    let metadata = library
+        .get_project_metadata_inner(project_id)
+        .map_err(ExportError::from_library)?;
     let comicinfo_xml = metadata_to_comicinfo_xml(&metadata, &pages);
 
     let destination = PathBuf::from(destination_path);
-    if let Some(parent) = destination.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)
-                .map_err(|error| format!("create export directory: {error}"))?;
-        }
-    }
 
     let mut members = Vec::with_capacity(pages.len() + 1);
     members.push(CbrMember {
@@ -42,10 +42,12 @@ pub fn export_cbr(
 
     let page_count = pages.len();
     for page in &pages {
-        let extension = normalize_extension(Path::new(&page.asset_path))?;
+        let extension = normalize_extension(Path::new(&page.asset_path))
+            .map_err(ExportError::from_library)?;
         let entry_name = cbz_zip_entry_name(page.sort_index, page_count, &extension);
-        let data = fs::read(&page.absolute_path)
-            .map_err(|error| format!("read page asset {}: {error}", page.absolute_path))?;
+        let data = fs::read(&page.absolute_path).map_err(|error| {
+            ExportError::map_read_page_asset(error, &page.absolute_path)
+        })?;
         members.push(CbrMember {
             name: entry_name.into_bytes(),
             data,
@@ -53,10 +55,10 @@ pub fn export_cbr(
     }
 
     let archive_bytes = write_rar50_archive(&members)?;
-    fs::write(&destination, &archive_bytes)
-        .map_err(|error| format!("write CBR file {}: {error}", destination.display()))?;
-
-    Ok(())
+    atomic_write_destination(&destination, |temp_path| {
+        fs::write(temp_path, &archive_bytes)
+            .map_err(|error| ExportError::map_create_destination(error, temp_path))
+    })
 }
 
 struct CbrMember {
@@ -70,7 +72,7 @@ enum MemberCompressionPlan {
     Compress,
 }
 
-fn write_rar50_archive(members: &[CbrMember]) -> Result<Vec<u8>, String> {
+fn write_rar50_archive(members: &[CbrMember]) -> Result<Vec<u8>, ExportError> {
     let plans: Vec<MemberCompressionPlan> = members
         .iter()
         .map(|member| plan_member_compression(&member.data))
@@ -120,7 +122,7 @@ fn rar50_writer_options() -> WriterOptions {
     options
 }
 
-fn plan_member_compression(data: &[u8]) -> Result<MemberCompressionPlan, String> {
+fn plan_member_compression(data: &[u8]) -> Result<MemberCompressionPlan, ExportError> {
     let packed_size = trial_compressed_packed_size(data)?;
     if packed_size >= data.len() as u64 {
         Ok(MemberCompressionPlan::Store)
@@ -129,7 +131,7 @@ fn plan_member_compression(data: &[u8]) -> Result<MemberCompressionPlan, String>
     }
 }
 
-fn trial_compressed_packed_size(data: &[u8]) -> Result<u64, String> {
+fn trial_compressed_packed_size(data: &[u8]) -> Result<u64, ExportError> {
     let entry = CompressedEntry {
         name: b"__cbm_trial__",
         data,
@@ -144,22 +146,26 @@ fn trial_compressed_packed_size(data: &[u8]) -> Result<u64, String> {
     first_file_member_packed_size(&bytes)
 }
 
-fn first_file_member_packed_size(archive_bytes: &[u8]) -> Result<u64, String> {
+fn first_file_member_packed_size(archive_bytes: &[u8]) -> Result<u64, ExportError> {
     let archive = ArchiveReader::read(archive_bytes).map_err(map_rars_error)?;
     archive
         .members()
         .find(|member| !member.meta.is_directory)
         .map(|member| member.meta.packed_size)
-        .ok_or_else(|| "RAR trial archive missing file member".to_string())
+        .ok_or_else(|| ExportError::new(
+            ExportErrorKind::ArchiveWriteFailed,
+            "RAR trial archive missing file member",
+        ))
 }
 
-fn map_rars_error(error: rars::Error) -> String {
-    format!("write CBR: {error}")
+fn map_rars_error(error: rars::Error) -> ExportError {
+    ExportError::map_archive_write("write CBR", error)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::export_error::{ExportError, ExportErrorKind};
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::import::scan_archive_tree;
     use crate::import_cbz::import_cbz;
@@ -231,7 +237,7 @@ mod tests {
 
         let error = export_cbr(&library, &project.id, &export_path.to_string_lossy())
             .expect_err("empty project");
-        assert!(error.contains("至少一页"));
+        assert!(matches!(error, ExportError { kind: ExportErrorKind::NoPages, .. }));
     }
 
     #[test]

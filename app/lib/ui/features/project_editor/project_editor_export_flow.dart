@@ -1,4 +1,6 @@
 import 'package:comic_book_maker/domain/use_cases/archive_export_runner.dart';
+import 'package:comic_book_maker/domain/use_cases/export_failure_presentation.dart';
+import 'package:comic_book_maker/domain/use_cases/export_preflight.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow_resolver.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
@@ -94,22 +96,54 @@ Future<void> runProjectExport({
   );
   if (target == null) return;
 
-  final deleteAfterExport = settings.deleteProjectAfterExport;
-  if (deleteAfterExport) {
+  final preflight = checkExportPreflight(target.destinationPath);
+  if (preflight.isBlocked) {
     if (!context.mounted) return;
-    final confirmed = await showAppConfirmDialog(
-      context: context,
-      title: '导出并删除项目',
-      description: Text(
-        '将导出「${workspace.project.title}」为 ${target.formatLabel} 并保存至：\n'
-        '${target.destinationPath}\n\n'
-        '导出完成后，本地页面与元数据将被永久删除，此操作不可恢复。',
-      ),
-      confirmLabel: '导出并删除',
-      destructive: true,
+    final presentation = preflight.presentation!;
+    await showAppOperationFailure(
+      context,
+      title: presentation.title,
+      message: presentation.message,
+      nextStepHint: presentation.nextStepHint,
     );
-    if (confirmed != true || !context.mounted) return;
+    return;
   }
+
+  final deleteAfterExport = settings.deleteProjectAfterExport;
+  final confirmed = await runExportConfirmations(
+    preflight: preflight,
+    deleteAfterExport: deleteAfterExport,
+    confirmOverwrite: () async {
+      if (!context.mounted) return false;
+      final result = await showAppConfirmDialog(
+        context: context,
+        title: '覆盖已有文件？',
+        description: Text(
+          '目标位置已存在文件：\n${target.destinationPath}\n\n'
+          '继续将覆盖该文件。',
+        ),
+        confirmLabel: '覆盖并导出',
+        destructive: true,
+      );
+      return result == true;
+    },
+    confirmDeleteProject: () async {
+      if (!context.mounted) return false;
+      final result = await showAppConfirmDialog(
+        context: context,
+        title: '导出并删除项目',
+        description: Text(
+          '将导出「${workspace.project.title}」为 ${target.formatLabel} 并保存至：\n'
+          '${target.destinationPath}\n\n'
+          '导出完成后，本地页面与元数据将被永久删除，此操作不可恢复。',
+        ),
+        confirmLabel: '导出并删除',
+        destructive: true,
+      );
+      return result == true;
+    },
+  );
+  if (!confirmed || !context.mounted) return;
 
   final exportRunner = ArchiveExportRunner();
 
@@ -128,11 +162,13 @@ Future<void> runProjectExport({
     );
   } catch (e) {
     if (!context.mounted) return;
+    final failure = presentationForExportFailure(e);
     await showAppOperationFailure(
       context,
-      title: '导出失败',
-      message: e.toString(),
-      nextStepHint: '请检查目标路径是否可写，或在设置 / 项目属性中更换导出目录后重试。',
+      title: failure?.title ?? '导出失败',
+      message: failure?.message ?? '导出过程中发生未知错误。',
+      nextStepHint: failure?.nextStepHint ??
+          '请检查目标路径是否可写，或在设置 / 项目属性中更换导出目录后重试。',
     );
     return;
   }

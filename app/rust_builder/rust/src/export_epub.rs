@@ -4,18 +4,23 @@ use std::path::PathBuf;
 
 use crate::db::Library;
 use crate::epub_format::write_epub;
+use crate::export_error::ExportError;
 
 pub fn export_epub(
     library: &Library,
     project_id: &str,
     destination_path: &str,
-) -> Result<(), String> {
-    let pages = library.list_pages_inner(project_id)?;
+) -> Result<(), ExportError> {
+    let pages = library
+        .list_pages_inner(project_id)
+        .map_err(ExportError::from_library)?;
     if pages.is_empty() {
-        return Err("Export 需要至少一页".to_string());
+        return Err(ExportError::no_pages());
     }
 
-    let metadata = library.get_project_metadata_inner(project_id)?;
+    let metadata = library
+        .get_project_metadata_inner(project_id)
+        .map_err(ExportError::from_library)?;
     let destination = PathBuf::from(destination_path);
 
     write_epub(&destination, &metadata, &pages)
@@ -24,6 +29,7 @@ pub fn export_epub(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::export_error::{ExportError, ExportErrorKind};
     use crate::epub_format::scan_epub_page_paths;
     use crate::import_cbz::import_cbz;
     use crate::import_epub::import_epub;
@@ -97,7 +103,7 @@ mod tests {
 
         let error = export_epub(&library, &project.id, &export_path.to_string_lossy())
             .expect_err("empty project");
-        assert!(error.contains("至少一页"));
+        assert!(matches!(error, ExportError { kind: ExportErrorKind::NoPages, .. }));
     }
 
     #[test]

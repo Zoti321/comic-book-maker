@@ -8,6 +8,8 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
 use crate::db::{Library, MetadataRecord, PageRecord};
+use crate::export_atomic::atomic_write_destination;
+use crate::export_error::ExportError;
 use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::{cbz_zip_entry_name, normalize_extension};
 
@@ -15,49 +17,60 @@ pub fn export_cbz(
     library: &Library,
     project_id: &str,
     destination_path: &str,
-) -> Result<(), String> {
-    let pages = library.list_pages_inner(project_id)?;
+) -> Result<(), ExportError> {
+    let pages = library
+        .list_pages_inner(project_id)
+        .map_err(ExportError::from_library)?;
     if pages.is_empty() {
-        return Err("Export 需要至少一页".to_string());
+        return Err(ExportError::no_pages());
     }
 
-    let metadata = library.get_project_metadata_inner(project_id)?;
+    let metadata = library
+        .get_project_metadata_inner(project_id)
+        .map_err(ExportError::from_library)?;
     let comicinfo_xml = metadata_to_comicinfo_xml(&metadata, &pages);
 
     let destination = PathBuf::from(destination_path);
-    if let Some(parent) = destination.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent)
-                .map_err(|error| format!("create export directory: {error}"))?;
-        }
-    }
+    atomic_write_destination(&destination, |temp_path| {
+        write_cbz_archive(temp_path, &comicinfo_xml, &pages)
+    })
+}
 
-    let file = File::create(&destination)
-        .map_err(|error| format!("create CBZ file {}: {error}", destination.display()))?;
+fn write_cbz_archive(
+    temp_path: &Path,
+    comicinfo_xml: &str,
+    pages: &[PageRecord],
+) -> Result<(), ExportError> {
+    let file = File::create(temp_path)
+        .map_err(|error| ExportError::map_create_destination(error, temp_path))?;
     let mut zip = ZipWriter::new(file);
     let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     zip.start_file("ComicInfo.xml", options)
-        .map_err(|error| format!("write ComicInfo.xml: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("write ComicInfo.xml", error))?;
     zip.write_all(comicinfo_xml.as_bytes())
-        .map_err(|error| format!("write ComicInfo.xml content: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("write ComicInfo.xml content", error))?;
 
     let page_count = pages.len();
-    for page in &pages {
-        let extension = normalize_extension(Path::new(&page.asset_path))?;
+    for page in pages {
+        let extension = normalize_extension(Path::new(&page.asset_path))
+            .map_err(ExportError::from_library)?;
         let entry_name = cbz_zip_entry_name(page.sort_index, page_count, &extension);
 
-        zip.start_file(&entry_name, options)
-            .map_err(|error| format!("write page {entry_name}: {error}"))?;
+        zip.start_file(&entry_name, options).map_err(|error| {
+            ExportError::map_archive_write(&format!("write page {entry_name}"), error)
+        })?;
 
-        let mut source = File::open(&page.absolute_path)
-            .map_err(|error| format!("open page asset {}: {error}", page.absolute_path))?;
-        copy(&mut source, &mut zip)
-            .map_err(|error| format!("copy page {entry_name} into CBZ: {error}"))?;
+        let mut source = File::open(&page.absolute_path).map_err(|error| {
+            ExportError::map_open_page_asset(error, &page.absolute_path)
+        })?;
+        copy(&mut source, &mut zip).map_err(|error| {
+            ExportError::map_archive_write(&format!("copy page {entry_name} into CBZ"), error)
+        })?;
     }
 
     zip.finish()
-        .map_err(|error| format!("finalize CBZ: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("finalize CBZ", error))?;
 
     Ok(())
 }
@@ -221,6 +234,7 @@ fn escape_xml(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::export_error::{ExportError, ExportErrorKind};
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::import_cbz::{import_cbz, scan_cbz_entries};
     use crate::paths::project_assets_dir;
@@ -330,7 +344,41 @@ mod tests {
 
         let error = export_cbz(&library, &project.id, &export_path.to_string_lossy())
             .expect_err("empty project");
-        assert!(error.contains("至少一页"));
+        assert!(matches!(error, ExportError { kind: ExportErrorKind::NoPages, .. }));
+    }
+
+    #[test]
+    fn failed_export_preserves_existing_destination_file() {
+        let app_data = temp_dir("atomic-preserve");
+        let mut library = Library::open(app_data).expect("open library");
+        let fixtures = temp_dir("atomic-fixtures");
+        let source_cbz = fixtures.join("source.cbz");
+        let png = png_bytes();
+        write_test_cbz(&source_cbz, &[("001.png", png)], None);
+
+        let outcome = import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import");
+        let pages = library
+            .list_pages_inner(&outcome.project_id)
+            .expect("pages");
+        let missing_asset = pages[0].absolute_path.clone();
+        std::fs::remove_file(&missing_asset).expect("remove page asset");
+
+        let export_path = temp_dir("atomic-out").join("existing.cbz");
+        let seed = b"PRE-EXPORT-CONTENT";
+        std::fs::write(&export_path, seed).expect("seed destination");
+
+        let error = export_cbz(
+            &library,
+            &outcome.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect_err("missing page asset should fail export");
+
+        assert_eq!(error.kind, ExportErrorKind::PageAssetMissing);
+        assert_eq!(
+            std::fs::read(&export_path).expect("read destination"),
+            seed
+        );
     }
 
     #[test]

@@ -372,16 +372,14 @@ fn wire__crate__api__simple__export_cbr_impl(
             let api_delete_project_after_export = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::simple::export_cbr(
-                            api_project_id,
-                            api_destination_path,
-                            api_delete_project_after_export,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::export_error::ExportError>((move || {
+                    let output_ok = crate::api::simple::export_cbr(
+                        api_project_id,
+                        api_destination_path,
+                        api_delete_project_after_export,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -413,16 +411,14 @@ fn wire__crate__api__simple__export_cbz_impl(
             let api_delete_project_after_export = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::simple::export_cbz(
-                            api_project_id,
-                            api_destination_path,
-                            api_delete_project_after_export,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::export_error::ExportError>((move || {
+                    let output_ok = crate::api::simple::export_cbz(
+                        api_project_id,
+                        api_destination_path,
+                        api_delete_project_after_export,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -454,16 +450,14 @@ fn wire__crate__api__simple__export_epub_impl(
             let api_delete_project_after_export = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
-                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                    (move || {
-                        let output_ok = crate::api::simple::export_epub(
-                            api_project_id,
-                            api_destination_path,
-                            api_delete_project_after_export,
-                        )?;
-                        Ok(output_ok)
-                    })(),
-                )
+                transform_result_sse::<_, crate::export_error::ExportError>((move || {
+                    let output_ok = crate::api::simple::export_epub(
+                        api_project_id,
+                        api_destination_path,
+                        api_delete_project_after_export,
+                    )?;
+                    Ok(output_ok)
+                })())
             }
         },
     )
@@ -1329,6 +1323,40 @@ impl SseDecode for crate::api::simple::ComicArchiveContainerFrb {
     }
 }
 
+impl SseDecode for crate::export_error::ExportError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_kind = <crate::export_error::ExportErrorKind>::sse_decode(deserializer);
+        let mut var_detail = <String>::sse_decode(deserializer);
+        return crate::export_error::ExportError {
+            kind: var_kind,
+            detail: var_detail,
+        };
+    }
+}
+
+impl SseDecode for crate::export_error::ExportErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::export_error::ExportErrorKind::DestinationExists,
+            1 => crate::export_error::ExportErrorKind::DestinationIsDirectory,
+            2 => crate::export_error::ExportErrorKind::DestinationNotWritable,
+            3 => crate::export_error::ExportErrorKind::DestinationLocked,
+            4 => crate::export_error::ExportErrorKind::DestinationFinalizeFailed,
+            5 => crate::export_error::ExportErrorKind::PageAssetMissing,
+            6 => crate::export_error::ExportErrorKind::PageAssetUnreadable,
+            7 => crate::export_error::ExportErrorKind::InsufficientSpace,
+            8 => crate::export_error::ExportErrorKind::ArchiveWriteFailed,
+            9 => crate::export_error::ExportErrorKind::NoPages,
+            10 => crate::export_error::ExportErrorKind::ProjectNotFound,
+            11 => crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+            _ => unreachable!("Invalid variant for ExportErrorKind: {}", inner),
+        };
+    }
+}
+
 impl SseDecode for crate::api::simple::ExportFormatFrb {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1927,6 +1955,58 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::simple::ComicArchiveContainer
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::export_error::ExportError {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.kind.into_into_dart().into_dart(),
+            self.detail.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::export_error::ExportError
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::export_error::ExportError>
+    for crate::export_error::ExportError
+{
+    fn into_into_dart(self) -> crate::export_error::ExportError {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::export_error::ExportErrorKind {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::DestinationExists => 0.into_dart(),
+            Self::DestinationIsDirectory => 1.into_dart(),
+            Self::DestinationNotWritable => 2.into_dart(),
+            Self::DestinationLocked => 3.into_dart(),
+            Self::DestinationFinalizeFailed => 4.into_dart(),
+            Self::PageAssetMissing => 5.into_dart(),
+            Self::PageAssetUnreadable => 6.into_dart(),
+            Self::InsufficientSpace => 7.into_dart(),
+            Self::ArchiveWriteFailed => 8.into_dart(),
+            Self::NoPages => 9.into_dart(),
+            Self::ProjectNotFound => 10.into_dart(),
+            Self::DeleteAfterExportFailed => 11.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::export_error::ExportErrorKind
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::export_error::ExportErrorKind>
+    for crate::export_error::ExportErrorKind
+{
+    fn into_into_dart(self) -> crate::export_error::ExportErrorKind {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::simple::ExportFormatFrb {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
@@ -2366,6 +2446,40 @@ impl SseEncode for crate::api::simple::ComicArchiveContainerFrb {
                 crate::api::simple::ComicArchiveContainerFrb::Zip => 0,
                 crate::api::simple::ComicArchiveContainerFrb::SevenZip => 1,
                 crate::api::simple::ComicArchiveContainerFrb::Rar => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
+    }
+}
+
+impl SseEncode for crate::export_error::ExportError {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <crate::export_error::ExportErrorKind>::sse_encode(self.kind, serializer);
+        <String>::sse_encode(self.detail, serializer);
+    }
+}
+
+impl SseEncode for crate::export_error::ExportErrorKind {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::export_error::ExportErrorKind::DestinationExists => 0,
+                crate::export_error::ExportErrorKind::DestinationIsDirectory => 1,
+                crate::export_error::ExportErrorKind::DestinationNotWritable => 2,
+                crate::export_error::ExportErrorKind::DestinationLocked => 3,
+                crate::export_error::ExportErrorKind::DestinationFinalizeFailed => 4,
+                crate::export_error::ExportErrorKind::PageAssetMissing => 5,
+                crate::export_error::ExportErrorKind::PageAssetUnreadable => 6,
+                crate::export_error::ExportErrorKind::InsufficientSpace => 7,
+                crate::export_error::ExportErrorKind::ArchiveWriteFailed => 8,
+                crate::export_error::ExportErrorKind::NoPages => 9,
+                crate::export_error::ExportErrorKind::ProjectNotFound => 10,
+                crate::export_error::ExportErrorKind::DeleteAfterExportFailed => 11,
                 _ => {
                     unimplemented!("");
                 }

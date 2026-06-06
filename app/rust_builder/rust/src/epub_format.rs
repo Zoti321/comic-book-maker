@@ -14,6 +14,8 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipWriter};
 
 use crate::import::archive_path::{is_comicinfo_entry, normalize_archive_path};
+use crate::export_atomic::atomic_write_destination;
+use crate::export_error::{ExportError, ExportErrorKind};
 use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::normalize_extension;
 
@@ -466,29 +468,32 @@ pub(crate) fn write_epub(
     destination: &Path,
     metadata: &crate::db::MetadataRecord,
     pages: &[crate::db::PageRecord],
-) -> Result<(), String> {
+) -> Result<(), ExportError> {
     if pages.is_empty() {
-        return Err("Export 需要至少一页".to_string());
+        return Err(ExportError::no_pages());
     }
 
-    if let Some(parent) = destination.parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent)
-                .map_err(|error| format!("create export directory: {error}"))?;
-        }
-    }
+    atomic_write_destination(destination, |temp_path| {
+        write_epub_to_path(temp_path, metadata, pages)
+    })
+}
 
-    let file = File::create(destination)
-        .map_err(|error| format!("create EPUB file {}: {error}", destination.display()))?;
+fn write_epub_to_path(
+    temp_path: &Path,
+    metadata: &crate::db::MetadataRecord,
+    pages: &[crate::db::PageRecord],
+) -> Result<(), ExportError> {
+    let file = File::create(temp_path)
+        .map_err(|error| ExportError::map_create_destination(error, temp_path))?;
     let mut zip = ZipWriter::new(file);
 
     let stored = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
     let deflated = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
 
     zip.start_file("mimetype", stored)
-        .map_err(|error| format!("write mimetype: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("write mimetype", error))?;
     zip.write_all(EPUB_MIMETYPE.as_bytes())
-        .map_err(|error| format!("write mimetype content: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("write mimetype content", error))?;
 
     let container_xml = r#"<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -519,7 +524,8 @@ pub(crate) fn write_epub(
     );
 
     for page in pages {
-        let extension = normalize_extension(Path::new(&page.asset_path))?;
+        let extension = normalize_extension(Path::new(&page.asset_path))
+            .map_err(ExportError::from_library)?;
         let width = 5_usize.max(page_count.to_string().len());
         let stem = format!("{:0width$}", page.sort_index + 1, width = width);
         let image_name = format!("{stem}.{extension}");
@@ -537,12 +543,15 @@ pub(crate) fn write_epub(
         let html = page_html(&format!("../{image_href}"), page.sort_index + 1);
         write_zip_string(&mut zip, &html_href, &html, deflated)?;
 
-        zip.start_file(&image_href, deflated)
-            .map_err(|error| format!("write image {image_href}: {error}"))?;
-        let mut source = File::open(&page.absolute_path)
-            .map_err(|error| format!("open page asset {}: {error}", page.absolute_path))?;
-        std::io::copy(&mut source, &mut zip)
-            .map_err(|error| format!("copy page into EPUB: {error}"))?;
+        zip.start_file(&image_href, deflated).map_err(|error| {
+            ExportError::map_archive_write(&format!("write image {image_href}"), error)
+        })?;
+        let mut source = File::open(&page.absolute_path).map_err(|error| {
+            ExportError::map_open_page_asset(error, &page.absolute_path)
+        })?;
+        std::io::copy(&mut source, &mut zip).map_err(|error| {
+            ExportError::map_archive_write("copy page into EPUB", error)
+        })?;
         if page.sort_index == cover_page_index {
             cover_image_href = image_href.clone();
             page_manifest_items.push_str(&format!(
@@ -611,8 +620,12 @@ pub(crate) fn write_epub(
     let cover_page = pages
         .iter()
         .find(|page| page.sort_index == cover_page_index)
-        .ok_or_else(|| "Export 需要封面页".to_string())?;
-    let original_resolution = page_image_resolution(&cover_page.absolute_path)?;
+        .ok_or_else(|| ExportError::new(
+            ExportErrorKind::ArchiveWriteFailed,
+            "Export 需要封面页",
+        ))?;
+    let original_resolution = page_image_resolution(&cover_page.absolute_path)
+        .map_err(|detail| ExportError::new(ExportErrorKind::PageAssetUnreadable, detail))?;
 
     let ncx = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
@@ -642,7 +655,7 @@ pub(crate) fn write_epub(
     write_zip_string(&mut zip, "content.opf", &opf, deflated)?;
 
     zip.finish()
-        .map_err(|error| format!("finalize EPUB: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write("finalize EPUB", error))?;
     Ok(())
 }
 
@@ -876,11 +889,11 @@ fn write_zip_string(
     path: &str,
     content: &str,
     options: SimpleFileOptions,
-) -> Result<(), String> {
+) -> Result<(), ExportError> {
     zip.start_file(path, options)
-        .map_err(|error| format!("write {path}: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write(&format!("write {path}"), error))?;
     zip.write_all(content.as_bytes())
-        .map_err(|error| format!("write {path} content: {error}"))?;
+        .map_err(|error| ExportError::map_archive_write(&format!("write {path} content"), error))?;
     Ok(())
 }
 

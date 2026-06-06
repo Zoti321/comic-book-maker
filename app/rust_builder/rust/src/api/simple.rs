@@ -1,6 +1,7 @@
 use anyhow::Result;
 
 use crate::db::Library;
+use crate::export_error::ExportError;
 use crate::import_metadata_snapshot::{ImportMetadataKind, ImportMetadataSnapshot};
 use crate::project_format::{ExportFormat, InferredImportKind};
 
@@ -136,9 +137,8 @@ pub fn export_cbz(
     project_id: String,
     destination_path: String,
     delete_project_after_export: bool,
-) -> Result<()> {
+) -> Result<(), ExportError> {
     Library::export_cbz(&project_id, &destination_path, delete_project_after_export)
-        .map_err(|error| anyhow::anyhow!(error))
 }
 
 #[flutter_rust_bridge::frb]
@@ -146,9 +146,8 @@ pub fn export_cbr(
     project_id: String,
     destination_path: String,
     delete_project_after_export: bool,
-) -> Result<()> {
+) -> Result<(), ExportError> {
     Library::export_cbr(&project_id, &destination_path, delete_project_after_export)
-        .map_err(|error| anyhow::anyhow!(error))
 }
 
 #[flutter_rust_bridge::frb]
@@ -156,9 +155,8 @@ pub fn export_epub(
     project_id: String,
     destination_path: String,
     delete_project_after_export: bool,
-) -> Result<()> {
+) -> Result<(), ExportError> {
     Library::export_epub(&project_id, &destination_path, delete_project_after_export)
-        .map_err(|error| anyhow::anyhow!(error))
 }
 
 #[flutter_rust_bridge::frb(sync)]

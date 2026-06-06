@@ -121,11 +121,16 @@ impl Library {
         project_id: &str,
         destination_path: &str,
         delete_project_after_export: bool,
-    ) -> Result<(), String> {
-        Self::with_library(|library| {
+    ) -> Result<(), crate::export_error::ExportError> {
+        Self::with_library_export(|library| {
             crate::export_cbz::export_cbz(library, project_id, destination_path)?;
             if delete_project_after_export {
-                library.delete_project_inner(project_id)?;
+                library
+                    .delete_project_inner(project_id)
+                    .map_err(|detail| crate::export_error::ExportError::new(
+                        crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+                        detail,
+                    ))?;
             }
             Ok(())
         })
@@ -135,11 +140,16 @@ impl Library {
         project_id: &str,
         destination_path: &str,
         delete_project_after_export: bool,
-    ) -> Result<(), String> {
-        Self::with_library(|library| {
+    ) -> Result<(), crate::export_error::ExportError> {
+        Self::with_library_export(|library| {
             crate::export_cbr::export_cbr(library, project_id, destination_path)?;
             if delete_project_after_export {
-                library.delete_project_inner(project_id)?;
+                library
+                    .delete_project_inner(project_id)
+                    .map_err(|detail| crate::export_error::ExportError::new(
+                        crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+                        detail,
+                    ))?;
             }
             Ok(())
         })
@@ -149,11 +159,16 @@ impl Library {
         project_id: &str,
         destination_path: &str,
         delete_project_after_export: bool,
-    ) -> Result<(), String> {
-        Self::with_library(|library| {
+    ) -> Result<(), crate::export_error::ExportError> {
+        Self::with_library_export(|library| {
             crate::export_epub::export_epub(library, project_id, destination_path)?;
             if delete_project_after_export {
-                library.delete_project_inner(project_id)?;
+                library
+                    .delete_project_inner(project_id)
+                    .map_err(|detail| crate::export_error::ExportError::new(
+                        crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+                        detail,
+                    ))?;
             }
             Ok(())
         })
