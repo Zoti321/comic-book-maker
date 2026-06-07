@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 enum AppIconButtonVariant { standard, filled, tonal, outline }
 
 /// Material 3 图标按钮封装。
+///
+/// [tooltip] 仅用于启用态、纯图标且语义不够直观时；[disabledTooltip] 仅在禁用时显示。
 class AppIconButton extends StatelessWidget {
   const AppIconButton({
     super.key,
     required this.icon,
     required this.onPressed,
     this.tooltip,
+    this.disabledTooltip,
     this.variant = AppIconButtonVariant.standard,
   });
 
   final Widget icon;
   final VoidCallback? onPressed;
   final String? tooltip;
+  final String? disabledTooltip;
   final AppIconButtonVariant variant;
 
   @override
@@ -38,7 +42,8 @@ class AppIconButton extends StatelessWidget {
         ),
     };
 
-    if (tooltip == null) return button;
-    return Tooltip(message: tooltip!, child: button);
+    final message = onPressed == null ? disabledTooltip : tooltip;
+    if (message == null) return button;
+    return Tooltip(message: message, child: button);
   }
 }

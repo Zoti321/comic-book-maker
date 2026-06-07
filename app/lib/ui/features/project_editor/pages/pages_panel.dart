@@ -465,7 +465,6 @@ Future<void> showPageImageViewer(
                   variant: AppIconButtonVariant.tonal,
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(LucideIcons.x),
-                  tooltip: '关闭',
                 ),
               ),
             ),

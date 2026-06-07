@@ -13,7 +13,6 @@ class LibrarySortMenuButton extends ConsumerWidget {
     final sort = ref.watch(librarySortProvider);
 
     return PopupMenuButton<LibrarySortField>(
-      tooltip: '排序',
       position: PopupMenuPosition.under,
       icon: const Icon(LucideIcons.arrowUpDown),
       onSelected: (field) {

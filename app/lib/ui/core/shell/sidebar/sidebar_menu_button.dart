@@ -13,6 +13,7 @@ class SidebarMenuButton extends StatefulWidget {
     this.onPressed,
     this.size = SidebarMenuButtonSize.normal,
     this.tooltip,
+    this.showTooltip = false,
   });
 
   final Widget child;
@@ -20,7 +21,10 @@ class SidebarMenuButton extends StatefulWidget {
   final bool isActive;
   final VoidCallback? onPressed;
   final SidebarMenuButtonSize size;
+
+  /// 折叠态等仅显示图标时配合 [showTooltip] 使用。
   final String? tooltip;
+  final bool showTooltip;
 
   @override
   State<SidebarMenuButton> createState() => _SidebarMenuButtonState();
@@ -101,7 +105,7 @@ class _SidebarMenuButtonState extends State<SidebarMenuButton> {
       ),
     );
 
-    if (widget.tooltip != null) {
+    if (widget.showTooltip && widget.tooltip != null) {
       button = Tooltip(message: widget.tooltip!, child: button);
     }
 

@@ -59,6 +59,7 @@ class AppMainSidebar extends StatelessWidget {
                         isActive: selectedIndex == i,
                         onPressed: () => onSelect(i),
                         tooltip: _items[i].$2,
+                        showTooltip: false,
                         child: Text(_items[i].$2),
                       ),
                     ),

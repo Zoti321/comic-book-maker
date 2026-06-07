@@ -125,13 +125,13 @@ class RevealMenuIconButton extends StatelessWidget {
   const RevealMenuIconButton({
     super.key,
     required this.onPressed,
-    this.tooltip = '更多操作',
+    this.tooltip,
     this.iconColor = Colors.white,
     this.backgroundColor,
   });
 
   final VoidCallback onPressed;
-  final String tooltip;
+  final String? tooltip;
   final Color iconColor;
   final Color? backgroundColor;
 
@@ -141,43 +141,43 @@ class RevealMenuIconButton extends StatelessWidget {
     final bg = backgroundColor;
     final usePill = bg != null && bg.a > 0;
 
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        type: MaterialType.transparency,
-        shape: const CircleBorder(),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: usePill ? bg : null,
-              border: usePill
-                  ? Border.all(color: scheme.outline.withValues(alpha: 0.8))
-                  : null,
-              boxShadow: usePill
-                  ? [
-                      BoxShadow(
-                        color: scheme.shadow.withValues(alpha: 0.12),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: Icon(
-                LucideIcons.ellipsisVertical,
-                size: 20,
-                color: iconColor,
-              ),
+    final button = Material(
+      type: MaterialType.transparency,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onPressed,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: usePill ? bg : null,
+            border: usePill
+                ? Border.all(color: scheme.outline.withValues(alpha: 0.8))
+                : null,
+            boxShadow: usePill
+                ? [
+                    BoxShadow(
+                      color: scheme.shadow.withValues(alpha: 0.12),
+                      blurRadius: 4,
+                      offset: const Offset(0, 1),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(
+              LucideIcons.ellipsisVertical,
+              size: 20,
+              color: iconColor,
             ),
           ),
         ),
       ),
     );
+
+    if (tooltip == null) return button;
+    return Tooltip(message: tooltip!, child: button);
   }
 }

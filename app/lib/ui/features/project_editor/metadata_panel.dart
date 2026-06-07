@@ -287,7 +287,7 @@ class MetadataPanel extends HookConsumerWidget {
                   hintText: '可选择预设或手动输入',
                   suffixIcon: value.text.isEmpty
                       ? null
-                      : IconButton(
+                      : AppIconButton(
                           tooltip: '清空',
                           onPressed: () {
                             controller.clear();

@@ -37,9 +37,8 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
 
     return AppBar(
       surfaceTintColor: Colors.transparent,
-      leading: IconButton(
+      leading: AppIconButton(
         icon: const Icon(LucideIcons.arrowLeft),
-        tooltip: '返回漫画库',
         onPressed: onBack,
       ),
       title: Column(
@@ -102,27 +101,30 @@ class _AppendImportButton extends StatelessWidget {
         workspace.settings?.inferredImportKind ?? InferredImportKindFrb.images;
     final label = appendImportActionLabel(kind);
     final enabled = workspace.canAppendImport;
-    final tooltip = enabled
-        ? label
-        : appendImportBlockedReason(kind).isNotEmpty
+    final disabledTooltip = !enabled
+        ? appendImportBlockedReason(kind).isNotEmpty
             ? appendImportBlockedReason(kind)
-            : '当前无法追加导入';
+            : '当前无法追加导入'
+        : null;
+
+    final button = AppButton(
+      variant: AppButtonVariant.outline,
+      onPressed: enabled ? onPressed : null,
+      icon: const Icon(LucideIcons.download, size: 18),
+      child: Text(label),
+    );
 
     if (showLabel) {
-      return Tooltip(
-        message: tooltip,
-        child: AppButton(
-          variant: AppButtonVariant.outline,
-          onPressed: enabled ? onPressed : null,
-          icon: const Icon(LucideIcons.download, size: 18),
-          child: Text(label),
-        ),
-      );
+      if (disabledTooltip != null) {
+        return Tooltip(message: disabledTooltip, child: button);
+      }
+      return button;
     }
 
     return AppIconButton(
       variant: AppIconButtonVariant.outline,
-      tooltip: tooltip,
+      tooltip: enabled ? label : null,
+      disabledTooltip: disabledTooltip,
       onPressed: enabled ? onPressed : null,
       icon: const Icon(LucideIcons.download),
     );
@@ -145,25 +147,28 @@ class _ExportButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPdf = exportFormat == ExportFormatFrb.pdf;
-    final tooltip = isPdf
-        ? 'PDF Export 尚未实现'
-        : '导出为 ${exportFormatLabel(exportFormat)}';
+    final canExport = workspace.canExport;
+    final disabledTooltip =
+        !canExport && isPdf ? 'PDF Export 尚未实现' : null;
+
+    final button = AppButton(
+      onPressed: canExport ? onPressed : null,
+      icon: const Icon(LucideIcons.upload, size: 18),
+      child: const Text('导出'),
+    );
 
     if (showLabel) {
-      return Tooltip(
-        message: tooltip,
-        child: AppButton(
-          onPressed: workspace.canExport ? onPressed : null,
-          icon: const Icon(LucideIcons.upload, size: 18),
-          child: const Text('导出'),
-        ),
-      );
+      if (disabledTooltip != null) {
+        return Tooltip(message: disabledTooltip, child: button);
+      }
+      return button;
     }
 
     return AppIconButton(
       variant: AppIconButtonVariant.filled,
-      tooltip: tooltip,
-      onPressed: workspace.canExport ? onPressed : null,
+      tooltip: canExport ? '导出为 ${exportFormatLabel(exportFormat)}' : null,
+      disabledTooltip: disabledTooltip,
+      onPressed: canExport ? onPressed : null,
       icon: const Icon(LucideIcons.upload),
     );
   }

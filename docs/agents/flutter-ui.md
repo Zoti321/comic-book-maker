@@ -160,6 +160,25 @@ class MyFeature extends _$MyFeature {
 - **不**在导入成功后自动进入编辑页；SnackBar 提供「打开项目」。
 - 失败时 `AppInlineErrorBanner` 可带 `onRetry`（复用上次路径）。
 
+## Tooltip 约定
+
+默认**不要**在 hover 时显示 tooltip；仅下列场景使用：
+
+| 场景 | 做法 |
+| ---- | ---- |
+| 控件旁已有可见文字标签 | **不要** tooltip（含侧栏展开态、带宽文字的 `AppButton`） |
+| 纯图标且语义直观 | **不要** tooltip（返回、关闭、排序、⋮ overflow 等） |
+| 纯图标且语义不够直观 | `AppIconButton` 的 `tooltip`（如「项目属性」「清空」、窄屏导出格式说明） |
+| 禁用且原因无法从标签读出 | `AppIconButton.disabledTooltip`；带标签的 `AppButton` 仅在 `onPressed == null` 时外包 `Tooltip` |
+| 文字截断需看全文 | 保留（如 `project_card` 标题 `TextOverflow.ellipsis`） |
+| 侧栏折叠态（仅图标） | `SidebarMenuButton`：`tooltip` 预置文案 + `showTooltip: true`（展开态 `showTooltip: false`） |
+
+实现要点：
+
+- 图标按钮统一用 `AppIconButton`；勿在裸 `IconButton` 上传 `tooltip`。
+- `RevealMenuIconButton` 默认无 tooltip（⋮ 语义已足够直观）。
+- 勿为「重复标签文字」的控件加 tooltip。
+
 ## 常用映射
 
 | 场景           | design_system / M3                          |
