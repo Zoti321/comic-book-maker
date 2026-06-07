@@ -23,6 +23,7 @@ void main() {
         id: 'p1',
         title: '测试',
         updatedAtMs: 1,
+        createdAtMs: 1,
         coverThumbnailPath: null,
       ),
     );
@@ -37,6 +38,7 @@ void main() {
         id: 'p1',
         title: '待删',
         updatedAtMs: 1,
+        createdAtMs: 1,
         coverThumbnailPath: null,
       ),
     );

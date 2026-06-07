@@ -33,6 +33,8 @@ pub struct ProjectSummary {
     pub id: String,
     pub title: String,
     pub updated_at_ms: i64,
+    pub created_at_ms: i64,
+    pub last_opened_at_ms: Option<i64>,
     pub cover_thumbnail_path: Option<String>,
 }
 
@@ -126,6 +128,8 @@ fn import_outcome_to_result(outcome: crate::import_shared::ImportArchiveOutcome)
             id: outcome.project_id,
             title: outcome.title,
             updated_at_ms: outcome.updated_at_ms,
+            created_at_ms: outcome.created_at_ms,
+            last_opened_at_ms: outcome.last_opened_at_ms,
             cover_thumbnail_path: outcome.cover_thumbnail_path,
         },
         warnings: outcome.warnings,
@@ -454,6 +458,8 @@ impl From<crate::db::ProjectRecord> for ProjectSummary {
             id: value.id,
             title: value.title,
             updated_at_ms: value.updated_at_ms,
+            created_at_ms: value.created_at_ms,
+            last_opened_at_ms: value.last_opened_at_ms,
             cover_thumbnail_path: value.cover_thumbnail_path,
         }
     }

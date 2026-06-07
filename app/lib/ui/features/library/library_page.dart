@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
+import 'package:comic_book_maker/ui/features/library/providers/library_sort_provider.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_flow.dart';
@@ -7,7 +8,9 @@ import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
+import 'package:comic_book_maker/ui/features/library/library_count_chip.dart';
 import 'package:comic_book_maker/ui/features/library/library_grid_layout.dart';
+import 'package:comic_book_maker/ui/features/library/library_sort_menu_button.dart';
 import 'package:comic_book_maker/ui/features/library/project_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -19,7 +22,7 @@ class LibraryPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final projects = ref.watch(libraryProjectsProvider);
+    final projects = ref.watch(sortedLibraryProjectsProvider);
     final library = ref.read(libraryOperationsProvider);
     final error = useState<String?>(null);
 
@@ -73,9 +76,6 @@ class LibraryPage extends HookConsumerWidget {
     final columns = libraryGridColumns(context);
     final padding = libraryContentPadding(context);
     final compact = isCompact(context);
-    final subtitle = projects.isEmpty
-        ? '创建或导入你的第一本漫画'
-        : '${projects.length} 个项目 · 按最近打开排序';
 
     final createButton = AppButton(
       onPressed: startCreateProject,
@@ -88,8 +88,11 @@ class LibraryPage extends HookConsumerWidget {
         SliverToBoxAdapter(
           child: PageHeader(
             title: '漫画库',
-            subtitle: subtitle,
-            actions: [createButton],
+            titleTrailing: LibraryCountChip(count: projects.length),
+            actions: [
+              const LibrarySortMenuButton(),
+              createButton,
+            ],
           ),
         ),
         if (error.value != null)
@@ -134,11 +137,13 @@ class LibraryPage extends HookConsumerWidget {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final project = projects[index];
+                      final lastOpenedMs =
+                          project.lastOpenedAtMs ?? project.updatedAtMs;
                       return ProjectCard(
                         title: project.title,
                         coverThumbnailPath: project.coverThumbnailPath,
                         updatedAt: DateTime.fromMillisecondsSinceEpoch(
-                          project.updatedAtMs.toInt(),
+                          lastOpenedMs.toInt(),
                         ),
                         activityLabel: '最近打开',
                         onTap: () => openProject(project),

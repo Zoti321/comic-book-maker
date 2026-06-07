@@ -60,6 +60,7 @@ class InMemoryCoreGateway implements CoreGateway {
       id: 'p1',
       title: '测试项目',
       updatedAtMs: DateTime.utc(2024, 1, 1).millisecondsSinceEpoch,
+      createdAtMs: DateTime.utc(2024, 1, 1).millisecondsSinceEpoch,
       coverThumbnailPath: null,
     );
     final pages = List<PageSummary>.generate(
@@ -119,7 +120,20 @@ class InMemoryCoreGateway implements CoreGateway {
   List<ProjectSummary> listProjects() => List.of(projects);
 
   @override
-  void touchProject({required String projectId}) {}
+  void touchProject({required String projectId}) {
+    final index = projects.indexWhere((project) => project.id == projectId);
+    if (index < 0) return;
+    final project = projects[index];
+    final now = DateTime.now().millisecondsSinceEpoch;
+    projects[index] = ProjectSummary(
+      id: project.id,
+      title: project.title,
+      updatedAtMs: project.updatedAtMs,
+      createdAtMs: project.createdAtMs,
+      lastOpenedAtMs: now,
+      coverThumbnailPath: project.coverThumbnailPath,
+    );
+  }
 
   @override
   void deleteProject({required String projectId}) {
@@ -128,10 +142,12 @@ class InMemoryCoreGateway implements CoreGateway {
   }
 
   ProjectSummary _createProject({String? title}) {
+    final now = DateTime.now().millisecondsSinceEpoch;
     final project = ProjectSummary(
       id: 'project-${projects.length + 1}',
       title: title ?? '未命名',
-      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+      updatedAtMs: now,
+      createdAtMs: now,
       coverThumbnailPath: null,
     );
     projects.add(project);
@@ -163,6 +179,8 @@ class InMemoryCoreGateway implements CoreGateway {
       id: project.id,
       title: title,
       updatedAtMs: project.updatedAtMs,
+      createdAtMs: project.createdAtMs,
+      lastOpenedAtMs: project.lastOpenedAtMs,
       coverThumbnailPath: project.coverThumbnailPath,
     );
   }
@@ -237,6 +255,7 @@ class InMemoryCoreGateway implements CoreGateway {
           id: 'imported-1',
           title: 'Imported',
           updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+          createdAtMs: DateTime.now().millisecondsSinceEpoch,
           coverThumbnailPath: null,
         ),
         warnings: const [],

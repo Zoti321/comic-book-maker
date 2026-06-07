@@ -1733,6 +1733,17 @@ impl SseDecode for Option<i32> {
     }
 }
 
+impl SseDecode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<i64>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
 impl SseDecode for crate::api::simple::PageSummary {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1800,11 +1811,15 @@ impl SseDecode for crate::api::simple::ProjectSummary {
         let mut var_id = <String>::sse_decode(deserializer);
         let mut var_title = <String>::sse_decode(deserializer);
         let mut var_updatedAtMs = <i64>::sse_decode(deserializer);
+        let mut var_createdAtMs = <i64>::sse_decode(deserializer);
+        let mut var_lastOpenedAtMs = <Option<i64>>::sse_decode(deserializer);
         let mut var_coverThumbnailPath = <Option<String>>::sse_decode(deserializer);
         return crate::api::simple::ProjectSummary {
             id: var_id,
             title: var_title,
             updated_at_ms: var_updatedAtMs,
+            created_at_ms: var_createdAtMs,
+            last_opened_at_ms: var_lastOpenedAtMs,
             cover_thumbnail_path: var_coverThumbnailPath,
         };
     }
@@ -2392,6 +2407,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::simple::ProjectSummary {
             self.id.into_into_dart().into_dart(),
             self.title.into_into_dart().into_dart(),
             self.updated_at_ms.into_into_dart().into_dart(),
+            self.created_at_ms.into_into_dart().into_dart(),
+            self.last_opened_at_ms.into_into_dart().into_dart(),
             self.cover_thumbnail_path.into_into_dart().into_dart(),
         ]
         .into_dart()
@@ -2775,6 +2792,16 @@ impl SseEncode for Option<i32> {
     }
 }
 
+impl SseEncode for Option<i64> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <i64>::sse_encode(value, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::api::simple::PageSummary {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2825,6 +2852,8 @@ impl SseEncode for crate::api::simple::ProjectSummary {
         <String>::sse_encode(self.id, serializer);
         <String>::sse_encode(self.title, serializer);
         <i64>::sse_encode(self.updated_at_ms, serializer);
+        <i64>::sse_encode(self.created_at_ms, serializer);
+        <Option<i64>>::sse_encode(self.last_opened_at_ms, serializer);
         <Option<String>>::sse_encode(self.cover_thumbnail_path, serializer);
     }
 }

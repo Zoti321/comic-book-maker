@@ -230,6 +230,8 @@ class ProjectWorkspace extends _$ProjectWorkspace {
         id: state.projectId,
         title: patch.projectTitle,
         updatedAtMs: state.project.updatedAtMs,
+        createdAtMs: state.project.createdAtMs,
+        lastOpenedAtMs: state.project.lastOpenedAtMs,
         coverThumbnailPath: state.project.coverThumbnailPath,
       ),
       coverPageIndex: patch.coverPageIndex,

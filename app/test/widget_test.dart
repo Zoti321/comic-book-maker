@@ -30,6 +30,7 @@ void main() {
           id: 'lib-1',
           title: '库内项目',
           updatedAtMs: 1,
+          createdAtMs: 1,
           coverThumbnailPath: null,
         ),
       );
@@ -47,7 +48,7 @@ void main() {
 
       expect(find.text('还没有项目'), findsNothing);
       expect(find.text('库内项目'), findsOneWidget);
-      expect(find.text('1 个项目 · 按最近打开排序'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
     });
 
     testWidgets('empty state at desktop width', (WidgetTester tester) async {

@@ -180,7 +180,7 @@ fn install_is_idempotent_for_same_app_data_dir() {
 }
 
 #[test]
-fn list_projects_orders_by_last_opened() {
+fn list_projects_returns_sort_fields_in_created_at_order() {
     let app_data = temp_dir("recent");
     let mut library = Library::open(app_data).expect("open library");
 
@@ -192,9 +192,12 @@ fn list_projects_orders_by_last_opened() {
         .create_project_inner(Some("Second".to_string()))
         .expect("create second");
 
-    let before_touch = library.list_projects_inner().expect("list");
-    assert_eq!(before_touch.len(), 2);
-    assert_eq!(before_touch[0].id, second.id);
+    let listed = library.list_projects_inner().expect("list");
+    assert_eq!(listed.len(), 2);
+    assert_eq!(listed[0].id, first.id);
+    assert_eq!(listed[1].id, second.id);
+    assert!(listed[0].created_at_ms <= listed[1].created_at_ms);
+    assert_eq!(listed[0].last_opened_at_ms, None);
 
     library
         .touch_project_inner(&first.id)
@@ -202,6 +205,7 @@ fn list_projects_orders_by_last_opened() {
 
     let after_touch = library.list_projects_inner().expect("list after touch");
     assert_eq!(after_touch[0].id, first.id);
+    assert!(after_touch[0].last_opened_at_ms.is_some());
 }
 
 #[test]

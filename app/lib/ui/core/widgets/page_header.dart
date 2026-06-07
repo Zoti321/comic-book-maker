@@ -6,11 +6,13 @@ class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
     required this.title,
+    this.titleTrailing,
     this.subtitle,
     this.actions = const [],
   });
 
   final String title;
+  final Widget? titleTrailing;
   final String? subtitle;
   final List<Widget> actions;
 
@@ -37,12 +39,24 @@ class PageHeader extends StatelessWidget {
             final titleBlock = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    if (titleTrailing != null) ...[
+                      const SizedBox(width: 8),
+                      titleTrailing!,
+                    ],
+                  ],
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),

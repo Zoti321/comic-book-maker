@@ -291,6 +291,8 @@ class FrbCoreGateway implements CoreGateway {
       id: project.id,
       title: title,
       updatedAtMs: project.updatedAtMs,
+      createdAtMs: project.createdAtMs,
+      lastOpenedAtMs: project.lastOpenedAtMs,
       coverThumbnailPath: project.coverThumbnailPath,
     );
   }

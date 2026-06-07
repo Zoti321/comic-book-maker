@@ -79,13 +79,16 @@ impl Library {
         let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
         self.connection
             .query_row(
-                "SELECT id, title, updated_at_ms FROM projects WHERE id = ?1",
+                "SELECT id, title, updated_at_ms, created_at_ms, last_opened_at_ms
+                 FROM projects WHERE id = ?1",
                 params![project_id],
                 |row| {
                     Ok(ProjectRecord {
                         id: row.get(0)?,
                         title: row.get(1)?,
                         updated_at_ms: row.get(2)?,
+                        created_at_ms: row.get(3)?,
+                        last_opened_at_ms: row.get(4)?,
                         cover_thumbnail_path: cover_thumbnail_absolute_path(&storage_dir),
                     })
                 },
@@ -148,6 +151,8 @@ impl Library {
             id,
             title,
             updated_at_ms: now,
+            created_at_ms: now,
+            last_opened_at_ms: None,
             cover_thumbnail_path: None,
         })
     }
@@ -233,9 +238,9 @@ impl Library {
         let mut statement = self
             .connection
             .prepare(
-                "SELECT id, title, COALESCE(last_opened_at_ms, updated_at_ms) AS activity_ms
+                "SELECT id, title, updated_at_ms, created_at_ms, last_opened_at_ms
                  FROM projects
-                 ORDER BY activity_ms DESC",
+                 ORDER BY created_at_ms ASC",
             )
             .map_err(|error| format!("prepare list projects: {error}"))?;
 
@@ -244,11 +249,15 @@ impl Library {
                 let id: String = row.get(0)?;
                 let title: String = row.get(1)?;
                 let updated_at_ms: i64 = row.get(2)?;
+                let created_at_ms: i64 = row.get(3)?;
+                let last_opened_at_ms: Option<i64> = row.get(4)?;
                 let storage_dir = project_storage_dir(&self.app_data_dir, &id);
                 Ok(ProjectRecord {
                     id,
                     title,
                     updated_at_ms,
+                    created_at_ms,
+                    last_opened_at_ms,
                     cover_thumbnail_path: cover_thumbnail_absolute_path(&storage_dir),
                 })
             })

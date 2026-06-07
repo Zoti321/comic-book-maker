@@ -4,6 +4,8 @@ pub struct ImportArchiveOutcome {
     pub project_id: String,
     pub title: String,
     pub updated_at_ms: i64,
+    pub created_at_ms: i64,
+    pub last_opened_at_ms: Option<i64>,
     pub cover_thumbnail_path: Option<String>,
     pub warnings: Vec<String>,
 }

@@ -104,6 +104,8 @@ pub fn finalize_import(
         project_id: listed.id,
         title: listed.title,
         updated_at_ms: listed.updated_at_ms,
+        created_at_ms: listed.created_at_ms,
+        last_opened_at_ms: listed.last_opened_at_ms,
         cover_thumbnail_path: listed.cover_thumbnail_path,
         warnings,
     })

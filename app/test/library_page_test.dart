@@ -42,7 +42,7 @@ void main() {
     await pumpLibrary(tester, viewport: const Size(1280, 800));
 
     expect(find.text('漫画库'), findsOneWidget);
-    expect(find.text('创建或导入你的第一本漫画'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
     expect(find.text('还没有项目'), findsOneWidget);
     expect(find.text('新建项目'), findsWidgets);
     expect(find.byType(ProjectCard), findsNothing);
@@ -56,13 +56,14 @@ void main() {
         id: 'p1',
         title: '我的漫画',
         updatedAtMs: 1_700_000_000_000,
+        createdAtMs: 1_700_000_000_000,
         coverThumbnailPath: null,
       ),
     );
 
     await pumpLibrary(tester, viewport: const Size(1280, 800));
 
-    expect(find.text('1 个项目 · 按最近打开排序'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
     expect(find.text('我的漫画'), findsOneWidget);
     expect(find.byType(ProjectCard), findsOneWidget);
     expect(find.text('还没有项目'), findsNothing);
@@ -85,6 +86,7 @@ void main() {
         id: 'p1',
         title: '窄屏项目',
         updatedAtMs: 1,
+        createdAtMs: 1,
         coverThumbnailPath: null,
       ),
     );

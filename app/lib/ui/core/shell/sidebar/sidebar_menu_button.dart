@@ -39,10 +39,10 @@ class _SidebarMenuButtonState extends State<SidebarMenuButton> {
         : AppSidebarTheme.menuButtonHeight;
 
     final background = widget.isActive
-        ? scheme.surfaceContainerHighest
+        ? AppSidebarTheme.menuItemBackgroundActive(scheme)
         : _hovered
-            ? scheme.surfaceContainerHigh
-            : Colors.transparent;
+            ? AppSidebarTheme.menuItemBackgroundHover(scheme)
+            : AppSidebarTheme.menuItemBackgroundRest(scheme);
 
     final foreground = widget.isActive
         ? scheme.onSurface

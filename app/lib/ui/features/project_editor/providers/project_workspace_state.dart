@@ -65,6 +65,7 @@ class ProjectWorkspaceState {
         id: projectId,
         title: '',
         updatedAtMs: 0,
+        createdAtMs: 0,
         coverThumbnailPath: null,
       ),
     );
