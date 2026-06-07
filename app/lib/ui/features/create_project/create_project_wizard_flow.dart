@@ -11,7 +11,6 @@ Future<ProjectSummary?> runCreateProjectWizard({
 }) async {
   final draft = await showAppFeatureDialog<CreateProjectDraft>(
     context: context,
-    barrierDismissible: false,
     maxWidth: sideTabFeatureDialogMaxWidth(context),
     builder: (dialogContext) => const CreateProjectWizardDialog(),
   );

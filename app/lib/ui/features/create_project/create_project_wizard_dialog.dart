@@ -5,6 +5,7 @@ import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_dialog.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -124,45 +125,12 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
         ),
     };
 
-    final disabledReason = current.createDisabledReason;
-    final theme = Theme.of(context);
-
-    return AppDialog(
+    return SideTabFeatureDialog(
       title: '新建项目',
-      content: LayoutBuilder(
-        builder: (context, constraints) {
-          const errorBandHeight = 28.0;
-          final hasErrorBand = disabledReason != null;
-          final shellHeight = constraints.maxHeight.isFinite
-              ? (constraints.maxHeight -
-                      (hasErrorBand ? errorBandHeight : 0))
-                  .clamp(280.0, 440.0)
-              : 440.0;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SideTabDialogShell(
-                height: shellHeight,
-                selectedIndex: tabIndex.value,
-                onTabSelected: (index) => tabIndex.value = index,
-                tabs: _tabs,
-                child: SingleChildScrollView(child: panel),
-              ),
-              if (hasErrorBand) ...[
-                const SizedBox(height: 8),
-                Text(
-                  disabledReason,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
+      tabs: _tabs,
+      selectedIndex: tabIndex.value,
+      onTabSelected: (index) => tabIndex.value = index,
+      body: SingleChildScrollView(child: panel),
       actions: [
         AppButton(
           variant: AppButtonVariant.secondary,

@@ -59,36 +59,87 @@ class AppDialog extends StatelessWidget {
     super.key,
     required this.title,
     required this.content,
+    this.titleTrailing,
     this.actions,
+    this.contentPadding = const EdgeInsets.fromLTRB(24, 16, 24, 16),
   });
 
   final String title;
+  final Widget? titleTrailing;
   final Widget content;
   final List<Widget>? actions;
+
+  /// body 内边距；侧栏 Tab 功能对话框传 [EdgeInsets.zero] 以使 shell 贴边。
+  final EdgeInsetsGeometry contentPadding;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return AlertDialog(
+    final actionWidgets = actions;
+    final hasActions = actionWidgets != null && actionWidgets.isNotEmpty;
+    final maxHeight = MediaQuery.sizeOf(context).height - 48;
+
+    return Dialog(
       backgroundColor: scheme.surface,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.lgBorder,
         side: BorderSide(color: scheme.outline),
       ),
-      title: Text(
-        title,
-        style: theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurface,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minWidth: 280, maxHeight: maxHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+              child: Row(
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  if (titleTrailing != null) ...[
+                    const Spacer(),
+                    Flexible(child: titleTrailing!),
+                  ],
+                ],
+              ),
+            ),
+            Divider(height: 1, thickness: 1, color: scheme.outline),
+            Flexible(
+              fit: FlexFit.loose,
+              child: SingleChildScrollView(
+                padding: hasActions
+                    ? contentPadding
+                    : contentPadding.add(const EdgeInsets.only(bottom: 8)),
+                child: SizedBox(width: double.maxFinite, child: content),
+              ),
+            ),
+            if (hasActions) ...[
+              Divider(height: 1, thickness: 1, color: scheme.outline),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    for (var i = 0; i < actionWidgets.length; i++) ...[
+                      if (i > 0) const SizedBox(width: AppSpacing.sm),
+                      actionWidgets[i],
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
-      content: SizedBox(width: double.maxFinite, child: content),
-      actions: actions,
-      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-      actionsOverflowButtonSpacing: 8,
     );
   }
 }

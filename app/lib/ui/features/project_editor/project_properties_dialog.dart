@@ -8,6 +8,7 @@ import 'package:comic_book_maker/ui/features/project_editor/project_editor_setti
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/project_settings_update.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -20,23 +21,21 @@ Future<void> showProjectPropertiesDialog({
 }) {
   return showAppFeatureDialog<void>(
     context: context,
-    builder: (dialogContext) => AppDialog(
-      title: '项目属性',
-      content: _ProjectPropertiesBody(projectId: projectId),
-      actions: [
-        AppButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('关闭'),
-        ),
-      ],
+    builder: (dialogContext) => _ProjectPropertiesDialog(
+      projectId: projectId,
+      dialogContext: dialogContext,
     ),
   );
 }
 
-class _ProjectPropertiesBody extends HookConsumerWidget {
-  const _ProjectPropertiesBody({required this.projectId});
+class _ProjectPropertiesDialog extends HookConsumerWidget {
+  const _ProjectPropertiesDialog({
+    required this.projectId,
+    required this.dialogContext,
+  });
 
   final String projectId;
+  final BuildContext dialogContext;
 
   static const _tabs = [
     SideTabDialogTab(label: '概览', icon: LucideIcons.info),
@@ -109,9 +108,18 @@ class _ProjectPropertiesBody extends HookConsumerWidget {
     }
 
     if (settings == null) {
-      return const SizedBox(
-        height: 200,
-        child: AppPageLoading(message: '正在加载项目设置…', compact: true),
+      return AppDialog(
+        title: '项目属性',
+        content: const SizedBox(
+          height: 200,
+          child: AppPageLoading(message: '正在加载项目设置…', compact: true),
+        ),
+        actions: [
+          AppButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('关闭'),
+          ),
+        ],
       );
     }
 
@@ -174,11 +182,18 @@ class _ProjectPropertiesBody extends HookConsumerWidget {
         ),
     };
 
-    return SideTabDialogShell(
+    return SideTabFeatureDialog(
+      title: '项目属性',
+      tabs: _tabs,
       selectedIndex: tabIndex.value,
       onTabSelected: (index) => tabIndex.value = index,
-      tabs: _tabs,
-      child: SingleChildScrollView(child: panel),
+      body: SingleChildScrollView(child: panel),
+      actions: [
+        AppButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('关闭'),
+        ),
+      ],
     );
   }
 }

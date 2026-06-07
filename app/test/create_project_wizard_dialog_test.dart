@@ -27,7 +27,6 @@ void main() {
       await openWizard(tester);
 
       expect(find.text('新建项目'), findsOneWidget);
-      expect(find.text('请先在「导入」中选择要导入的资源'), findsOneWidget);
       expect(find.text('尚未选择'), findsOneWidget);
 
       final createButton = tester.widget<AppButton>(
@@ -60,7 +59,6 @@ void main() {
       await tester.tap(find.text('打开向导'));
       await tester.pumpAndSettle();
 
-      expect(find.text('请先在「导入」中选择要导入的资源'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });

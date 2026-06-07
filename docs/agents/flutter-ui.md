@@ -205,6 +205,13 @@ class MyFeature extends _$MyFeature {
 - `AppPopupMenuItem`：自绘无 ripple；`px 8` / `py 6`、`sm` 圆角；背景拉满行宽（`AppPopupMenuPanel` 内 `IntrinsicWidth` + 父 `Column(crossAxisAlignment: stretch)`，overlay 中勿对项使用 `width: double.infinity`）；项间 `2px` gap（`Column(spacing: AppSpacing.xs / 2)`）；hover `surfaceContainer`；`selected: true` 常驻浅灰底，hover 时 `surfaceContainerHigh`；可选 `leading`（排序方向 icon）。
 - 漫画库排序按钮：`LibrarySortMenuButton`，无 tooltip（排序图标语义已足够直观）。
 
+## 对话框
+
+- `AppDialog` / `showAppDialog` / `showAppFeatureDialog`：标题行底部分隔线；底部操作区为 `outline` 分隔线 + 右对齐按钮行（次要左、主要右，间距 `8px`）；`showAppFeatureDialog` 默认 `barrierDismissible: true`（点遮罩等同取消）。
+- 侧栏 Tab 功能对话框统一 `SideTabFeatureDialog` + `SideTabDialogShell`（新建项目、项目属性等），经 `showAppFeatureDialog` 限制宽屏最大宽度。
+- 宽屏（≥560px）：`AppDialog` body `contentPadding: 0`；左侧 Tab 贴左贴顶，左 `primary` 指示条（行级）+ 图标文字，hover `surfaceContainer`；Tab 列与内容区 `outline` 竖线拉满 body 高度（与 header/footer 分隔线相交）；右侧内容区保留 `16px` 内边距。
+- 窄屏（<560px）：Tab 移至 `AppDialog` 标题行右侧（仅文字 + 底部 `primary` 指示条）；body 零外边距，内容区 `16px` 内边距。
+
 ## 常用映射
 
 | 场景           | design_system                                 |
