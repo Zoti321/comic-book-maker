@@ -19,6 +19,8 @@
 | 0006 | Material 3 `design_system`，弃用 shadcn |
 | 0007 | Flutter 分层目录与 FRB 边界（已落地） |
 | 0008 | CBR Export：`rars`、rar50、往返测试门槛 |
+| 0009 | 桌面整窗原生毛玻璃壳层（**已废弃**，由 0010 取代） |
+| 0010 | 桌面无边框窗口与实色自绘标题栏 |
 
 ## Agent 约定
 

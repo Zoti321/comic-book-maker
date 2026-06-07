@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
@@ -39,6 +40,9 @@ class ComicBookMakerApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      builder: (context, child) {
+        return DesktopShell(child: child ?? const SizedBox.shrink());
+      },
     );
   }
 }
