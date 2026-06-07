@@ -1,8 +1,14 @@
+import 'package:comic_book_maker/ui/core/design_system/app_button_core.dart';
 import 'package:flutter/material.dart';
 
-enum AppButtonVariant { primary, secondary, outline, ghost, destructive }
+export 'app_button_core.dart'
+    show
+        AppButtonMetrics,
+        AppButtonRadius,
+        AppButtonSize,
+        AppButtonVariant;
 
-/// Material 3 按钮封装；高度与圆角跟随主题。
+/// 自绘文字 / 图标+文字按钮（无 M3 水波纹）。
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -11,6 +17,9 @@ class AppButton extends StatelessWidget {
     this.variant = AppButtonVariant.primary,
     this.icon,
     this.isLoading = false,
+    this.size = AppButtonSize.md,
+    this.metrics,
+    this.radius = AppButtonRadius.md,
   });
 
   final VoidCallback? onPressed;
@@ -18,73 +27,21 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final Widget? icon;
   final bool isLoading;
+  final AppButtonSize size;
+  final AppButtonMetrics? metrics;
+  final AppButtonRadius radius;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onPressed != null && !isLoading;
-    final label = isLoading
-        ? SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: _progressColor(context),
-            ),
-          )
-        : child;
-
-    final childWidget = icon == null
-        ? label
-        : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconTheme.merge(
-                data: const IconThemeData(size: 18),
-                child: icon!,
-              ),
-              const SizedBox(width: 8),
-              Flexible(child: label),
-            ],
-          );
-
-    return switch (variant) {
-      AppButtonVariant.primary => FilledButton(
-          onPressed: enabled ? onPressed : null,
-          child: childWidget,
-        ),
-      AppButtonVariant.secondary => FilledButton.tonal(
-          onPressed: enabled ? onPressed : null,
-          child: childWidget,
-        ),
-      AppButtonVariant.outline => OutlinedButton(
-          onPressed: enabled ? onPressed : null,
-          child: childWidget,
-        ),
-      AppButtonVariant.ghost => TextButton(
-          onPressed: enabled ? onPressed : null,
-          child: childWidget,
-        ),
-      AppButtonVariant.destructive => FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Theme.of(context).colorScheme.onError,
-          ),
-          onPressed: enabled ? onPressed : null,
-          child: childWidget,
-        ),
-    };
-  }
-
-  Color? _progressColor(BuildContext context) {
-    return switch (variant) {
-      AppButtonVariant.primary ||
-      AppButtonVariant.destructive =>
-        Theme.of(context).colorScheme.onPrimary,
-      AppButtonVariant.secondary =>
-        Theme.of(context).colorScheme.onSecondaryContainer,
-      AppButtonVariant.outline ||
-      AppButtonVariant.ghost =>
-        Theme.of(context).colorScheme.onSurface,
-    };
+    return AppButtonCore(
+      onPressed: onPressed,
+      variant: variant,
+      size: size,
+      metrics: metrics,
+      radius: radius,
+      icon: icon,
+      label: child,
+      isLoading: isLoading,
+    );
   }
 }

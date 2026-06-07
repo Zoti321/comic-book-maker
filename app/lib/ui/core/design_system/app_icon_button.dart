@@ -1,8 +1,7 @@
+import 'package:comic_book_maker/ui/core/design_system/app_button_core.dart';
 import 'package:flutter/material.dart';
 
-enum AppIconButtonVariant { standard, filled, tonal, outline }
-
-/// Material 3 图标按钮封装。
+/// 自绘纯图标按钮（无 M3 水波纹）。
 ///
 /// [tooltip] 仅用于启用态、纯图标且语义不够直观时；[disabledTooltip] 仅在禁用时显示。
 class AppIconButton extends StatelessWidget {
@@ -12,35 +11,32 @@ class AppIconButton extends StatelessWidget {
     required this.onPressed,
     this.tooltip,
     this.disabledTooltip,
-    this.variant = AppIconButtonVariant.standard,
+    this.variant = AppButtonVariant.ghost,
+    this.size = AppButtonSize.md,
+    this.metrics,
+    this.radius = AppButtonRadius.md,
   });
 
   final Widget icon;
   final VoidCallback? onPressed;
   final String? tooltip;
   final String? disabledTooltip;
-  final AppIconButtonVariant variant;
+  final AppButtonVariant variant;
+  final AppButtonSize size;
+  final AppButtonMetrics? metrics;
+  final AppButtonRadius radius;
 
   @override
   Widget build(BuildContext context) {
-    final button = switch (variant) {
-      AppIconButtonVariant.standard => IconButton(
-          onPressed: onPressed,
-          icon: icon,
-        ),
-      AppIconButtonVariant.filled => IconButton.filled(
-          onPressed: onPressed,
-          icon: icon,
-        ),
-      AppIconButtonVariant.tonal => IconButton.filledTonal(
-          onPressed: onPressed,
-          icon: icon,
-        ),
-      AppIconButtonVariant.outline => IconButton.outlined(
-          onPressed: onPressed,
-          icon: icon,
-        ),
-    };
+    final button = AppButtonCore(
+      onPressed: onPressed,
+      variant: variant,
+      size: size,
+      metrics: metrics,
+      radius: radius,
+      icon: icon,
+      iconOnly: true,
+    );
 
     final message = onPressed == null ? disabledTooltip : tooltip;
     if (message == null) return button;

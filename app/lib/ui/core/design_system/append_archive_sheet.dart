@@ -18,14 +18,14 @@ Future<AppendArchiveFormat?> showAppendArchiveSheet(BuildContext context) {
         const AppSheetDescription('追加页面到当前项目'),
         const SizedBox(height: AppSpacing.md),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.folderArchive),
           onPressed: () => Navigator.pop(context, AppendArchiveFormat.cbz),
           child: const Text('选择 CBZ'),
         ),
         const SizedBox(height: AppSpacing.sm),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.archive),
           onPressed: () => Navigator.pop(context, AppendArchiveFormat.cbr),
           child: const Text('选择 CBR'),

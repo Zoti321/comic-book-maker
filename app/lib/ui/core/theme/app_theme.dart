@@ -79,38 +79,6 @@ abstract final class AppTheme {
         ),
         margin: EdgeInsets.zero,
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          minimumSize: const Size(64, AppTypography.controlHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.onSurface,
-          minimumSize: const Size(64, AppTypography.controlHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          side: const BorderSide(color: AppColors.outline),
-        ),
-      ),
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.onSurface,
-          minimumSize: const Size(48, AppTypography.controlHeight),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-        ),
-      ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           visualDensity: VisualDensity.compact,

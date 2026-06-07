@@ -116,7 +116,7 @@ class ProjectExportSettingsPanel extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           AppButton(
-            variant: AppButtonVariant.outline,
+            variant: AppButtonVariant.secondary,
             onPressed: enabled ? pickProjectExportDirectory : null,
             icon: const Icon(LucideIcons.folder),
             child: const Text('选择专用导出目录'),

@@ -152,7 +152,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       ),
       actions: [
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
@@ -201,28 +201,28 @@ class _ImportTab extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.image),
           onPressed: onPickImages,
           child: const Text('选择 Page Image'),
         ),
         const SizedBox(height: 8),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.folderArchive),
           onPressed: onPickCbz,
           child: const Text('导入 CBZ'),
         ),
         const SizedBox(height: 8),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.archive),
           onPressed: onPickCbr,
           child: const Text('导入 CBR'),
         ),
         const SizedBox(height: 8),
         AppButton(
-          variant: AppButtonVariant.outline,
+          variant: AppButtonVariant.secondary,
           icon: const Icon(LucideIcons.bookOpen),
           onPressed: onPickEpub,
           child: const Text('导入 EPUB'),

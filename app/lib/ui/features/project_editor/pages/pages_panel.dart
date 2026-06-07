@@ -462,7 +462,7 @@ Future<void> showPageImageViewer(
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: AppIconButton(
-                  variant: AppIconButtonVariant.tonal,
+                  variant: AppButtonVariant.secondary,
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(LucideIcons.x),
                 ),

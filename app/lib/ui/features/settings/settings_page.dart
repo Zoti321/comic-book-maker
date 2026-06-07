@@ -138,7 +138,7 @@ class SettingsPage extends HookConsumerWidget {
                                   ),
                                   if (hasDirectory)
                                     AppButton(
-                                      variant: AppButtonVariant.outline,
+                                      variant: AppButtonVariant.secondary,
                                       onPressed: savingExportPath.value
                                           ? null
                                           : clearExportDirectory,

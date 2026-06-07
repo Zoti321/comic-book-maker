@@ -20,11 +20,8 @@ void main() {
     expect(scheme.inversePrimary.value & 0xFFFFFF, isNot(0x93C5FD));
   });
 
-  test('filled button style follows neutral primary', () {
-    final theme = AppTheme.light();
-    final style = theme.filledButtonTheme.style!;
-
-    expect(style.backgroundColor?.resolve({}), AppColors.primary);
-    expect(style.foregroundColor?.resolve({}), AppColors.onPrimary);
+  test('design tokens use tightened sm radius', () {
+    expect(AppRadius.sm, 4.0);
+    expect(AppRadius.md, 8.0);
   });
 }

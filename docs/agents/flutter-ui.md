@@ -179,15 +179,30 @@ class MyFeature extends _$MyFeature {
 - `RevealMenuIconButton` 默认无 tooltip（⋮ 语义已足够直观）。
 - 勿为「重复标签文字」的控件加 tooltip。
 
+## 按钮约定
+
+`AppButton` / `AppIconButton` 基于自绘内核（`app_button_core.dart`），**不使用** M3 `FilledButton` / `OutlinedButton` / `TextButton`；无 Material 水波纹，桌面端提供 hover / pressed 背景与键盘 focus ring。
+
+| 变体 | 视觉 |
+| ---- | ---- |
+| `primary` | 深灰实心填充 |
+| `secondary` | 透明底 + 边框（替代旧 `outline` 与 MD tonal） |
+| `ghost` | 透明无底，hover 浅底 |
+| `destructive` | 红色实心 |
+
+- 尺寸：`AppButtonSize`（`xs`–`xl`，默认 `md`）+ 可选 `AppButtonMetrics` 局部覆盖。
+- 圆角：`AppButtonRadius`（`sm` 4px / `md` 8px 默认 / `lg` / `pill` / `circle`）；全局 `AppRadius.sm` 亦为 4px。
+- 纯图标按钮统一 `AppIconButton`，variant 与文字按钮相同。
+
 ## 常用映射
 
-| 场景           | design_system / M3                          |
+| 场景           | design_system                                 |
 | -------------- | --------------------------------------------- |
-| 主操作         | `AppButton` / `FilledButton`                  |
-| 次要操作       | `AppButton` variant `secondary` / `tonal`     |
-| 线框按钮       | `AppButton` variant `outline`                 |
+| 主操作         | `AppButton` variant `primary`                 |
+| 次要 / 线框    | `AppButton` variant `secondary`               |
+| 轻量文字操作   | `AppButton` variant `ghost`                   |
 | 危险操作       | `AppButton` variant `destructive`             |
-| 图标按钮       | `AppIconButton`                               |
+| 图标按钮       | `AppIconButton`（同 variant 枚举）            |
 | 对话框         | `showAppDialog` / `showAppConfirmDialog`      |
 | 底部 Sheet     | `showAppBottomSheet`                          |
 | 卡片           | `AppCard`                                     |

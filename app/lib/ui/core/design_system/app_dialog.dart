@@ -108,7 +108,7 @@ Future<bool?> showAppConfirmDialog({
     content: description,
     actionsBuilder: (dialogContext) => [
       AppButton(
-        variant: AppButtonVariant.outline,
+        variant: AppButtonVariant.secondary,
         onPressed: () => Navigator.pop(dialogContext, false),
         child: Text(cancelLabel),
       ),

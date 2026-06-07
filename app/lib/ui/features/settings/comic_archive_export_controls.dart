@@ -95,7 +95,7 @@ class _ContainerMenuAnchor extends StatelessWidget {
         return Align(
           alignment: Alignment.centerLeft,
           child: AppButton(
-            variant: AppButtonVariant.outline,
+            variant: AppButtonVariant.secondary,
             onPressed: enabled
                 ? () {
                     if (controller.isOpen) {

@@ -108,7 +108,7 @@ class _AppendImportButton extends StatelessWidget {
         : null;
 
     final button = AppButton(
-      variant: AppButtonVariant.outline,
+      variant: AppButtonVariant.secondary,
       onPressed: enabled ? onPressed : null,
       icon: const Icon(LucideIcons.download, size: 18),
       child: Text(label),
@@ -122,7 +122,7 @@ class _AppendImportButton extends StatelessWidget {
     }
 
     return AppIconButton(
-      variant: AppIconButtonVariant.outline,
+      variant: AppButtonVariant.secondary,
       tooltip: enabled ? label : null,
       disabledTooltip: disabledTooltip,
       onPressed: enabled ? onPressed : null,
@@ -165,7 +165,7 @@ class _ExportButton extends StatelessWidget {
     }
 
     return AppIconButton(
-      variant: AppIconButtonVariant.filled,
+      variant: AppButtonVariant.primary,
       tooltip: canExport ? '导出为 ${exportFormatLabel(exportFormat)}' : null,
       disabledTooltip: disabledTooltip,
       onPressed: canExport ? onPressed : null,
