@@ -1,26 +1,10 @@
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late FlutterExceptionHandler? originalOnError;
-
-  setUp(() {
-    originalOnError = FlutterError.onError;
-    FlutterError.onError = (details) {
-      final message = details.exceptionAsString();
-      if (message.contains('RenderFlex overflowed')) return;
-      originalOnError?.call(details);
-    };
-  });
-
-  tearDown(() {
-    FlutterError.onError = originalOnError;
-  });
-
   Future<void> openWizard(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -60,6 +44,24 @@ void main() {
 
       expect(find.text('Export 格式'), findsOneWidget);
       expect(find.text('导出目录'), findsOneWidget);
+    });
+
+    testWidgets('fits content when dialog height is tight', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: _WizardHost(),
+          ),
+        ),
+      );
+      await tester.tap(find.text('打开向导'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('请先在「导入」中选择要导入的资源'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

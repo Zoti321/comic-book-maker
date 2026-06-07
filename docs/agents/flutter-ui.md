@@ -25,7 +25,7 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
 - 根应用：`MaterialApp.router` + `go_router`（见 `app/lib/main.dart`、`app/lib/ui/core/router/`）
 - 主题：`AppTheme.light()`；间距 / 圆角 / 排版见 `app/lib/ui/core/theme/app_tokens.dart`
 - 页面与 feature **禁止** 直接 import 第三方 UI 库；控件通过 `design_system` 暴露：
-  - `AppButton`、`AppIconButton`、`AppTextField`、`AppCard`、`AppCheckbox`
+  - `AppButton`、`AppIconButton`、`AppPopupMenu`、`AppPopupMenuPanel`、`AppTextField`、`AppCard`、`AppCheckbox`
   - `AppInlineErrorBanner`、`AppEmptyState`、`AppPageLoading`、`AppPageErrorState`
   - `showAppDialog` / `showAppConfirmDialog` / `showAppAlertDialog`
   - `showAppToast` / `showAppSnackBar`
@@ -193,6 +193,17 @@ class MyFeature extends _$MyFeature {
 - 尺寸：`AppButtonSize`（`xs`–`xl`，默认 `md`）+ 可选 `AppButtonMetrics` 局部覆盖。
 - 圆角：`AppButtonRadius`（`sm` 4px / `md` 8px 默认 / `lg` / `pill` / `circle`）；全局 `AppRadius.sm` 亦为 4px。
 - 纯图标按钮统一 `AppIconButton`，variant 与文字按钮相同。
+- `secondary` / `ghost` 静止态背景用 hover 目标色 + `alpha: 0` 插值，避免 `Colors.transparent` 动画中间帧发灰；`secondary` 边框全程固定 `AppColors.outline`。
+
+## 弹出菜单
+
+锚点弹出菜单统一 `AppPopupMenu` + `AppPopupMenuPanel`（自绘 overlay），**勿**在 feature 直接使用裸 `PopupMenuButton`。
+
+- `AppPopupMenu`：菜单左缘对齐锚点左缘、默认 `verticalMargin: 0`；遮罩 `Colors.transparent`（点外关闭）；下方空间不足时自动上翻，右溢时水平 clamp；`Escape` 关闭。
+- 展开时锚点 `AppIconButton` 经 `AppPopupMenuOpenScope` 保持 hover 打开态。
+- `AppPopupMenuPanel`：白底、`outline` 细边框、`md` 圆角、四周 `4px` 内边距、轻阴影（`blur 12` / `offset (0,4)`）；宽度内容自适应。
+- `AppPopupMenuItem`：自绘无 ripple；`px 8` / `py 6`、`sm` 圆角；背景拉满行宽（`AppPopupMenuPanel` 内 `IntrinsicWidth` + 父 `Column(crossAxisAlignment: stretch)`，overlay 中勿对项使用 `width: double.infinity`）；项间 `2px` gap（`Column(spacing: AppSpacing.xs / 2)`）；hover `surfaceContainer`；`selected: true` 常驻浅灰底，hover 时 `surfaceContainerHigh`；可选 `leading`（排序方向 icon）。
+- 漫画库排序按钮：`LibrarySortMenuButton`，无 tooltip（排序图标语义已足够直观）。
 
 ## 常用映射
 
@@ -203,6 +214,7 @@ class MyFeature extends _$MyFeature {
 | 轻量文字操作   | `AppButton` variant `ghost`                   |
 | 危险操作       | `AppButton` variant `destructive`             |
 | 图标按钮       | `AppIconButton`（同 variant 枚举）            |
+| 锚点弹出菜单   | `AppPopupMenu` + `AppPopupMenuPanel`          |
 | 对话框         | `showAppDialog` / `showAppConfirmDialog`      |
 | 底部 Sheet     | `showAppBottomSheet`                          |
 | 卡片           | `AppCard`                                     |

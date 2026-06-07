@@ -80,6 +80,7 @@ class LibraryPage extends HookConsumerWidget {
 
     final createButton = AppButton(
       onPressed: startCreateProject,
+      size: AppButtonSize.sm,
       icon: const Icon(LucideIcons.plus),
       child: Text(compact ? '新建' : '新建项目'),
     );
@@ -121,11 +122,14 @@ class LibraryPage extends HookConsumerWidget {
                     icon: LucideIcons.library,
                     title: '还没有项目',
                     subtitle: '通过新建项目向导导入图片或漫画包开始制作',
-                    action: AppButton(
-                      onPressed: startCreateProject,
-                      icon: const Icon(LucideIcons.plus),
-                      child: const Text('新建项目'),
-                    ),
+                    action: TickerMode.of(context)
+                        ? AppButton(
+                            onPressed: startCreateProject,
+                            size: AppButtonSize.sm,
+                            icon: const Icon(LucideIcons.plus),
+                            child: const Text('新建项目'),
+                          )
+                        : null,
                   ),
                 )
               : SliverGrid(

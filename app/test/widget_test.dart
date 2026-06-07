@@ -1,5 +1,7 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/main.dart';
+import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
+import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +19,8 @@ void main() {
   });
 
   setUp(() {
+    resetDesktopWindowConfigForTesting();
+    desktopWindowConfig = DesktopWindowConfig.disabled;
     gateway = InMemoryCoreGateway.emptyLibrary();
     appRouter.go(AppRoutes.projects);
   });
@@ -113,8 +117,10 @@ void main() {
 
   group('mobile shell', () {
     testWidgets('bottom nav opens settings', (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(400, 800));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(
         coreGatewayScope(

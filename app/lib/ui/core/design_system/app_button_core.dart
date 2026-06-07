@@ -188,10 +188,14 @@ _ButtonColors _colorsFor({
   );
 }
 
+Color _alphaBackground(Color color, double alpha) =>
+    color.withValues(alpha: alpha);
+
 Color _restBackground(AppButtonVariant variant) => switch (variant) {
       AppButtonVariant.primary => AppColors.primary,
-      AppButtonVariant.secondary => Colors.transparent,
-      AppButtonVariant.ghost => Colors.transparent,
+      AppButtonVariant.secondary =>
+        _alphaBackground(AppColors.surfaceContainer, 0),
+      AppButtonVariant.ghost => _alphaBackground(AppColors.surfaceLow, 0),
       AppButtonVariant.destructive => AppColors.error,
     };
 
@@ -221,15 +225,9 @@ Color? _restBorder(AppButtonVariant variant) => switch (variant) {
       _ => null,
     };
 
-Color? _hoverBorder(AppButtonVariant variant) => switch (variant) {
-      AppButtonVariant.secondary => AppColors.surfaceContainerHigh,
-      _ => null,
-    };
+Color? _hoverBorder(AppButtonVariant variant) => _restBorder(variant);
 
-Color? _pressedBorder(AppButtonVariant variant) => switch (variant) {
-      AppButtonVariant.secondary => AppColors.surfaceContainerHighest,
-      _ => null,
-    };
+Color? _pressedBorder(AppButtonVariant variant) => _restBorder(variant);
 
 /// 自绘按钮内核（无 M3 水波纹）；供 [AppButton] / [AppIconButton] 共用。
 class AppButtonCore extends StatefulWidget {
@@ -244,6 +242,7 @@ class AppButtonCore extends StatefulWidget {
     this.label,
     this.isLoading = false,
     this.iconOnly = false,
+    this.forceHovered = false,
   });
 
   final VoidCallback? onPressed;
@@ -255,6 +254,7 @@ class AppButtonCore extends StatefulWidget {
   final Widget? label;
   final bool isLoading;
   final bool iconOnly;
+  final bool forceHovered;
 
   @override
   State<AppButtonCore> createState() => _AppButtonCoreState();
@@ -276,10 +276,11 @@ class _AppButtonCoreState extends State<AppButtonCore> {
       resolved.height,
       iconOnly: iconOnly,
     );
+    final showHovered = _enabled && (_hovered || widget.forceHovered);
     final colors = _colorsFor(
       variant: widget.variant,
       enabled: _enabled,
-      hovered: _hovered && _enabled,
+      hovered: showHovered && !_pressed,
       pressed: _pressed && _enabled,
     );
 

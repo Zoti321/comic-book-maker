@@ -129,26 +129,39 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
 
     return AppDialog(
       title: '新建项目',
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SideTabDialogShell(
-            selectedIndex: tabIndex.value,
-            onTabSelected: (index) => tabIndex.value = index,
-            tabs: _tabs,
-            child: panel,
-          ),
-          if (disabledReason != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              disabledReason,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
+      content: LayoutBuilder(
+        builder: (context, constraints) {
+          const errorBandHeight = 28.0;
+          final hasErrorBand = disabledReason != null;
+          final shellHeight = constraints.maxHeight.isFinite
+              ? (constraints.maxHeight -
+                      (hasErrorBand ? errorBandHeight : 0))
+                  .clamp(280.0, 440.0)
+              : 440.0;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SideTabDialogShell(
+                height: shellHeight,
+                selectedIndex: tabIndex.value,
+                onTabSelected: (index) => tabIndex.value = index,
+                tabs: _tabs,
+                child: SingleChildScrollView(child: panel),
               ),
-            ),
-          ],
-        ],
+              if (hasErrorBand) ...[
+                const SizedBox(height: 8),
+                Text(
+                  disabledReason,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
       ),
       actions: [
         AppButton(

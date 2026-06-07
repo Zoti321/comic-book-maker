@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/ui/core/design_system/app_button_core.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_popup_menu.dart';
 import 'package:flutter/material.dart';
 
 /// 自绘纯图标按钮（无 M3 水波纹）。
@@ -36,6 +37,7 @@ class AppIconButton extends StatelessWidget {
       radius: radius,
       icon: icon,
       iconOnly: true,
+      forceHovered: AppPopupMenuOpenScope.maybeIsOpen(context),
     );
 
     final message = onPressed == null ? disabledTooltip : tooltip;

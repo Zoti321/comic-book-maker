@@ -9,12 +9,16 @@ class SideTabDialogShell extends StatelessWidget {
     required this.onTabSelected,
     required this.tabs,
     required this.child,
+    this.height,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onTabSelected;
   final List<SideTabDialogTab> tabs;
   final Widget child;
+
+  /// 外壳高度；未设时按宽度选用 400 / 440，并在父级有界时不超过可用高度。
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +27,11 @@ class SideTabDialogShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final useCompactTabs = constraints.maxWidth < 560;
-        final shellHeight = useCompactTabs ? 400.0 : 440.0;
+        final preferredHeight = useCompactTabs ? 400.0 : 440.0;
+        final shellHeight = height ??
+            (constraints.hasBoundedHeight
+                ? constraints.maxHeight.clamp(240.0, preferredHeight)
+                : preferredHeight);
 
         if (useCompactTabs) {
           return SizedBox(

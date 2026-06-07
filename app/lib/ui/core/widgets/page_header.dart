@@ -36,6 +36,9 @@ class PageHeader extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
+            // IndexedStack 离屏分支在过渡帧可能得到极窄约束，跳过 actions 避免按钮被压扁。
+            final showActions = constraints.maxWidth >= 64;
+
             final titleBlock = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -70,7 +73,7 @@ class PageHeader extends StatelessWidget {
               ],
             );
 
-            if (actions.isEmpty) return titleBlock;
+            if (actions.isEmpty || !showActions) return titleBlock;
 
             final stacked = constraints.maxWidth < 520;
             if (stacked) {
