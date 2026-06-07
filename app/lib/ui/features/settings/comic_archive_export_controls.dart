@@ -2,6 +2,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 漫画压缩包 Export 的容器算法（二级菜单）与扩展名策略控件。
 class ComicArchiveExportControls extends StatelessWidget {
@@ -104,7 +105,7 @@ class _ContainerMenuAnchor extends StatelessWidget {
                     }
                   }
                 : null,
-            icon: const Icon(Icons.expand_more),
+            icon: const Icon(LucideIcons.chevronDown),
             child: Text('压缩算法：$label${canExport ? '' : '（尚未实现）'}'),
           ),
         );
@@ -117,7 +118,7 @@ class _ContainerMenuAnchor extends StatelessWidget {
                 : () => onSelected(container),
             leadingIcon: selected == container
                 ? Icon(
-                    Icons.check,
+                    LucideIcons.check,
                     size: 20,
                     color: Theme.of(context).colorScheme.onSurface,
                   )

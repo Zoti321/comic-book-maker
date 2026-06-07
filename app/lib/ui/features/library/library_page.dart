@@ -13,6 +13,7 @@ import 'package:comic_book_maker/ui/features/library/library_grid_layout.dart';
 import 'package:comic_book_maker/ui/features/library/library_sort_menu_button.dart';
 import 'package:comic_book_maker/ui/features/library/project_card.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -79,7 +80,7 @@ class LibraryPage extends HookConsumerWidget {
 
     final createButton = AppButton(
       onPressed: startCreateProject,
-      icon: const Icon(Icons.add),
+      icon: const Icon(LucideIcons.plus),
       child: Text(compact ? '新建' : '新建项目'),
     );
 
@@ -117,12 +118,12 @@ class LibraryPage extends HookConsumerWidget {
               ? SliverFillRemaining(
                   hasScrollBody: false,
                   child: AppEmptyState(
-                    icon: Icons.collections_bookmark_outlined,
+                    icon: LucideIcons.library,
                     title: '还没有项目',
                     subtitle: '通过新建项目向导导入图片或漫画包开始制作',
                     action: AppButton(
                       onPressed: startCreateProject,
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(LucideIcons.plus),
                       child: const Text('新建项目'),
                     ),
                   ),

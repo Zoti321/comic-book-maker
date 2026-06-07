@@ -12,6 +12,7 @@ import 'package:comic_book_maker/ui/features/project_editor/project_editor_tab_s
 import 'package:comic_book_maker/ui/features/project_editor/project_properties_dialog.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -193,7 +194,7 @@ class ProjectEditorPage extends HookConsumerWidget {
                       trailing: AppIconButton(
                         tooltip: '项目属性',
                         onPressed: openProjectProperties,
-                        icon: const Icon(Icons.settings_outlined),
+                        icon: const Icon(LucideIcons.settings),
                       ),
                     ),
                     const SizedBox(height: 12),

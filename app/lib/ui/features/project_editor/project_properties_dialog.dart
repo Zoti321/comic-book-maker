@@ -9,6 +9,7 @@ import 'package:comic_book_maker/ui/features/settings/project_export_settings_pa
 import 'package:comic_book_maker/ui/core/project_settings_update.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -38,10 +39,10 @@ class _ProjectPropertiesBody extends HookConsumerWidget {
   final String projectId;
 
   static const _tabs = [
-    SideTabDialogTab(label: '概览', icon: Icons.info_outline),
-    SideTabDialogTab(label: '导入', icon: Icons.download_outlined),
-    SideTabDialogTab(label: '导出', icon: Icons.upload_outlined),
-    SideTabDialogTab(label: '元数据', icon: Icons.description_outlined),
+    SideTabDialogTab(label: '概览', icon: LucideIcons.info),
+    SideTabDialogTab(label: '导入', icon: LucideIcons.download),
+    SideTabDialogTab(label: '导出', icon: LucideIcons.upload),
+    SideTabDialogTab(label: '元数据', icon: LucideIcons.fileText),
   ];
 
   @override

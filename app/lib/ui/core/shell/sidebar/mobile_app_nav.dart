@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar_menu_button.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 窄屏底部导航（侧栏不可用时的替代）。
 class MobileAppNav extends StatelessWidget {
@@ -12,17 +13,9 @@ class MobileAppNav extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  static const _items = <(IconData, IconData, String)>[
-    (
-      Icons.collections_bookmark_outlined,
-      Icons.collections_bookmark,
-      '项目',
-    ),
-    (
-      Icons.settings_outlined,
-      Icons.settings,
-      '设置',
-    ),
+  static const _items = <(IconData, String)>[
+    (LucideIcons.library, '项目'),
+    (LucideIcons.settings, '设置'),
   ];
 
   @override
@@ -43,13 +36,11 @@ class MobileAppNav extends StatelessWidget {
               for (var i = 0; i < _items.length; i++)
                 Expanded(
                   child: SidebarMenuButton(
-                    icon: Icon(
-                      selectedIndex == i ? _items[i].$2 : _items[i].$1,
-                    ),
+                    icon: Icon(_items[i].$1),
                     isActive: selectedIndex == i,
                     onPressed: () => onSelect(i),
                     child: Text(
-                      _items[i].$3,
+                      _items[i].$2,
                       textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                     ),

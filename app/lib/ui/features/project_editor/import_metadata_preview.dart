@@ -2,6 +2,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 String importMetadataKindLabel(ImportMetadataKindFrb kind) {
   return switch (kind) {
@@ -67,7 +68,7 @@ class _ImportMetadataPreviewState extends State<ImportMetadataPreview> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.archive_outlined,
+                LucideIcons.archive,
                 size: 20,
                 color: onSurfaceVariant,
               ),
@@ -102,7 +103,7 @@ class _ImportMetadataPreviewState extends State<ImportMetadataPreview> {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.arrow_downward, size: 16, color: onSurfaceVariant),
+                Icon(LucideIcons.arrowDown, size: 16, color: onSurfaceVariant),
                 const SizedBox(width: 6),
                 Text(
                   '可编辑字段在下方「导出元数据」',

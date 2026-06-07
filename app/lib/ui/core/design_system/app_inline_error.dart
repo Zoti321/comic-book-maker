@@ -1,6 +1,7 @@
 import 'package:comic_book_maker/ui/core/design_system/app_button.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 页面内可恢复错误（FRB / 表单校验等）；不用 Dialog / SnackBar。
 ///
@@ -36,7 +37,7 @@ class AppInlineErrorBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.error_outline,
+                LucideIcons.circleAlert,
                 size: 20,
                 color: scheme.onErrorContainer,
               ),

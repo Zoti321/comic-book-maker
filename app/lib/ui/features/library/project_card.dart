@@ -4,6 +4,7 @@ import 'package:comic_book_maker/ui/core/design_system/hover_reveal_menu.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
 
 enum _ProjectCardMenuAction { delete }
@@ -81,7 +82,7 @@ class _ProjectCardState extends State<ProjectCard> {
             value: _ProjectCardMenuAction.delete,
             child: Row(
               children: [
-                Icon(Icons.delete_outline, size: 20, color: scheme.error),
+                Icon(LucideIcons.trash2, size: 20, color: scheme.error),
                 const SizedBox(width: 12),
                 Text('删除', style: TextStyle(color: scheme.error)),
               ],
@@ -241,7 +242,7 @@ class _CoverPlaceholder extends StatelessWidget {
       ),
       child: Center(
         child: Icon(
-          Icons.auto_stories_outlined,
+          LucideIcons.bookOpen,
           size: 32,
           color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
         ),

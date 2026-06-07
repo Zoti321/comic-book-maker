@@ -5,6 +5,7 @@ import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 项目 Export 工作流设置（属性对话框 / 新建向导共用）。
@@ -117,7 +118,7 @@ class ProjectExportSettingsPanel extends ConsumerWidget {
           AppButton(
             variant: AppButtonVariant.outline,
             onPressed: enabled ? pickProjectExportDirectory : null,
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(LucideIcons.folder),
             child: const Text('选择专用导出目录'),
           ),
         ],

@@ -2,6 +2,7 @@ import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 应用主导航侧栏（项目 / 设置）。
 class AppMainSidebar extends StatelessWidget {
@@ -14,17 +15,9 @@ class AppMainSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  static const _items = <(IconData, IconData, String)>[
-    (
-      Icons.collections_bookmark_outlined,
-      Icons.collections_bookmark,
-      '项目',
-    ),
-    (
-      Icons.settings_outlined,
-      Icons.settings,
-      '设置',
-    ),
+  static const _items = <(IconData, String)>[
+    (LucideIcons.library, '项目'),
+    (LucideIcons.settings, '设置'),
   ];
 
   bool _showChromeLead(BuildContext context) =>
@@ -62,13 +55,11 @@ class AppMainSidebar extends StatelessWidget {
                   for (var i = 0; i < _items.length; i++)
                     SidebarMenuItem(
                       child: SidebarMenuButton(
-                        icon: Icon(
-                          selectedIndex == i ? _items[i].$2 : _items[i].$1,
-                        ),
+                        icon: Icon(_items[i].$1),
                         isActive: selectedIndex == i,
                         onPressed: () => onSelect(i),
-                        tooltip: _items[i].$3,
-                        child: Text(_items[i].$3),
+                        tooltip: _items[i].$2,
+                        child: Text(_items[i].$2),
                       ),
                     ),
                 ],

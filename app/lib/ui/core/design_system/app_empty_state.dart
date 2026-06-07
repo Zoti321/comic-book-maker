@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 列表 / 面板空态或占位；[subtitle] 应说明建议的下一步操作。
 class AppEmptyState extends StatelessWidget {
@@ -136,7 +137,7 @@ class AppPageErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppEmptyState(
-      icon: Icons.error_outline,
+      icon: LucideIcons.circleAlert,
       title: title,
       subtitle: message,
       action: action,

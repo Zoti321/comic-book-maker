@@ -1,6 +1,7 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 编辑页 Tab：图片 / 元数据（分段按钮，非 [TabBar]）。
 class ProjectEditorTabSwitcher extends StatelessWidget {
@@ -37,12 +38,12 @@ class ProjectEditorTabSwitcher extends StatelessWidget {
         ButtonSegment(
           value: ProjectEditorTab.images,
           label: Text('图片'),
-          icon: Icon(Icons.photo_library_outlined, size: 18),
+          icon: Icon(LucideIcons.images, size: 18),
         ),
         ButtonSegment(
           value: ProjectEditorTab.metadata,
           label: Text('元数据'),
-          icon: Icon(Icons.description_outlined, size: 18),
+          icon: Icon(LucideIcons.fileText, size: 18),
         ),
       ],
       selected: {selectedTab},

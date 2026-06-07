@@ -5,6 +5,7 @@ import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// Project 编辑页顶栏：返回 + 导出 / 追加导入。
 class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -37,7 +38,7 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
     return AppBar(
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
+        icon: const Icon(LucideIcons.arrowLeft),
         tooltip: '返回漫画库',
         onPressed: onBack,
       ),
@@ -113,7 +114,7 @@ class _AppendImportButton extends StatelessWidget {
         child: AppButton(
           variant: AppButtonVariant.outline,
           onPressed: enabled ? onPressed : null,
-          icon: const Icon(Icons.download_outlined, size: 18),
+          icon: const Icon(LucideIcons.download, size: 18),
           child: Text(label),
         ),
       );
@@ -123,7 +124,7 @@ class _AppendImportButton extends StatelessWidget {
       variant: AppIconButtonVariant.outline,
       tooltip: tooltip,
       onPressed: enabled ? onPressed : null,
-      icon: const Icon(Icons.download_outlined),
+      icon: const Icon(LucideIcons.download),
     );
   }
 }
@@ -153,7 +154,7 @@ class _ExportButton extends StatelessWidget {
         message: tooltip,
         child: AppButton(
           onPressed: workspace.canExport ? onPressed : null,
-          icon: const Icon(Icons.upload_outlined, size: 18),
+          icon: const Icon(LucideIcons.upload, size: 18),
           child: const Text('导出'),
         ),
       );
@@ -163,7 +164,7 @@ class _ExportButton extends StatelessWidget {
       variant: AppIconButtonVariant.filled,
       tooltip: tooltip,
       onPressed: workspace.canExport ? onPressed : null,
-      icon: const Icon(Icons.upload_outlined),
+      icon: const Icon(LucideIcons.upload),
     );
   }
 }

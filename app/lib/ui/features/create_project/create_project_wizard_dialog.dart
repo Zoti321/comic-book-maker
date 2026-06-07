@@ -8,6 +8,7 @@ import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -20,9 +21,9 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
   const CreateProjectWizardDialog({super.key});
 
   static const _tabs = [
-    SideTabDialogTab(label: '导入', icon: Icons.download_outlined),
-    SideTabDialogTab(label: '导出', icon: Icons.upload_outlined),
-    SideTabDialogTab(label: '行为', icon: Icons.tune_outlined),
+    SideTabDialogTab(label: '导入', icon: LucideIcons.download),
+    SideTabDialogTab(label: '导出', icon: LucideIcons.upload),
+    SideTabDialogTab(label: '行为', icon: LucideIcons.slidersHorizontal),
   ];
 
   @override
@@ -201,28 +202,28 @@ class _ImportTab extends StatelessWidget {
         const SizedBox(height: 12),
         AppButton(
           variant: AppButtonVariant.outline,
-          icon: const Icon(Icons.image_outlined),
+          icon: const Icon(LucideIcons.image),
           onPressed: onPickImages,
           child: const Text('选择 Page Image'),
         ),
         const SizedBox(height: 8),
         AppButton(
           variant: AppButtonVariant.outline,
-          icon: const Icon(Icons.folder_zip_outlined),
+          icon: const Icon(LucideIcons.folderArchive),
           onPressed: onPickCbz,
           child: const Text('导入 CBZ'),
         ),
         const SizedBox(height: 8),
         AppButton(
           variant: AppButtonVariant.outline,
-          icon: const Icon(Icons.archive_outlined),
+          icon: const Icon(LucideIcons.archive),
           onPressed: onPickCbr,
           child: const Text('导入 CBR'),
         ),
         const SizedBox(height: 8),
         AppButton(
           variant: AppButtonVariant.outline,
-          icon: const Icon(Icons.menu_book_outlined),
+          icon: const Icon(LucideIcons.bookOpen),
           onPressed: onPickEpub,
           child: const Text('导入 EPUB'),
         ),

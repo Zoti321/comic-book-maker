@@ -11,6 +11,7 @@ import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/section_chip_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -292,7 +293,7 @@ class MetadataPanel extends HookConsumerWidget {
                             controller.clear();
                             onTextFieldChanged();
                           },
-                          icon: const Icon(Icons.clear),
+                          icon: const Icon(LucideIcons.x),
                         ),
                 ),
                 onChanged: (_) => onTextFieldChanged(),
@@ -417,7 +418,7 @@ class MetadataPanel extends HookConsumerWidget {
       return Padding(
         padding: padding,
         child: AppEmptyState(
-          icon: Icons.description_outlined,
+          icon: LucideIcons.fileText,
           title: '当前格式不支持编辑',
           subtitle: session.schema.pdfMessage ??
               '请在「项目属性」中将 Export 格式改为 CBZ 或 EPUB 后再编辑元数据。',

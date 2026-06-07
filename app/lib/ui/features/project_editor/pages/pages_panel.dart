@@ -4,6 +4,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 const _thumbAspectRatio = 2 / 3;
 const _gridSpacing = AppSpacing.sm + 4; // 12
@@ -174,7 +175,7 @@ class _AddPageTile extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.add_photo_alternate_outlined,
+                LucideIcons.imagePlus,
                 size: 28,
                 color: scheme.onSurfaceVariant,
               ),
@@ -276,7 +277,7 @@ class _PageThumbnailTile extends StatelessWidget {
                       label: '封面',
                       background: scheme.inverseSurface,
                       foreground: scheme.onInverseSurface,
-                      icon: Icons.bookmark_outline,
+                      icon: LucideIcons.bookmark,
                     ),
                   ),
               ],
@@ -298,36 +299,36 @@ List<PopupMenuEntry<PageThumbnailAction>> _pageThumbnailMenuItems({
 
   return [
     _menuRow(
-      icon: Icons.zoom_in_outlined,
+      icon: LucideIcons.zoomIn,
       label: '查看原图',
       value: PageThumbnailAction.view,
     ),
     _menuRow(
-      icon: Icons.swap_horiz_outlined,
+      icon: LucideIcons.replace,
       label: '替换图片',
       value: PageThumbnailAction.replace,
     ),
     if (!isCover)
       _menuRow(
-        icon: Icons.bookmark_outline,
+        icon: LucideIcons.bookmark,
         label: '设为封面',
         value: PageThumbnailAction.setCover,
       ),
     if (canMoveEarlier)
       _menuRow(
-        icon: Icons.arrow_back_outlined,
+        icon: LucideIcons.arrowLeft,
         label: '前移',
         value: PageThumbnailAction.moveEarlier,
       ),
     if (canMoveLater)
       _menuRow(
-        icon: Icons.arrow_forward_outlined,
+        icon: LucideIcons.arrowRight,
         label: '后移',
         value: PageThumbnailAction.moveLater,
       ),
     const PopupMenuDivider(),
     _menuRow(
-      icon: Icons.delete_outline,
+      icon: LucideIcons.trash2,
       label: '删除',
       value: PageThumbnailAction.delete,
       foregroundColor: scheme.error,
@@ -418,7 +419,7 @@ class _PageThumbnailImage extends StatelessWidget {
         color: Theme.of(context).colorScheme.surfaceContainer,
         child: Center(
           child: Icon(
-            Icons.broken_image_outlined,
+            LucideIcons.imageOff,
             size: 28,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -448,7 +449,7 @@ Future<void> showPageImageViewer(
                 File(page.absolutePath),
                 fit: BoxFit.contain,
                 errorBuilder: (_, _, _) => const Icon(
-                  Icons.broken_image_outlined,
+                  LucideIcons.imageOff,
                   color: Colors.white54,
                   size: 64,
                 ),
@@ -463,7 +464,7 @@ Future<void> showPageImageViewer(
                 child: AppIconButton(
                   variant: AppIconButtonVariant.tonal,
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(LucideIcons.x),
                   tooltip: '关闭',
                 ),
               ),

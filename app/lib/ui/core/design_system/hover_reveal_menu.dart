@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 悬停 ⋮ 按钮的中性样式。
 class RevealMenuButtonStyle {
@@ -169,7 +170,7 @@ class RevealMenuIconButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(6),
               child: Icon(
-                Icons.more_vert,
+                LucideIcons.ellipsisVertical,
                 size: 20,
                 color: iconColor,
               ),
