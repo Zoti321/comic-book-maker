@@ -5,8 +5,8 @@ import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
-const _thumbWidth = 128.0;
 const _thumbAspectRatio = 2 / 3;
+const _gridSpacing = AppSpacing.sm + 4; // 12
 
 /// 缩略图统一 overflow 菜单项（所有页面操作经此入口）。
 enum PageThumbnailAction {
@@ -16,6 +16,20 @@ enum PageThumbnailAction {
   moveEarlier,
   moveLater,
   delete,
+}
+
+/// 按可用宽度计算缩略图边长（自适应列数）。
+double pageThumbnailWidthFor(double availableWidth) {
+  const minThumb = 96.0;
+  const maxThumb = 128.0;
+  if (availableWidth <= 0) return maxThumb;
+
+  var columns = ((availableWidth + _gridSpacing) / (minThumb + _gridSpacing))
+      .floor();
+  columns = columns.clamp(2, 8);
+  final width =
+      (availableWidth - _gridSpacing * (columns - 1)) / columns;
+  return width.clamp(minThumb, maxThumb);
 }
 
 /// 图片 Tab：Wrap 网格展示有序 Page 缩略图。
@@ -49,50 +63,57 @@ class PageThumbnailGrid extends StatelessWidget {
     final sorted = List<PageSummary>.from(pages)
       ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
 
-    return CustomScrollView(
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          sliver: SliverToBoxAdapter(
-            child: Text(
-              '${pages.length} 页',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final thumbWidth = pageThumbnailWidthFor(constraints.maxWidth);
+
+        return CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: Text(
+                  '${pages.length} 页',
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          sliver: SliverToBoxAdapter(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (var i = 0; i < sorted.length; i++)
-                  _PageThumbnailTile(
-                    page: sorted[i],
-                    isCover: sorted[i].sortIndex == coverPageIndex,
-                    canMoveEarlier: i > 0,
-                    canMoveLater: i < sorted.length - 1,
-                    onViewOriginal: () => onViewOriginal(sorted[i]),
-                    onAction: (action) => _dispatchAction(
-                      action,
-                      sorted[i],
-                      onReplace: onReplace,
-                      onDelete: onDelete,
-                      onSetCover: onSetCover,
-                      onViewOriginal: onViewOriginal,
-                      onMoveEarlier: onMoveEarlier,
-                      onMoveLater: onMoveLater,
+            SliverToBoxAdapter(
+              child: Wrap(
+                spacing: _gridSpacing,
+                runSpacing: _gridSpacing,
+                children: [
+                  for (var i = 0; i < sorted.length; i++)
+                    _PageThumbnailTile(
+                      page: sorted[i],
+                      thumbWidth: thumbWidth,
+                      isCover: sorted[i].sortIndex == coverPageIndex,
+                      canMoveEarlier: i > 0,
+                      canMoveLater: i < sorted.length - 1,
+                      onViewOriginal: () => onViewOriginal(sorted[i]),
+                      onAction: (action) => _dispatchAction(
+                        action,
+                        sorted[i],
+                        onReplace: onReplace,
+                        onDelete: onDelete,
+                        onSetCover: onSetCover,
+                        onViewOriginal: onViewOriginal,
+                        onMoveEarlier: onMoveEarlier,
+                        onMoveLater: onMoveLater,
+                      ),
                     ),
+                  _AddPageTile(
+                    thumbWidth: thumbWidth,
+                    onAdd: onAdd,
                   ),
-                _AddPageTile(onAdd: onAdd),
-              ],
+                ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
@@ -124,23 +145,27 @@ void _dispatchAction(
 }
 
 class _AddPageTile extends StatelessWidget {
-  const _AddPageTile({required this.onAdd});
+  const _AddPageTile({
+    required this.thumbWidth,
+    required this.onAdd,
+  });
 
+  final double thumbWidth;
   final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final thumbHeight = _thumbWidth / _thumbAspectRatio;
+    final thumbHeight = thumbWidth / _thumbAspectRatio;
 
     return SizedBox(
-      width: _thumbWidth,
+      width: thumbWidth,
       height: thumbHeight,
       child: Material(
         color: scheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.lgBorder,
-          side: BorderSide(color: scheme.outlineVariant),
+          side: BorderSide(color: scheme.outline),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -151,13 +176,13 @@ class _AddPageTile extends StatelessWidget {
               Icon(
                 Icons.add_photo_alternate_outlined,
                 size: 28,
-                color: scheme.primary,
+                color: scheme.onSurfaceVariant,
               ),
               const SizedBox(height: 8),
               Text(
                 '添加页面',
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: scheme.primary,
+                      color: scheme.onSurface,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -172,6 +197,7 @@ class _AddPageTile extends StatelessWidget {
 class _PageThumbnailTile extends StatelessWidget {
   const _PageThumbnailTile({
     required this.page,
+    required this.thumbWidth,
     required this.isCover,
     required this.canMoveEarlier,
     required this.canMoveLater,
@@ -180,6 +206,7 @@ class _PageThumbnailTile extends StatelessWidget {
   });
 
   final PageSummary page;
+  final double thumbWidth;
   final bool isCover;
   final bool canMoveEarlier;
   final bool canMoveLater;
@@ -190,23 +217,31 @@ class _PageThumbnailTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final thumbHeight = _thumbWidth / _thumbAspectRatio;
+    final thumbHeight = thumbWidth / _thumbAspectRatio;
+    final menuButtonStyle = RevealMenuButtonStyle(
+      iconColor: scheme.onSurface,
+      backgroundColor: scheme.surface.withValues(alpha: 0.92),
+    );
 
     return SizedBox(
-      width: _thumbWidth,
+      width: thumbWidth,
       child: Material(
         color: scheme.surface,
-        elevation: isCover ? 2 : 0,
-        shadowColor: scheme.primary.withValues(alpha: 0.35),
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: AppRadius.lgBorder,
           side: BorderSide(
-            color: isCover ? scheme.primary : scheme.outline,
-            width: isCover ? 2.5 : 1,
+            color: isCover
+                ? scheme.onSurface
+                : scheme.outline,
+            width: isCover ? 2 : 1,
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: HoverRevealMenuAnchor<PageThumbnailAction>(
+          buttonTop: 6,
+          buttonRight: 6,
+          menuButtonStyle: menuButtonStyle,
           onSelected: onAction,
           menuItemsBuilder: (context) => _pageThumbnailMenuItems(
             context: context,
@@ -219,23 +254,10 @@ class _PageThumbnailTile extends StatelessWidget {
             child: Stack(
               children: [
                 SizedBox(
-                  width: _thumbWidth,
+                  width: thumbWidth,
                   height: thumbHeight,
                   child: _PageThumbnailImage(page: page),
                 ),
-                if (isCover)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: scheme.primary.withValues(alpha: 0.25),
-                            width: 4,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 Positioned(
                   left: 6,
                   bottom: 6,
@@ -243,6 +265,7 @@ class _PageThumbnailTile extends StatelessWidget {
                     label: '${page.sortIndex + 1}',
                     background: scheme.surface.withValues(alpha: 0.92),
                     foreground: scheme.onSurface,
+                    borderColor: scheme.outline,
                   ),
                 ),
                 if (isCover)
@@ -251,9 +274,9 @@ class _PageThumbnailTile extends StatelessWidget {
                     top: 6,
                     child: _Badge(
                       label: '封面',
-                      background: scheme.primary,
-                      foreground: scheme.onPrimary,
-                      icon: Icons.star_rounded,
+                      background: scheme.inverseSurface,
+                      foreground: scheme.onInverseSurface,
+                      icon: Icons.bookmark_outline,
                     ),
                   ),
               ],
@@ -286,7 +309,7 @@ List<PopupMenuEntry<PageThumbnailAction>> _pageThumbnailMenuItems({
     ),
     if (!isCover)
       _menuRow(
-        icon: Icons.star_outline,
+        icon: Icons.bookmark_outline,
         label: '设为封面',
         value: PageThumbnailAction.setCover,
       ),
@@ -339,12 +362,14 @@ class _Badge extends StatelessWidget {
     required this.background,
     required this.foreground,
     this.icon,
+    this.borderColor,
   });
 
   final String label;
   final Color background;
   final Color foreground;
   final IconData? icon;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +377,9 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: background,
         borderRadius: AppRadius.smBorder,
+        border: borderColor != null
+            ? Border.all(color: borderColor!)
+            : null,
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -387,9 +415,13 @@ class _PageThumbnailImage extends StatelessWidget {
       File(page.absolutePath),
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(
-          child: Icon(Icons.broken_image_outlined, size: 28),
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        child: Center(
+          child: Icon(
+            Icons.broken_image_outlined,
+            size: 28,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );

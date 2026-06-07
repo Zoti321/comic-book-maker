@@ -119,7 +119,7 @@ class _ContainerMenuAnchor extends StatelessWidget {
                 ? Icon(
                     Icons.check,
                     size: 20,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Theme.of(context).colorScheme.onSurface,
                   )
                 : const SizedBox(width: 20),
             child: Text(_menuItemLabel(container)),

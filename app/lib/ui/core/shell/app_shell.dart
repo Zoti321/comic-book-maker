@@ -19,12 +19,13 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final useSidebar = useAppSidebar(context);
     final selectedIndex = navigationShell.currentIndex;
 
     // 壳层页面（漫画库 / 设置）无自带 Scaffold；需此处提供以便 SnackBar 等反馈。
     final shellBody = Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: scheme.surface,
       body: navigationShell,
     );
 
@@ -38,15 +39,18 @@ class AppShell extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Expanded(child: SidebarInset(child: shellBody)),
-        MobileAppNav(
-          selectedIndex: selectedIndex,
-          onSelect: _goBranch,
-        ),
-      ],
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: shellBody),
+          MobileAppNav(
+            selectedIndex: selectedIndex,
+            onSelect: _goBranch,
+          ),
+        ],
+      ),
     );
   }
 }

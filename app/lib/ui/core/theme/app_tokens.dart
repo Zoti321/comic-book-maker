@@ -1,5 +1,17 @@
 import 'package:flutter/material.dart';
 
+/// 响应式断点宽度（与 [breakpointOf] 一致）。
+abstract final class AppBreakpointWidths {
+  static const medium = 720.0;
+  static const expanded = 1200.0;
+}
+
+/// 布局常量（侧栏宽度、内容区最大宽度等）。
+abstract final class AppLayout {
+  static const sidebarWidth = 256.0;
+  static const contentMaxWidth = 1280.0;
+}
+
 /// 间距、圆角、排版等设计 token（与 [AppTheme.light] 配套）。
 abstract final class AppSpacing {
   static const xs = 4.0;
@@ -10,8 +22,12 @@ abstract final class AppSpacing {
 
   static EdgeInsets pagePadding(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    if (width >= 1200) return const EdgeInsets.all(xl);
-    if (width >= 720) return const EdgeInsets.all(lg);
+    if (width >= AppBreakpointWidths.expanded) {
+      return const EdgeInsets.all(xl);
+    }
+    if (width >= AppBreakpointWidths.medium) {
+      return const EdgeInsets.all(lg);
+    }
     return const EdgeInsets.all(md);
   }
 }

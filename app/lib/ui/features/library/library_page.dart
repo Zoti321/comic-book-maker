@@ -4,6 +4,7 @@ import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_flow.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
 import 'package:comic_book_maker/ui/features/library/library_grid_layout.dart';
@@ -70,10 +71,17 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     final columns = libraryGridColumns(context);
-    final padding = AppSpacing.pagePadding(context);
+    final padding = libraryContentPadding(context);
+    final compact = isCompact(context);
     final subtitle = projects.isEmpty
-        ? null
+        ? '创建或导入你的第一本漫画'
         : '${projects.length} 个项目 · 按最近打开排序';
+
+    final createButton = AppButton(
+      onPressed: startCreateProject,
+      icon: const Icon(Icons.add),
+      child: Text(compact ? '新建' : '新建项目'),
+    );
 
     return CustomScrollView(
       slivers: [
@@ -81,21 +89,23 @@ class LibraryPage extends HookConsumerWidget {
           child: PageHeader(
             title: '漫画库',
             subtitle: subtitle,
-            actions: [
-              AppButton(
-                onPressed: startCreateProject,
-                icon: const Icon(Icons.add),
-                child: const Text('新建项目'),
-              ),
-              const SizedBox(width: 4),
-            ],
+            actions: [createButton],
           ),
         ),
         if (error.value != null)
-          SliverToBoxAdapter(
-            child: AppInlineErrorBanner(
-              message: error.value!,
-              onDismiss: () => error.value = null,
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(
+              padding.left,
+              AppSpacing.sm,
+              padding.right,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: AppInlineErrorBanner(
+                message: error.value!,
+                onDismiss: () => error.value = null,
+                padding: EdgeInsets.zero,
+              ),
             ),
           ),
         SliverPadding(
@@ -117,8 +127,8 @@ class LibraryPage extends HookConsumerWidget {
               : SliverGrid(
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: columns,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
+                    mainAxisSpacing: libraryGridSpacing,
+                    crossAxisSpacing: libraryGridSpacing,
                     childAspectRatio: libraryGridChildAspectRatio(context),
                   ),
                   delegate: SliverChildBuilderDelegate(

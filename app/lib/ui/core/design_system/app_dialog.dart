@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/ui/core/design_system/app_button.dart';
-import 'package:comic_book_maker/ui/core/design_system/app_sheet.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// 功能对话框（Export 等）；宽屏限制最大宽度。
@@ -18,10 +19,10 @@ Future<T?> showAppFeatureDialog<T>({
       if (width <= 600) return dialog;
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              maxWidth: maxWidth ?? appSheetMaxWidth + 40,
+              maxWidth: maxWidth ?? sideTabFeatureDialogMaxWidth(context),
             ),
             child: dialog,
           ),
@@ -67,11 +68,27 @@ class AppDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     return AlertDialog(
-      title: Text(title),
+      backgroundColor: scheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.lgBorder,
+        side: BorderSide(color: scheme.outline),
+      ),
+      title: Text(
+        title,
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurface,
+        ),
+      ),
       content: SizedBox(width: double.maxFinite, child: content),
       actions: actions,
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      actionsOverflowButtonSpacing: 8,
     );
   }
 }

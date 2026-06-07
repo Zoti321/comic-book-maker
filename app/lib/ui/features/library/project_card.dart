@@ -1,14 +1,15 @@
 import 'dart:io';
 
 import 'package:comic_book_maker/ui/core/design_system/hover_reveal_menu.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 enum _ProjectCardMenuAction { delete }
 
-/// 漫画库项目卡片：封面菜单 — 桌面悬停 ⋮，移动端长按菜单。
-class ProjectCard extends StatelessWidget {
+/// 漫画库项目卡片：封面 + 标题区；桌面悬停 ⋮，移动端长按菜单。
+class ProjectCard extends StatefulWidget {
   const ProjectCard({
     super.key,
     required this.title,
@@ -30,7 +31,7 @@ class ProjectCard extends StatelessWidget {
   static const double coverAspectRatio = 2 / 3;
 
   /// 标题区预估高度，用于计算网格 [childAspectRatio]（含内边距，略留余量防亚像素溢出）。
-  static const double footerHeightEstimate = 68;
+  static const double footerHeightEstimate = 72;
 
   static final _updatedAtFormat = DateFormat('yyyy年MM月dd日 HH:mm');
 
@@ -43,26 +44,38 @@ class ProjectCard extends StatelessWidget {
   }
 
   @override
+  State<ProjectCard> createState() => _ProjectCardState();
+}
+
+class _ProjectCardState extends State<ProjectCard> {
+  var _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final formatted = formatUpdatedAt(updatedAt);
-    final hasCover = _hasValidCover(coverThumbnailPath);
-    final radius = AppRadius.lgBorder;
-    final shape = RoundedRectangleBorder(
-      borderRadius: radius,
-      side: BorderSide(color: scheme.outline),
-    );
+    final theme = Theme.of(context);
+    final formatted = ProjectCard.formatUpdatedAt(widget.updatedAt);
+    final hasCover = _hasValidCover(widget.coverThumbnailPath);
+    final showHoverChrome = _hovered && !isCompact(context);
+    final borderColor = showHoverChrome
+        ? scheme.onSurfaceVariant.withValues(alpha: 0.45)
+        : scheme.outline;
 
     Widget coverContent = hasCover
-        ? _CoverImage(path: coverThumbnailPath!)
+        ? _CoverImage(path: widget.coverThumbnailPath!)
         : _CoverPlaceholder(scheme: scheme);
 
-    if (onDelete != null) {
+    final menuButtonStyle = RevealMenuButtonStyle(
+      iconColor: scheme.onSurface,
+      backgroundColor: scheme.surface.withValues(alpha: 0.92),
+    );
+
+    if (widget.onDelete != null) {
       coverContent = HoverRevealMenuAnchor<_ProjectCardMenuAction>(
-        buttonTop: 6,
-        buttonRight: 6,
-        menuIconColor: hasCover ? Colors.white : scheme.onSurface,
-        onSelected: (_) => onDelete!(),
+        buttonTop: 8,
+        buttonRight: 8,
+        menuButtonStyle: menuButtonStyle,
+        onSelected: (_) => widget.onDelete!(),
         menuItemsBuilder: (context) => [
           PopupMenuItem(
             value: _ProjectCardMenuAction.delete,
@@ -78,7 +91,7 @@ class ProjectCard extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: widget.onTap,
             child: coverContent,
           ),
         ),
@@ -87,32 +100,52 @@ class ProjectCard extends StatelessWidget {
       coverContent = Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap,
+          onTap: widget.onTap,
           child: coverContent,
         ),
       );
     }
 
-    return Material(
-      color: scheme.surface,
-      elevation: 0,
-      shape: shape,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: coverContent),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              child: _CardFooter(
-                title: title,
-                subtitle: '$activityLabel · $formatted',
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: AppRadius.lgBorder,
+          border: Border.all(color: borderColor),
+          boxShadow: showHoverChrome
+              ? [
+                  BoxShadow(
+                    color: scheme.shadow.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: coverContent),
+            Material(
+              color: scheme.surfaceContainerLow,
+              child: InkWell(
+                onTap: widget.onTap,
+                child: _CardFooter(
+                  title: widget.title,
+                  subtitle: '${widget.activityLabel} · $formatted',
+                  theme: theme,
+                  scheme: scheme,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -127,16 +160,17 @@ class _CardFooter extends StatelessWidget {
   const _CardFooter({
     required this.title,
     required this.subtitle,
+    required this.theme,
+    required this.scheme,
   });
 
   final String title;
   final String subtitle;
+  final ThemeData theme;
+  final ColorScheme scheme;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
@@ -200,13 +234,16 @@ class _CoverPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+        color: scheme.surfaceContainer,
+        border: Border(
+          bottom: BorderSide(color: scheme.outlineVariant),
+        ),
       ),
       child: Center(
         child: Icon(
           Icons.auto_stories_outlined,
-          size: 36,
-          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+          size: 32,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
         ),
       ),
     );

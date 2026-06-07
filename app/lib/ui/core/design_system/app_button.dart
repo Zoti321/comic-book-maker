@@ -84,7 +84,7 @@ class AppButton extends StatelessWidget {
         Theme.of(context).colorScheme.onSecondaryContainer,
       AppButtonVariant.outline ||
       AppButtonVariant.ghost =>
-        Theme.of(context).colorScheme.primary,
+        Theme.of(context).colorScheme.onSurface,
     };
   }
 }

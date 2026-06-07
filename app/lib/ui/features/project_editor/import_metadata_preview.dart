@@ -69,7 +69,7 @@ class _ImportMetadataPreviewState extends State<ImportMetadataPreview> {
               Icon(
                 Icons.archive_outlined,
                 size: 20,
-                color: theme.colorScheme.primary,
+                color: onSurfaceVariant,
               ),
               const SizedBox(width: 10),
               Expanded(

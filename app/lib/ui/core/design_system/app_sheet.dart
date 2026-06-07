@@ -15,6 +15,7 @@ Future<T?> showAppBottomSheet<T>({
     showDragHandle: true,
     isScrollControlled: true,
     isDismissible: isDismissible,
+    backgroundColor: Theme.of(context).colorScheme.surface,
     builder: (context) => AppSheetFrame(child: builder(context)),
   );
 }
@@ -61,10 +62,30 @@ class AppSheetTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Text(
       text,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
+            color: scheme.onSurface,
+          ),
+    );
+  }
+}
+
+/// Sheet 说明文字。
+class AppSheetDescription extends StatelessWidget {
+  const AppSheetDescription(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
     );
   }

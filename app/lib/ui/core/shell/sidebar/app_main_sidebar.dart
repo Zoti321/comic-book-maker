@@ -12,14 +12,23 @@ class AppMainSidebar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelect;
 
-  static const _items = <(IconData, String)>[
-    (Icons.collections_bookmark_outlined, '项目'),
-    (Icons.settings_outlined, '设置'),
+  static const _items = <(IconData, IconData, String)>[
+    (
+      Icons.collections_bookmark_outlined,
+      Icons.collections_bookmark,
+      '项目',
+    ),
+    (
+      Icons.settings_outlined,
+      Icons.settings,
+      '设置',
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
     return Sidebar(
       child: Column(
@@ -30,7 +39,7 @@ class AppMainSidebar extends StatelessWidget {
               'Comic Book Maker',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
-                color: AppSidebarTheme.brandAccent,
+                color: scheme.onSurface,
               ),
             ),
           ),
@@ -42,11 +51,13 @@ class AppMainSidebar extends StatelessWidget {
                   for (var i = 0; i < _items.length; i++)
                     SidebarMenuItem(
                       child: SidebarMenuButton(
-                        icon: Icon(_items[i].$1),
+                        icon: Icon(
+                          selectedIndex == i ? _items[i].$2 : _items[i].$1,
+                        ),
                         isActive: selectedIndex == i,
                         onPressed: () => onSelect(i),
-                        tooltip: _items[i].$2,
-                        child: Text(_items[i].$2),
+                        tooltip: _items[i].$3,
+                        child: Text(_items[i].$3),
                       ),
                     ),
                 ],

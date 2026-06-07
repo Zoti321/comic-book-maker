@@ -398,7 +398,7 @@ class MetadataPanel extends HookConsumerWidget {
               height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 8),

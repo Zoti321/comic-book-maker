@@ -38,14 +38,21 @@ class DesktopShell extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final framed = (frameBuilderOverride ?? _defaultFrameBuilder)(
       ColoredBox(
-        color: colorScheme.surface,
+        color: Theme.of(context).scaffoldBackgroundColor,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
-              key: captionSlotKey,
-              height: kWindowCaptionHeight,
-              child: captionOverride ?? const DesktopWindowCaption(),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: colorScheme.outline),
+                ),
+              ),
+              child: SizedBox(
+                key: captionSlotKey,
+                height: kWindowCaptionHeight,
+                child: captionOverride ?? const DesktopWindowCaption(),
+              ),
             ),
             Expanded(child: child),
           ],

@@ -12,11 +12,13 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       width: AppSidebarTheme.width,
-      decoration: const BoxDecoration(
-        color: AppSidebarTheme.background,
-        border: Border(right: BorderSide(color: AppSidebarTheme.border)),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(right: BorderSide(color: scheme.outline)),
       ),
       child: SafeArea(child: child),
     );
@@ -32,7 +34,7 @@ class SidebarHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: padding ?? const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: child,
     );
   }
@@ -67,13 +69,22 @@ class SidebarGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (label != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-            child: Text(label!, style: AppSidebarTheme.groupLabelStyle),
+            child: Text(
+              label!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.02,
+              ),
+            ),
           ),
         child,
       ],
@@ -117,7 +128,7 @@ class SidebarInset extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppSidebarTheme.background,
+      color: Theme.of(context).colorScheme.surface,
       child: child,
     );
   }
@@ -136,12 +147,14 @@ class SidebarLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: AppSidebarTheme.background,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           sidebar,
-          Expanded(child: SidebarInset(child: child)),
+          Expanded(
+            child: SidebarInset(child: child),
+          ),
         ],
       ),
     );

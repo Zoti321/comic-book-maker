@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 enum SidebarMenuButtonSize { normal, lg }
 
-/// 侧栏/底栏导航按钮（M3 色板 + 悬停态）。
+/// 侧栏/底栏导航按钮（中性 token + 悬停/选中态）。
 class SidebarMenuButton extends StatefulWidget {
   const SidebarMenuButton({
     super.key,
@@ -31,25 +31,28 @@ class _SidebarMenuButtonState extends State<SidebarMenuButton> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     final height = widget.size == SidebarMenuButtonSize.lg
         ? AppSidebarTheme.menuButtonHeightLg
         : AppSidebarTheme.menuButtonHeight;
 
     final background = widget.isActive
-        ? AppSidebarTheme.accent
+        ? scheme.surfaceContainerHighest
         : _hovered
-        ? AppSidebarTheme.accent
-        : Colors.transparent;
+            ? scheme.surfaceContainerHigh
+            : Colors.transparent;
 
     final foreground = widget.isActive
-        ? AppSidebarTheme.accentForeground
-        : AppSidebarTheme.foreground;
+        ? scheme.onSurface
+        : scheme.onSurfaceVariant;
 
-    final textStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: foreground,
-          fontWeight: widget.isActive ? FontWeight.w500 : FontWeight.w400,
-          height: 1.25,
-        );
+    final textStyle = theme.textTheme.labelLarge?.copyWith(
+      color: foreground,
+      fontWeight: widget.isActive ? FontWeight.w600 : FontWeight.w500,
+      height: 1.25,
+    );
 
     Widget button = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -70,6 +73,9 @@ class _SidebarMenuButtonState extends State<SidebarMenuButton> {
             borderRadius: BorderRadius.circular(
               AppSidebarTheme.menuButtonRadius,
             ),
+            border: widget.isActive
+                ? Border.all(color: scheme.outline)
+                : null,
           ),
           child: Row(
             children: [

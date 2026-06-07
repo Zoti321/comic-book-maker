@@ -31,17 +31,17 @@ class SectionChipBar extends StatelessWidget {
                 selected: selectedIndex == i,
                 onSelected: (_) => onSelected(i),
                 showCheckmark: false,
-                selectedColor: scheme.secondaryContainer,
+                selectedColor: scheme.surfaceContainerHighest,
                 labelStyle: TextStyle(
                   color: selectedIndex == i
-                      ? scheme.onSecondaryContainer
+                      ? scheme.onSurface
                       : scheme.onSurfaceVariant,
                   fontWeight:
                       selectedIndex == i ? FontWeight.w600 : FontWeight.w500,
                 ),
                 side: BorderSide(
                   color: selectedIndex == i
-                      ? scheme.primary.withValues(alpha: 0.35)
+                      ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
                       : scheme.outline,
                 ),
                 shape: RoundedRectangleBorder(

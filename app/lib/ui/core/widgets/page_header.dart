@@ -1,8 +1,7 @@
-import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar_theme.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// 内容区顶栏（白底 + M3 排版）。
+/// 内容区顶栏（surface 底 + 底部分割线 + M3 排版）。
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
@@ -21,8 +20,11 @@ class PageHeader extends StatelessWidget {
     final scheme = theme.colorScheme;
     final padding = AppSpacing.pagePadding(context);
 
-    return ColoredBox(
-      color: AppSidebarTheme.background,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        border: Border(bottom: BorderSide(color: scheme.outline)),
+      ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           padding.left,

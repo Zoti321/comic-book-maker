@@ -163,9 +163,18 @@ class ProjectEditorPage extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (workspace.error != null)
-              AppInlineErrorBanner(
-                message: workspace.error!,
-                onDismiss: workspaceNotifier.clearError,
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  pagePadding.left,
+                  AppSpacing.sm,
+                  pagePadding.right,
+                  0,
+                ),
+                child: AppInlineErrorBanner(
+                  message: workspace.error!,
+                  onDismiss: workspaceNotifier.clearError,
+                  padding: EdgeInsets.zero,
+                ),
               ),
             Expanded(
               child: Padding(

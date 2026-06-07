@@ -1,7 +1,18 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:flutter/material.dart';
 
-/// 桌面：悬停显示透明 ⋮ 按钮；移动端：长按弹出 [showMenu]（不显示按钮）。
+/// 悬停 ⋮ 按钮的中性样式。
+class RevealMenuButtonStyle {
+  const RevealMenuButtonStyle({
+    required this.iconColor,
+    this.backgroundColor,
+  });
+
+  final Color iconColor;
+  final Color? backgroundColor;
+}
+
+/// 桌面：悬停显示 ⋮ 按钮；移动端：长按弹出 [showMenu]（不显示按钮）。
 class HoverRevealMenuAnchor<T> extends StatefulWidget {
   const HoverRevealMenuAnchor({
     super.key,
@@ -12,6 +23,7 @@ class HoverRevealMenuAnchor<T> extends StatefulWidget {
     this.buttonTop = 4,
     this.buttonRight = 4,
     this.menuIconColor = Colors.white,
+    this.menuButtonStyle,
   });
 
   final Widget child;
@@ -20,7 +32,10 @@ class HoverRevealMenuAnchor<T> extends StatefulWidget {
   final bool enableLongPressMenu;
   final double buttonTop;
   final double buttonRight;
+
+  /// 旧 API；优先使用 [menuButtonStyle]。
   final Color menuIconColor;
+  final RevealMenuButtonStyle? menuButtonStyle;
 
   @override
   State<HoverRevealMenuAnchor<T>> createState() => _HoverRevealMenuAnchorState<T>();
@@ -91,7 +106,9 @@ class _HoverRevealMenuAnchorState<T> extends State<HoverRevealMenuAnchor<T>> {
                   right: widget.buttonRight,
                   child: RevealMenuIconButton(
                     onPressed: _openMenu,
-                    iconColor: widget.menuIconColor,
+                    iconColor:
+                        widget.menuButtonStyle?.iconColor ?? widget.menuIconColor,
+                    backgroundColor: widget.menuButtonStyle?.backgroundColor,
                   ),
                 ),
             ],
@@ -109,25 +126,19 @@ class RevealMenuIconButton extends StatelessWidget {
     required this.onPressed,
     this.tooltip = '更多操作',
     this.iconColor = Colors.white,
+    this.backgroundColor,
   });
 
   final VoidCallback onPressed;
   final String tooltip;
   final Color iconColor;
-
-  static const _darkShadows = [
-    Shadow(color: Color(0xCC000000), blurRadius: 8, offset: Offset(0, 1)),
-    Shadow(color: Color(0x80000000), blurRadius: 2),
-  ];
-
-  static const _lightShadows = [
-    Shadow(color: Color(0x33000000), blurRadius: 4, offset: Offset(0, 1)),
-  ];
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final onDark = iconColor.computeLuminance() > 0.55;
-    final shadows = onDark ? _lightShadows : _darkShadows;
+    final scheme = Theme.of(context).colorScheme;
+    final bg = backgroundColor;
+    final usePill = bg != null && bg.a > 0;
 
     return Tooltip(
       message: tooltip,
@@ -138,13 +149,30 @@ class RevealMenuIconButton extends StatelessWidget {
         child: InkWell(
           customBorder: const CircleBorder(),
           onTap: onPressed,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(
-              Icons.more_vert,
-              size: 22,
-              color: iconColor,
-              shadows: shadows,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: usePill ? bg : null,
+              border: usePill
+                  ? Border.all(color: scheme.outline.withValues(alpha: 0.8))
+                  : null,
+              boxShadow: usePill
+                  ? [
+                      BoxShadow(
+                        color: scheme.shadow.withValues(alpha: 0.12),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                Icons.more_vert,
+                size: 20,
+                color: iconColor,
+              ),
             ),
           ),
         ),

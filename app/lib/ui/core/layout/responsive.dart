@@ -1,11 +1,16 @@
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
 enum AppBreakpoint { compact, medium, expanded }
 
 AppBreakpoint breakpointOf(BuildContext context) {
   final width = MediaQuery.sizeOf(context).width;
-  if (width >= 1200) return AppBreakpoint.expanded;
-  if (width >= 720) return AppBreakpoint.medium;
+  if (width >= AppBreakpointWidths.expanded) {
+    return AppBreakpoint.expanded;
+  }
+  if (width >= AppBreakpointWidths.medium) {
+    return AppBreakpoint.medium;
+  }
   return AppBreakpoint.compact;
 }
 
@@ -20,10 +25,55 @@ bool useAppSidebar(BuildContext context) =>
     breakpointOf(context) != AppBreakpoint.compact;
 
 bool editorUsePageSidebar(BuildContext context) =>
-    MediaQuery.sizeOf(context).width >= 720;
+    MediaQuery.sizeOf(context).width >= AppBreakpointWidths.medium;
 
-/// 桌面端窗口最小尺寸（侧栏 256px + 内容区，避免工具栏与侧边 Tab 对话框溢出）。
+/// 桌面端窗口最小尺寸（侧栏 + 内容区，避免工具栏与侧边 Tab 对话框溢出）。
 const Size appDesktopMinWindowSize = Size(800, 600);
+
+/// 内容区可用宽度（可选扣除侧栏）。
+double contentWidthOf(
+  BuildContext context, {
+  bool subtractSidebar = true,
+}) {
+  final width = MediaQuery.sizeOf(context).width;
+  if (subtractSidebar && useAppSidebar(context)) {
+    return width - AppLayout.sidebarWidth - 1;
+  }
+  return width;
+}
+
+/// 内容区内边距；超宽屏时水平居中并限制最大宽度。
+EdgeInsets contentPaddingOf(BuildContext context) {
+  final base = AppSpacing.pagePadding(context);
+  final width = contentWidthOf(context);
+  if (width <= AppLayout.contentMaxWidth) return base;
+
+  final extra = (width - AppLayout.contentMaxWidth) / 2;
+  return EdgeInsets.fromLTRB(
+    extra + base.left,
+    base.top,
+    extra + base.right,
+    base.bottom,
+  );
+}
+
+/// 按内容区宽度估算自适应网格列数（漫画库、缩略图等共用）。
+int gridColumnsForWidth(
+  double contentWidth, {
+  int minColumns = 1,
+  int maxColumns = 7,
+}) {
+  final columns = switch (contentWidth) {
+    >= 1200 => 7,
+    >= 960 => 6,
+    >= 760 => 5,
+    >= 560 => 4,
+    >= 400 => 3,
+    >= 280 => 2,
+    _ => 1,
+  };
+  return columns.clamp(minColumns, maxColumns);
+}
 
 /// 侧边 Tab 功能对话框最大宽度（与 [appSheetMaxWidth + 40] 对齐的紧凑默认值）。
 double sideTabFeatureDialogMaxWidth(BuildContext context) {

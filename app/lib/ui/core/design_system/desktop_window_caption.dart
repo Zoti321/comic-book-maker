@@ -24,6 +24,7 @@ class DesktopWindowCaption extends StatelessWidget {
         title,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

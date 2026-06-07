@@ -5,6 +5,7 @@ import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -225,7 +226,7 @@ class _ImportTab extends StatelessWidget {
           onPressed: onPickEpub,
           child: const Text('导入 EPUB'),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.md),
         Text(
           '已选来源',
           style: theme.textTheme.labelMedium?.copyWith(
@@ -233,9 +234,19 @@ class _ImportTab extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          _importSourceSummary(draft.importSource),
-          style: theme.textTheme.bodyMedium,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: AppRadius.mdBorder,
+            border: Border.all(color: theme.colorScheme.outline),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              _importSourceSummary(draft.importSource),
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
         ),
         if (draft.inferredImportKind != null) ...[
           const SizedBox(height: 12),

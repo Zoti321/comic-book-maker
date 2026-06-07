@@ -21,18 +21,21 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
   final VoidCallback onAppendImport;
   final VoidCallback onBack;
 
-  static const toolbarPreferredSize = Size.fromHeight(kToolbarHeight);
+  static const toolbarPreferredSize = Size.fromHeight(kToolbarHeight + 1);
 
   @override
   Size get preferredSize => toolbarPreferredSize;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
     final exportFormat =
         workspace.settings?.exportFormat ?? ExportFormatFrb.comicArchive;
     final useWideActions = !isCompact(context);
 
     return AppBar(
+      surfaceTintColor: Colors.transparent,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         tooltip: '返回漫画库',
@@ -45,13 +48,16 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
             workspace.project.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
           ),
           if (workspace.pages.isNotEmpty)
             Text(
               '${workspace.pages.length} 页',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
         ],
       ),
@@ -70,6 +76,10 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
         ),
         const SizedBox(width: 8),
       ],
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(1),
+        child: Divider(height: 1, color: scheme.outline),
+      ),
     );
   }
 }
@@ -110,6 +120,7 @@ class _AppendImportButton extends StatelessWidget {
     }
 
     return AppIconButton(
+      variant: AppIconButtonVariant.outline,
       tooltip: tooltip,
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.download_outlined),
