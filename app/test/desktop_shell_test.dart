@@ -80,7 +80,7 @@ void main() {
     expect(find.text('应用正文'), findsOneWidget);
   });
 
-  testWidgets('DesktopWindowCaption uses solid surfaceContainerLow background',
+  testWidgets('DesktopWindowCaption uses shell chrome surface background',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -95,8 +95,25 @@ void main() {
     final windowCaption = tester.widget<WindowCaption>(find.byType(WindowCaption));
     expect(
       windowCaption.backgroundColor,
-      AppTheme.light().colorScheme.surfaceContainerLow,
+      AppTheme.light().colorScheme.surface,
     );
+    expect(find.text('Comic Book Maker'), findsOneWidget);
+  });
+
+  testWidgets('split chrome aligns caption lead with sidebar width at desktop',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await pumpShell(
+      tester,
+      config: const DesktopWindowConfig(chromeEnabled: true),
+      frameBuilderOverride: (child) => child,
+    );
+
+    expect(find.byKey(DesktopShellChromeLead.keySlot), findsOneWidget);
     expect(find.text('Comic Book Maker'), findsOneWidget);
   });
 }

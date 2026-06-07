@@ -1,3 +1,5 @@
+import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar.dart';
 import 'package:flutter/material.dart';
 
@@ -25,25 +27,34 @@ class AppMainSidebar extends StatelessWidget {
     ),
   ];
 
+  bool _showChromeLead(BuildContext context) =>
+      desktopWindowConfig.chromeEnabled && useAppSidebar(context);
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final showChromeLead = _showChromeLead(context);
 
     return Sidebar(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SidebarHeader(
-            child: Text(
-              'Comic Book Maker',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
+          if (!showChromeLead)
+            SidebarHeader(
+              child: Text(
+                'Comic Book Maker',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               ),
             ),
-          ),
           SidebarContent(
+            padding: EdgeInsets.fromLTRB(
+              8,
+              showChromeLead ? 12 : 0,
+              8,
+              0,
+            ),
             child: SidebarGroup(
               label: '导航',
               child: SidebarMenu(

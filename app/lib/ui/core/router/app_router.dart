@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/library/library_page.dart';
@@ -43,14 +44,20 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.projectEditor,
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final project = state.extra as ProjectSummary?;
         if (project == null) {
-          return const Scaffold(
-            body: Center(child: Text('缺少项目信息')),
+          return fadeTransitionPage(
+            key: state.pageKey,
+            child: const Scaffold(
+              body: Center(child: Text('缺少项目信息')),
+            ),
           );
         }
-        return ProjectEditorPage(project: project);
+        return fadeTransitionPage(
+          key: state.pageKey,
+          child: ProjectEditorPage(project: project),
+        );
       },
     ),
   ],

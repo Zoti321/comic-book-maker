@@ -1,3 +1,5 @@
+import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_chrome.dart';
 import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -16,11 +18,11 @@ class Sidebar extends StatelessWidget {
 
     return Container(
       width: AppSidebarTheme.width,
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        border: Border(right: BorderSide(color: scheme.outline)),
+      decoration: AppShellChrome.sidebarDecoration(scheme),
+      child: SafeArea(
+        top: !desktopWindowConfig.chromeEnabled,
+        child: child,
       ),
-      child: SafeArea(child: child),
     );
   }
 }

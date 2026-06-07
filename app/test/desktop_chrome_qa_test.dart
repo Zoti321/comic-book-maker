@@ -1,5 +1,7 @@
 import 'package:comic_book_maker/main.dart';
+import 'package:comic_book_maker/ui/core/design_system/desktop_window_caption.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_chrome.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -74,8 +76,11 @@ void main() {
       await pumpApp(tester, config: const DesktopWindowConfig(chromeEnabled: true));
 
       expect(find.byKey(DesktopShell.captionSlotKey), findsOneWidget);
+      expect(find.byKey(AppShellChrome.captionBottomBorderKey), findsOneWidget);
+      expect(find.byKey(DesktopShellChromeLead.keySlot), findsOneWidget);
       expect(find.byType(WindowCaption), findsOneWidget);
       expect(find.byType(WindowCaptionButton), findsWidgets);
+      expect(find.text('Comic Book Maker'), findsOneWidget);
       expect(find.text('漫画库'), findsOneWidget);
       expect(find.text('项目'), findsOneWidget);
       expect(find.text('设置'), findsOneWidget);
