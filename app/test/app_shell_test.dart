@@ -4,6 +4,7 @@ import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_app_nav.dart';
+import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_nav_tab.dart';
 import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -61,6 +62,7 @@ void main() {
 
     expect(find.byType(Sidebar), findsNothing);
     expect(find.byType(MobileAppNav), findsOneWidget);
+    expect(find.byType(MobileNavTab), findsNWidgets(2));
     expect(find.text('漫画库'), findsOneWidget);
   });
 

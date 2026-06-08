@@ -1,4 +1,4 @@
-import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar_menu_button.dart';
+import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_nav_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -35,15 +35,11 @@ class MobileAppNav extends StatelessWidget {
             children: [
               for (var i = 0; i < _items.length; i++)
                 Expanded(
-                  child: SidebarMenuButton(
-                    icon: Icon(_items[i].$1),
+                  child: MobileNavTab(
+                    icon: _items[i].$1,
+                    label: _items[i].$2,
                     isActive: selectedIndex == i,
                     onPressed: () => onSelect(i),
-                    child: Text(
-                      _items[i].$2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
                 ),
             ],

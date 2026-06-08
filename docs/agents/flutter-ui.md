@@ -195,6 +195,27 @@ class MyFeature extends _$MyFeature {
 - 纯图标按钮统一 `AppIconButton`，variant 与文字按钮相同。
 - `secondary` / `ghost` 静止态背景用 hover 目标色 + `alpha: 0` 插值，避免 `Colors.transparent` 动画中间帧发灰；`secondary` 边框全程固定 `AppColors.outline`。
 
+## 颜色过渡动画（`AnimatedContainer`）
+
+自绘控件的 hover / pressed 背景若用 `AnimatedContainer`（或 `AnimatedDecoration`）做颜色过渡，**禁止**在「无背景」静止态使用 `Colors.transparent`，再在 hover 时切到不透明灰阶色。
+
+### 现象
+
+`Color.lerp(Colors.transparent, surfaceContainer, t)` 会对 RGBA 四维插值；`transparent` 的 RGB 为 `(0,0,0)`，中间帧会先出现**偏深的灰色**，再过渡到目标浅灰，视觉上像闪一下脏色。窄屏底栏 `MobileNavTab`、侧栏 `SidebarMenuButton` 等均可能踩坑。
+
+### 正确做法（二选一）
+
+| 场景 | 静止态 | hover / pressed | 参考 |
+| ---- | ------ | --------------- | ---- |
+| 静止态需与**父级同色**（看起来「无底」） | 父级实色 token，如 `AppSidebarTheme.menuItemBackgroundRest` → `scheme.surface` | `menuItemBackgroundHover` → `surfaceContainer` | `sidebar_theme.dart`、`mobile_nav_tab.dart` |
+| 静止态为**透明按钮**（如 ghost / secondary） | hover 目标色 + **`alpha: 0`**（勿用 `Colors.transparent`） | 同一色相应 `alpha: 1` | `app_button_core.dart` 中 `_alphaBackground` |
+
+要点：
+
+- `someColor.withValues(alpha: 0)` 与 `Colors.transparent` 不同：前者保留 RGB，插值只在透明度与同一色相之间进行。
+- 导航项常态应与壳层面板同色（`menuItemBackgroundRest`），代码注释见 `AppSidebarTheme`。
+- 新增自绘 hover 背景前，先确认静止态与目标态均为**可安全 lerp 的不透明色**，或采用「同色相 + alpha」方案。
+
 ## 弹出菜单
 
 锚点弹出菜单统一 `AppPopupMenu` + `AppPopupMenuPanel`（自绘 overlay），**勿**在 feature 直接使用裸 `PopupMenuButton`。

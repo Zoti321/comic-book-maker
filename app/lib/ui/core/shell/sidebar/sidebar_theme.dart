@@ -9,7 +9,8 @@ abstract final class AppSidebarTheme {
   static const menuButtonHeightLg = 48.0;
   static const menuButtonRadius = AppRadius.md;
 
-  /// 导航项常态：与侧栏面板同色，避免 `transparent` 插值闪烁。
+  /// 导航项常态：与侧栏/底栏面板同色，避免 `Colors.transparent` 在
+  /// [AnimatedContainer] 中与 hover 色插值时中间帧发灰。见 `docs/agents/flutter-ui.md` §颜色过渡动画。
   static Color menuItemBackgroundRest(ColorScheme scheme) => scheme.surface;
 
   /// 导航项悬停：浅灰高亮，轻于旧版 `surfaceContainerHigh`。
