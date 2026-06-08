@@ -49,12 +49,14 @@ class AppPopupMenuItem extends StatefulWidget {
     required this.onTap,
     this.leading,
     this.selected = false,
+    this.enabled = true,
   });
 
   final String label;
   final VoidCallback onTap;
   final Widget? leading;
   final bool selected;
+  final bool enabled;
 
   @override
   State<AppPopupMenuItem> createState() => _AppPopupMenuItemState();
@@ -64,6 +66,7 @@ class _AppPopupMenuItemState extends State<AppPopupMenuItem> {
   var _hovered = false;
 
   Color? get _backgroundColor {
+    if (!widget.enabled) return null;
     if (widget.selected) {
       return _hovered
           ? AppColors.surfaceContainerHigh
@@ -78,16 +81,18 @@ class _AppPopupMenuItemState extends State<AppPopupMenuItem> {
     final textStyle = AppFonts.textStyle(
       scheme: Theme.of(context).colorScheme,
       fontSize: AppTypography.bodySize,
-      color: AppColors.onSurface,
+      color: widget.enabled ? AppColors.onSurface : AppColors.onSurfaceVariant,
     );
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
+      onEnter: widget.enabled ? (_) => setState(() => _hovered = true) : null,
+      onExit: widget.enabled ? (_) => setState(() => _hovered = false) : null,
+      cursor: widget.enabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
+        onTap: widget.enabled ? widget.onTap : null,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOut,

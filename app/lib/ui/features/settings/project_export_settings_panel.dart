@@ -54,29 +54,21 @@ class ProjectExportSettingsPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<ExportFormatFrb>(
+        AppSelect<ExportFormatFrb>(
           key: ValueKey(settings.exportFormat),
-          initialValue: settings.exportFormat,
-          decoration: InputDecoration(
-            labelText: 'Export 格式',
-            helperText: '决定导出文件类型与元数据 Tab 的编辑模型',
-            enabled: enabled,
-          ),
-          items: ExportFormatFrb.values
-              .map(
-                (format) => DropdownMenuItem(
-                  value: format,
-                  enabled: format != ExportFormatFrb.pdf,
-                  child: Text(exportFormatLabel(format)),
-                ),
-              )
-              .toList(),
-          onChanged: enabled
-              ? (value) {
-                  if (value == null || value == ExportFormatFrb.pdf) return;
-                  onExportFormatChanged(value);
-                }
-              : null,
+          label: 'Export 格式',
+          helper: '决定导出文件类型与元数据 Tab 的编辑模型',
+          enabled: enabled,
+          value: settings.exportFormat,
+          onChanged: enabled ? onExportFormatChanged : null,
+          items: [
+            for (final format in ExportFormatFrb.values)
+              AppSelectItem(
+                value: format,
+                label: exportFormatLabel(format),
+                enabled: format != ExportFormatFrb.pdf,
+              ),
+          ],
         ),
         if (settings.exportFormat == ExportFormatFrb.comicArchive) ...[
           const SizedBox(height: 16),

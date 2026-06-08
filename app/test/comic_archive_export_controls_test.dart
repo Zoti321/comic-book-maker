@@ -30,7 +30,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('压缩算法：ZIP'), findsOneWidget);
+    expect(find.text('压缩算法'), findsOneWidget);
+    expect(find.text('ZIP'), findsOneWidget);
     expect(find.textContaining('Demo.cbz'), findsOneWidget);
     expect(find.text('使用漫画扩展名'), findsOneWidget);
     expect(
@@ -63,7 +64,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('压缩算法：RAR'), findsOneWidget);
+    expect(find.text('RAR'), findsOneWidget);
     expect(find.textContaining('Demo.cbr'), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),

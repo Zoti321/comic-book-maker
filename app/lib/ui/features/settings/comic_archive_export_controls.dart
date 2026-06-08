@@ -2,9 +2,8 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// 漫画压缩包 Export 的容器算法（二级菜单）与扩展名策略控件。
+/// 漫画压缩包 Export 的容器算法与扩展名策略控件。
 class ComicArchiveExportControls extends StatelessWidget {
   const ComicArchiveExportControls({
     super.key,
@@ -33,15 +32,21 @@ class ComicArchiveExportControls extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '漫画压缩包',
-          style: theme.textTheme.labelLarge,
-        ),
-        const SizedBox(height: 8),
-        _ContainerMenuAnchor(
-          selected: settings.comicArchiveContainer,
+        AppSelect<ComicArchiveContainerFrb>(
+          key: ValueKey(settings.comicArchiveContainer),
+          label: '压缩算法',
           enabled: enabled,
-          onSelected: onContainerChanged,
+          value: settings.comicArchiveContainer,
+          onChanged: enabled ? onContainerChanged : null,
+          items: [
+            for (final container in _containers)
+              AppSelectItem(
+                value: container,
+                label: comicArchiveContainerMenuLabel(container),
+                displayLabel: comicArchiveContainerLabel(container),
+                enabled: comicArchiveContainerSelectable(container),
+              ),
+          ],
         ),
         if (!implemented) ...[
           const SizedBox(height: 8),
@@ -74,70 +79,14 @@ class ComicArchiveExportControls extends StatelessWidget {
   }
 }
 
-class _ContainerMenuAnchor extends StatelessWidget {
-  const _ContainerMenuAnchor({
-    required this.selected,
-    required this.enabled,
-    required this.onSelected,
-  });
-
-  final ComicArchiveContainerFrb selected;
-  final bool enabled;
-  final ValueChanged<ComicArchiveContainerFrb> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = comicArchiveContainerLabel(selected);
-    final canExport = comicArchiveContainerSelectable(selected);
-
-    return MenuAnchor(
-      builder: (context, controller, child) {
-        return Align(
-          alignment: Alignment.centerLeft,
-          child: AppButton(
-            variant: AppButtonVariant.secondary,
-            onPressed: enabled
-                ? () {
-                    if (controller.isOpen) {
-                      controller.close();
-                    } else {
-                      controller.open();
-                    }
-                  }
-                : null,
-            icon: const Icon(LucideIcons.chevronDown),
-            child: Text('压缩算法：$label${canExport ? '' : '（尚未实现）'}'),
-          ),
-        );
-      },
-      menuChildren: [
-        for (final container in ComicArchiveExportControls._containers)
-          MenuItemButton(
-            onPressed: !enabled || !comicArchiveContainerSelectable(container)
-                ? null
-                : () => onSelected(container),
-            leadingIcon: selected == container
-                ? Icon(
-                    LucideIcons.check,
-                    size: 20,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  )
-                : const SizedBox(width: 20),
-            child: Text(_menuItemLabel(container)),
-          ),
-      ],
-    );
+String comicArchiveContainerMenuLabel(ComicArchiveContainerFrb container) {
+  final name = comicArchiveContainerLabel(container);
+  if (comicArchiveContainerSelectable(container)) {
+    return switch (container) {
+      ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
+      ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',
+      ComicArchiveContainerFrb.sevenZip => '$name（可用）',
+    };
   }
-
-  String _menuItemLabel(ComicArchiveContainerFrb container) {
-    final name = comicArchiveContainerLabel(container);
-    if (comicArchiveContainerSelectable(container)) {
-      return switch (container) {
-        ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
-        ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',
-        ComicArchiveContainerFrb.sevenZip => '$name（可用）',
-      };
-    }
-    return '$name（尚未实现）';
-  }
+  return '$name（尚未实现）';
 }
