@@ -13,6 +13,29 @@ void main() {
     runner = ArchiveImportRunner(gateway: gateway);
   });
 
+  test('inferFormatFromPath maps comic archive extensions', () {
+    expect(
+      ArchiveImportRunner.inferFormatFromPath(r'C:\comic.cbz'),
+      ImportArchiveFormat.cbz,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.zip'),
+      ImportArchiveFormat.cbz,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.cbr'),
+      ImportArchiveFormat.cbr,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.rar'),
+      ImportArchiveFormat.cbr,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.epub'),
+      isNull,
+    );
+  });
+
   test('displayName and allowedExtensions match format', () {
     expect(
       ArchiveImportRunner.displayName(ImportArchiveFormat.cbz),

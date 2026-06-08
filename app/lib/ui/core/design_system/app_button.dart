@@ -20,6 +20,7 @@ class AppButton extends StatelessWidget {
     this.size = AppButtonSize.md,
     this.metrics,
     this.radius = AppButtonRadius.md,
+    this.expanded = false,
   });
 
   final VoidCallback? onPressed;
@@ -30,6 +31,9 @@ class AppButton extends StatelessWidget {
   final AppButtonSize size;
   final AppButtonMetrics? metrics;
   final AppButtonRadius radius;
+
+  /// 拉满父级宽度，图标与文字左对齐。
+  final bool expanded;
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,7 @@ class AppButton extends StatelessWidget {
       icon: icon,
       label: child,
       isLoading: isLoading,
+      expanded: expanded,
     );
   }
 }

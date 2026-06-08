@@ -30,7 +30,7 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
   - `showAppDialog` / `showAppConfirmDialog` / `showAppAlertDialog`
   - `showAppToast` / `showAppSnackBar`
   - `showAppBottomSheet`、`showAppFeatureDialog`
-  - Import / Export / Append 见 `import_archive_sheet.dart`、`export_archive_dialog.dart`、`append_archive_sheet.dart`
+  - Export / Append 见 `export_archive_dialog.dart`、`append_archive_sheet.dart`；新建项目导入见 `create_project_wizard_dialog.dart`
 
 侧栏在 `app/lib/ui/core/shell/sidebar/` 自封装（`Sidebar`、`SidebarMenuButton`、`SidebarInset` 等）；色板：`AppSidebarTheme`。
 

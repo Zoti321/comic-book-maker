@@ -31,6 +31,43 @@ class ArchiveImportRunner {
     };
   }
 
+  /// 漫画压缩包文件选择器允许的扩展名（含容器扩展名）。
+  static const comicArchiveExtensions = ['cbz', 'zip', 'cbr', 'rar'];
+
+  /// 按路径扩展名推断 [ImportArchiveFormat]；无法识别时返回 `null`。
+  static ImportArchiveFormat? inferFormatFromPath(String path) {
+    final dot = path.lastIndexOf('.');
+    if (dot < 0 || dot == path.length - 1) return null;
+
+    return switch (path.substring(dot + 1).toLowerCase()) {
+      'cbz' || 'zip' => ImportArchiveFormat.cbz,
+      'cbr' || 'rar' => ImportArchiveFormat.cbr,
+      _ => null,
+    };
+  }
+
+  /// 选择漫画压缩包并推断 CBZ/CBR 格式；取消返回 `null`。
+  Future<({ImportArchiveFormat format, String path})?> pickComicArchivePath() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: comicArchiveExtensions,
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty) return null;
+
+    final sourcePath = result.files.single.path;
+    if (sourcePath == null || sourcePath.isEmpty) {
+      throw StateError('无法读取所选漫画压缩包文件路径');
+    }
+
+    final format = inferFormatFromPath(sourcePath);
+    if (format == null) {
+      throw StateError('不支持的漫画压缩包格式：$sourcePath');
+    }
+
+    return (format: format, path: sourcePath);
+  }
+
   static ImportArchiveFormat fromAppendFormat(AppendArchiveFormat format) {
     return switch (format) {
       AppendArchiveFormat.cbz => ImportArchiveFormat.cbz,

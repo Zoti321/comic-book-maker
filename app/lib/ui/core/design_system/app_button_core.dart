@@ -243,6 +243,7 @@ class AppButtonCore extends StatefulWidget {
     this.isLoading = false,
     this.iconOnly = false,
     this.forceHovered = false,
+    this.expanded = false,
   });
 
   final VoidCallback? onPressed;
@@ -255,6 +256,7 @@ class AppButtonCore extends StatefulWidget {
   final bool isLoading;
   final bool iconOnly;
   final bool forceHovered;
+  final bool expanded;
 
   @override
   State<AppButtonCore> createState() => _AppButtonCoreState();
@@ -312,9 +314,11 @@ class _AppButtonCoreState extends State<AppButtonCore> {
               minWidth: minWidth,
               minHeight: resolved.height,
             ),
+            width: widget.expanded ? double.infinity : null,
             height: resolved.height,
             padding: padding,
-            alignment: Alignment.center,
+            alignment:
+                widget.expanded ? Alignment.centerLeft : Alignment.center,
             decoration: BoxDecoration(
               color: colors.background,
               borderRadius: borderRadius,
@@ -382,7 +386,8 @@ class _AppButtonCoreState extends State<AppButtonCore> {
     if (icon == null) return label;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: widget.expanded ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         icon,
         SizedBox(width: resolved.iconGap),

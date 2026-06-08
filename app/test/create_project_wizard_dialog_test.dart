@@ -28,6 +28,10 @@ void main() {
 
       expect(find.text('新建项目'), findsOneWidget);
       expect(find.text('尚未选择'), findsOneWidget);
+      expect(find.text('导入图片'), findsOneWidget);
+      expect(find.text('导入漫画压缩包'), findsOneWidget);
+      expect(find.text('导入 EPUB'), findsOneWidget);
+      expect(find.text('选择要导入的资源（必选）'), findsNothing);
 
       final createButton = tester.widget<AppButton>(
         find.widgetWithText(AppButton, '创建'),

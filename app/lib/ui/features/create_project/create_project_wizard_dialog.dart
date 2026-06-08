@@ -56,6 +56,20 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       setDraft(next);
     }
 
+    Future<void> pickComicArchive() async {
+      final picked = await ArchiveImportRunner().pickComicArchivePath();
+      if (picked == null) return;
+
+      final next = draft.value.copyWith();
+      next.applyImportSource(
+        CreateProjectArchiveImport(
+          format: picked.format,
+          sourcePath: picked.path,
+        ),
+      );
+      setDraft(next);
+    }
+
     Future<void> pickArchive(ImportArchiveFormat format) async {
       final path = await ArchiveImportRunner().pickSourcePath(format);
       if (path == null) return;
@@ -83,8 +97,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       0 => _ImportTab(
           draft: current,
           onPickImages: pickImages,
-          onPickCbz: () => pickArchive(ImportArchiveFormat.cbz),
-          onPickCbr: () => pickArchive(ImportArchiveFormat.cbr),
+          onPickComicArchive: pickComicArchive,
           onPickEpub: () => pickArchive(ImportArchiveFormat.epub),
         ),
       1 => ProjectExportSettingsPanel(
@@ -157,15 +170,13 @@ class _ImportTab extends StatelessWidget {
   const _ImportTab({
     required this.draft,
     required this.onPickImages,
-    required this.onPickCbz,
-    required this.onPickCbr,
+    required this.onPickComicArchive,
     required this.onPickEpub,
   });
 
   final CreateProjectDraft draft;
   final VoidCallback onPickImages;
-  final VoidCallback onPickCbz;
-  final VoidCallback onPickCbr;
+  final VoidCallback onPickComicArchive;
   final VoidCallback onPickEpub;
 
   @override
@@ -176,34 +187,25 @@ class _ImportTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '选择要导入的资源（必选）',
-          style: theme.textTheme.bodyMedium,
-        ),
-        const SizedBox(height: 12),
         AppButton(
           variant: AppButtonVariant.secondary,
+          expanded: true,
           icon: const Icon(LucideIcons.image),
           onPressed: onPickImages,
-          child: const Text('选择 Page Image'),
+          child: const Text('导入图片'),
         ),
         const SizedBox(height: 8),
         AppButton(
           variant: AppButtonVariant.secondary,
+          expanded: true,
           icon: const Icon(LucideIcons.folderArchive),
-          onPressed: onPickCbz,
-          child: const Text('导入 CBZ'),
+          onPressed: onPickComicArchive,
+          child: const Text('导入漫画压缩包'),
         ),
         const SizedBox(height: 8),
         AppButton(
           variant: AppButtonVariant.secondary,
-          icon: const Icon(LucideIcons.archive),
-          onPressed: onPickCbr,
-          child: const Text('导入 CBR'),
-        ),
-        const SizedBox(height: 8),
-        AppButton(
-          variant: AppButtonVariant.secondary,
+          expanded: true,
           icon: const Icon(LucideIcons.bookOpen),
           onPressed: onPickEpub,
           child: const Text('导入 EPUB'),
