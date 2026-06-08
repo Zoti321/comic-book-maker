@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/main.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_icon_button.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -46,16 +47,18 @@ void main() {
     await pumpSettings(tester, viewport: const Size(1280, 800));
 
     expect(find.text('设置'), findsWidgets);
-    expect(find.text('应用偏好与导出默认值'), findsOneWidget);
-    expect(find.text('导出'), findsOneWidget);
-    expect(find.text('选择目录'), findsOneWidget);
+    expect(find.text('应用偏好与导出默认值'), findsNothing);
+    expect(find.text('默认导出目录'), findsOneWidget);
+    expect(find.text('未设置'), findsOneWidget);
+    expect(find.text('选择目录'), findsNothing);
     expect(find.text('关于'), findsOneWidget);
   });
 
   testWidgets('export controls remain usable at compact width', (tester) async {
     await pumpSettings(tester, viewport: const Size(400, 800));
 
-    expect(find.text('选择目录'), findsOneWidget);
+    expect(find.text('未设置'), findsOneWidget);
+    expect(find.byType(AppIconButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 }

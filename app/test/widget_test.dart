@@ -135,7 +135,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      expect(find.text('导出'), findsOneWidget);
+      expect(find.text('默认导出目录'), findsOneWidget);
       expect(find.text('关于'), findsOneWidget);
     });
   });

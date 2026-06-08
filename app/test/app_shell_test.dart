@@ -91,7 +91,7 @@ void main() {
     await tester.tap(find.text('设置').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('导出'), findsOneWidget);
+    expect(find.text('默认导出目录'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
     expect(find.text('漫画库'), findsNothing);
   });
@@ -105,7 +105,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('导出'), findsOneWidget);
+    expect(find.text('默认导出目录'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
   });
 

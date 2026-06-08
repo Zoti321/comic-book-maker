@@ -16,8 +16,6 @@ class SettingsPage extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final exportPathAsync = ref.watch(exportPathProvider);
     final savingExportPath = useState(false);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final padding = contentPaddingOf(context);
 
     Future<void> pickExportDirectory() async {
@@ -51,13 +49,22 @@ class SettingsPage extends HookConsumerWidget {
       }
     }
 
+    Future<void> confirmClearExportDirectory() async {
+      final confirmed = await showAppConfirmDialog(
+        context: context,
+        title: '清除默认导出目录',
+        description: const Text('清除后，沿用全局默认目录的项目在导出前需要重新配置目录。'),
+        confirmLabel: '清除',
+        destructive: true,
+      );
+      if (confirmed != true || !context.mounted) return;
+      await clearExportDirectory();
+    }
+
     return CustomScrollView(
       slivers: [
         const SliverToBoxAdapter(
-          child: PageHeader(
-            title: '设置',
-            subtitle: '应用偏好与导出默认值',
-          ),
+          child: PageHeader(title: '设置'),
         ),
         SliverPadding(
           padding: padding,
@@ -72,8 +79,7 @@ class SettingsPage extends HookConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _SettingsSectionCard(
-                      title: '导出',
-                      description: '配置全局默认导出目录（新建项目可沿用）',
+                      title: '默认导出目录',
                       child: exportPathAsync.when(
                         loading: () => const AppPageLoading(
                           message: '正在读取设置…',
@@ -86,67 +92,15 @@ class SettingsPage extends HookConsumerWidget {
                         data: (exportDirectory) {
                           final hasDirectory = exportDirectory != null &&
                               exportDirectory.isNotEmpty;
+                          final busy = savingExportPath.value;
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: scheme.surfaceContainerLow,
-                                  borderRadius: AppRadius.mdBorder,
-                                  border: Border.all(color: scheme.outline),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Text(
-                                    hasDirectory
-                                        ? exportDirectory
-                                        : '未设置默认导出目录（沿用全局的项目在 Export 前需在此配置）',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: hasDirectory
-                                          ? scheme.onSurface
-                                          : scheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  AppButton(
-                                    variant: AppButtonVariant.secondary,
-                                    onPressed: savingExportPath.value
-                                        ? null
-                                        : pickExportDirectory,
-                                    icon: savingExportPath.value
-                                        ? const SizedBox(
-                                            width: 16,
-                                            height: 16,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            LucideIcons.folder,
-                                            size: 18,
-                                          ),
-                                    child: Text(
-                                      hasDirectory ? '更改目录' : '选择目录',
-                                    ),
-                                  ),
-                                  if (hasDirectory)
-                                    AppButton(
-                                      variant: AppButtonVariant.secondary,
-                                      onPressed: savingExportPath.value
-                                          ? null
-                                          : clearExportDirectory,
-                                      child: const Text('清除'),
-                                    ),
-                                ],
-                              ),
-                            ],
+                          return _DefaultExportDirectoryRow(
+                            path: hasDirectory ? exportDirectory : null,
+                            busy: busy,
+                            onPick: busy ? null : pickExportDirectory,
+                            onClear: hasDirectory && !busy
+                                ? confirmClearExportDirectory
+                                : null,
                           );
                         },
                       ),
@@ -168,15 +122,93 @@ class SettingsPage extends HookConsumerWidget {
   }
 }
 
+class _DefaultExportDirectoryRow extends StatelessWidget {
+  const _DefaultExportDirectoryRow({
+    required this.path,
+    required this.busy,
+    required this.onPick,
+    this.onClear,
+  });
+
+  final String? path;
+  final bool busy;
+  final VoidCallback? onPick;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final hasDirectory = path != null && path!.isNotEmpty;
+
+    final pathField = DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: AppRadius.mdBorder,
+        border: Border.all(color: scheme.outline),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Text(
+          hasDirectory ? path! : '未设置',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: hasDirectory ? scheme.onSurface : scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPick,
+              borderRadius: AppRadius.mdBorder,
+              child: pathField,
+            ),
+          ),
+        ),
+        const SizedBox(width: 4),
+        AppIconButton(
+          tooltip: hasDirectory ? '更改目录' : '选择目录',
+          onPressed: onPick,
+          icon: busy
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                )
+              : Icon(LucideIcons.folder, size: 18),
+        ),
+        if (onClear != null)
+          AppIconButton(
+            tooltip: '清除目录',
+            variant: AppButtonVariant.ghost,
+            onPressed: onClear,
+            icon: Icon(LucideIcons.trash2, size: 18, color: scheme.error),
+          ),
+      ],
+    );
+  }
+}
+
 class _SettingsSectionCard extends StatelessWidget {
   const _SettingsSectionCard({
     required this.title,
-    required this.description,
+    this.description,
     required this.child,
   });
 
   final String title;
-  final String description;
+  final String? description;
   final Widget child;
 
   @override
@@ -195,14 +227,16 @@ class _SettingsSectionCard extends StatelessWidget {
               color: scheme.onSurface,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+          if (description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              description!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+          ],
+          SizedBox(height: description != null ? 12 : 8),
           child,
         ],
       ),
