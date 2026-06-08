@@ -27,8 +27,8 @@ bool useAppSidebar(BuildContext context) =>
 bool editorUsePageSidebar(BuildContext context) =>
     MediaQuery.sizeOf(context).width >= AppBreakpointWidths.medium;
 
-/// 桌面端窗口最小尺寸（侧栏 + 内容区，避免工具栏与侧边 Tab 对话框溢出）。
-const Size appDesktopMinWindowSize = Size(800, 600);
+/// 桌面端窗口最小尺寸（允许缩至 compact 断点以下，便于桌面调试窄屏 UI）。
+const Size appDesktopMinWindowSize = Size(360, 640);
 
 /// 内容区可用宽度（可选扣除侧栏）。
 double contentWidthOf(

@@ -142,15 +142,9 @@ class LibraryPage extends HookConsumerWidget {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final project = projects[index];
-                      final lastOpenedMs =
-                          project.lastOpenedAtMs ?? project.updatedAtMs;
                       return ProjectCard(
                         title: project.title,
                         coverThumbnailPath: project.coverThumbnailPath,
-                        updatedAt: DateTime.fromMillisecondsSinceEpoch(
-                          lastOpenedMs.toInt(),
-                        ),
-                        activityLabel: '最近打开',
                         onTap: () => openProject(project),
                         onDelete: () => confirmDeleteProject(project),
                       );

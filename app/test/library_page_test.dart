@@ -78,6 +78,26 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('minimum width 360px shows library without overflow', (
+    tester,
+  ) async {
+    gateway.projects.add(
+      ProjectSummary(
+        id: 'p1',
+        title: '最小宽度项目',
+        updatedAtMs: 1,
+        createdAtMs: 1,
+        coverThumbnailPath: null,
+      ),
+    );
+
+    await pumpLibrary(tester, viewport: const Size(360, 640));
+
+    expect(find.text('漫画库'), findsOneWidget);
+    expect(find.byType(ProjectCard), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('720px sidebar layout shows grid without overflow', (
     tester,
   ) async {

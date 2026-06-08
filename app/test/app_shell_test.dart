@@ -64,6 +64,17 @@ void main() {
     expect(find.text('漫画库'), findsOneWidget);
   });
 
+  testWidgets('minimum width 360px shows bottom navigation without overflow', (
+    tester,
+  ) async {
+    await pumpApp(tester, surfaceSize: const Size(360, 640), settle: false);
+
+    expect(find.byType(Sidebar), findsNothing);
+    expect(find.byType(MobileAppNav), findsOneWidget);
+    expect(find.text('漫画库'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('medium width shows sidebar navigation', (tester) async {
     await pumpApp(tester, surfaceSize: const Size(900, 800));
 

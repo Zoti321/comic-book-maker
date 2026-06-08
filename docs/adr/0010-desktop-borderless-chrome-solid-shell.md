@@ -10,7 +10,7 @@
 
 ### 1. 窗口 chrome
 
-- 启动时通过 `window_manager` 在桌面平台尝试 `TitleBarStyle.hidden` 并保留最小窗口尺寸（800×600，见 `configureDesktopWindow()`）。
+- 启动时通过 `window_manager` 在桌面平台尝试 `TitleBarStyle.hidden` 并保留最小窗口尺寸（360×640，见 `configureDesktopWindow()`）；允许缩至 compact 断点（720px）以下，便于桌面端调试窄屏 UI。
 - 初始化成功时写入只读配置（如 `desktopWindowConfig.chromeEnabled == true`）；任一步骤失败则**不**隐藏系统标题栏，写入 `chromeEnabled == false`，应用以系统 chrome 正常运行。
 - 当 `chromeEnabled == true` 时，根 widget 通过 `DesktopShell` 包裹应用：`VirtualWindowFrame` 支持拖边缩放；顶栏为 `DesktopWindowCaption`（实色 `surface` / `surfaceContainerLow`，**非透明**）。
 

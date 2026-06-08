@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:comic_book_maker/ui/core/design_system/hover_reveal_menu.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/theme/app_colors.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:intl/intl.dart';
 
 enum _ProjectCardMenuAction { delete }
 
@@ -14,29 +14,21 @@ class ProjectCard extends StatefulWidget {
   const ProjectCard({
     super.key,
     required this.title,
-    required this.updatedAt,
     required this.onTap,
     this.onDelete,
     this.coverThumbnailPath,
-    this.activityLabel = '更新于',
   });
 
   final String title;
-  final DateTime updatedAt;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
   final String? coverThumbnailPath;
-  final String activityLabel;
 
-  /// 封面宽高比（漫画常见 2:3）。
-  static const double coverAspectRatio = 2 / 3;
+  /// 封面宽高比。
+  static const double coverAspectRatio = 3 / 4;
 
-  /// 标题区预估高度，用于计算网格 [childAspectRatio]（含内边距，略留余量防亚像素溢出）。
-  static const double footerHeightEstimate = 72;
-
-  static final _updatedAtFormat = DateFormat('yyyy年MM月dd日 HH:mm');
-
-  static String formatUpdatedAt(DateTime time) => _updatedAtFormat.format(time);
+  /// 标题区预估高度，用于计算网格 [childAspectRatio]（单行标题 + 状态标签）。
+  static const double footerHeightEstimate = 56;
 
   /// 根据单列卡片宽度估算网格宽高比。
   static double gridChildAspectRatioForCellWidth(double cellWidth) {
@@ -50,17 +42,15 @@ class ProjectCard extends StatefulWidget {
 
 class _ProjectCardState extends State<ProjectCard> {
   var _hovered = false;
+  var _pressedFooter = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final theme = Theme.of(context);
-    final formatted = ProjectCard.formatUpdatedAt(widget.updatedAt);
     final hasCover = _hasValidCover(widget.coverThumbnailPath);
     final showHoverChrome = _hovered && !isCompact(context);
-    final borderColor = showHoverChrome
-        ? scheme.onSurfaceVariant.withValues(alpha: 0.45)
-        : scheme.outline;
+    final borderColor =
+        showHoverChrome ? AppColors.outlineVariant : AppColors.outline;
 
     Widget coverContent = hasCover
         ? _CoverImage(path: widget.coverThumbnailPath!)
@@ -89,63 +79,63 @@ class _ProjectCardState extends State<ProjectCard> {
             ),
           ),
         ],
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            child: coverContent,
-          ),
-        ),
+        child: coverContent,
       );
     } else {
-      coverContent = Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          child: coverContent,
-        ),
-      );
+      // 无删除菜单时，保持封面简单，由外层统一处理点击。
     }
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: AppRadius.lgBorder,
-          border: Border.all(color: borderColor),
-          boxShadow: showHoverChrome
-              ? [
-                  BoxShadow(
-                    color: scheme.shadow.withValues(alpha: 0.08),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        onTapDown: (_) => setState(() => _pressedFooter = true),
+        onTapUp: (_) => setState(() => _pressedFooter = false),
+        onTapCancel: () => setState(() => _pressedFooter = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: AppRadius.smBorder,
+            border: Border.all(color: borderColor),
+            boxShadow: showHoverChrome
+                ? const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.sm),
                   ),
-                ]
-              : null,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: coverContent),
-            Material(
-              color: scheme.surfaceContainerLow,
-              child: InkWell(
-                onTap: widget.onTap,
-                child: _CardFooter(
-                  title: widget.title,
-                  subtitle: '${widget.activityLabel} · $formatted',
-                  theme: theme,
-                  scheme: scheme,
+                  child: coverContent,
                 ),
               ),
-            ),
-          ],
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(AppRadius.sm),
+                ),
+                child: _CardFooter(
+                  title: widget.title,
+                  subtitle: '最近打开',
+                  isPressed: _pressedFooter,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -161,46 +151,52 @@ class _CardFooter extends StatelessWidget {
   const _CardFooter({
     required this.title,
     required this.subtitle,
-    required this.theme,
-    required this.scheme,
+    required this.isPressed,
   });
 
   final String title;
   final String subtitle;
-  final ThemeData theme;
-  final ColorScheme scheme;
+  final bool isPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Tooltip(
-            message: title,
-            waitDuration: const Duration(milliseconds: 400),
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: isPressed ? AppColors.surfaceLow : AppColors.surface,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: title,
+              waitDuration: const Duration(milliseconds: 400),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
