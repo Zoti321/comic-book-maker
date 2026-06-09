@@ -127,6 +127,7 @@ class MyFeature extends _$MyFeature {
 | 可恢复、可继续编辑的错误 | `AppInlineErrorBanner` | 库列表、编辑页 workspace、元数据表单保存失败；可 `onDismiss` |
 | 列表 / 面板无数据 | `AppEmptyState` | **必须**写 `subtitle` 说明建议下一步 |
 | 短时后台操作 | `runAppBlockingOperation` | 导出、追加等；见 `app_blocking_loading.dart` |
+| 可关闭的后台长任务 | `AppToast` + `AppToastController` | 新建项目等：关对话框后在右下角 Toast 反馈 loading / success / error |
 | 操作结果（非阻塞） | `showAppToast` / `showAppSnackBar` | 成功提示、可忽略的失败 |
 | 需确认或展示结果摘要 | `showAppDialog` / `showAppConfirmDialog` | 导出成功路径等（见 `app_operation_feedback.dart`） |
 
@@ -159,6 +160,12 @@ class MyFeature extends _$MyFeature {
 - 逻辑集中在 `library_import_flow.dart`；成功结果用 `showAppLibraryImportOutcome`。
 - **不**在导入成功后自动进入编辑页；SnackBar 提供「打开项目」。
 - 失败时 `AppInlineErrorBanner` 可带 `onRetry`（复用上次路径）。
+
+### 新建项目
+
+- 逻辑集中在 `create_project_wizard_flow.dart`；确认创建后关向导，后台执行 `library.createFromDraft`。
+- 进度与结果用根级 `AppToast`（loading 可关闭，任务继续；成功 6 秒自动消失并带「打开项目」；失败常驻并带「查看详情」→ `showAppOperationFailure`）。
+- **不**在创建成功后自动进入编辑页。
 
 ## Tooltip 约定
 

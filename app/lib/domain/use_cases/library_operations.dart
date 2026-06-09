@@ -54,10 +54,12 @@ class LibraryOperations {
   void refreshLibraryCatalog() => _notifyLibraryChanged();
 
   /// 从向导 [CreateProjectDraft] 执行 Create Project 事务。
-  Future<ProjectSummary> createFromDraft(CreateProjectDraft draft) async {
-    final created = _createProject.createFromDraft(draft);
-    _notifyLibraryChanged();
-    return created;
+  Future<ProjectSummary> createFromDraft(CreateProjectDraft draft) {
+    return Future(() {
+      final created = _createProject.createFromDraft(draft);
+      _notifyLibraryChanged();
+      return created;
+    });
   }
 
   Future<ImportCbzResult> importArchive({

@@ -4,14 +4,13 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/library/library_page.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_page.dart';
 import 'package:comic_book_maker/ui/features/settings/settings_page.dart';
+import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/shell/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-
 final appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
+  navigatorKey: rootNavigatorKey,
   initialLocation: AppRoutes.projects,
   routes: [
     StatefulShellRoute.indexedStack(
@@ -43,7 +42,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.projectEditor,
-      parentNavigatorKey: _rootNavigatorKey,
+      parentNavigatorKey: rootNavigatorKey,
       pageBuilder: (context, state) {
         final project = state.extra as ProjectSummary?;
         if (project == null) {

@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/design_system/app_toast_host.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -41,7 +42,9 @@ class ComicBookMakerApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       builder: (context, child) {
-        return DesktopShell(child: child ?? const SizedBox.shrink());
+        return AppToastHost(
+          child: DesktopShell(child: child ?? const SizedBox.shrink()),
+        );
       },
     );
   }
