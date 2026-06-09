@@ -33,7 +33,7 @@ void main() {
     expect(find.text('压缩算法'), findsOneWidget);
     expect(find.text('ZIP'), findsOneWidget);
     expect(find.textContaining('Demo.cbz'), findsOneWidget);
-    expect(find.text('使用漫画扩展名'), findsOneWidget);
+    expect(find.text(kComicArchiveExtensionCheckboxLabel), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
       findsNothing,

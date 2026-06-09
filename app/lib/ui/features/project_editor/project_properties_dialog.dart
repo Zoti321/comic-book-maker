@@ -5,6 +5,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
+import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/project_settings_update.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
@@ -138,6 +139,8 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
           settings: settings,
           enabled: !saving,
           exampleBaseName: exampleName.isEmpty ? '未命名' : exampleName,
+          layout: ExportSettingsLayout.horizontal,
+          minimalCopy: false,
           onExportFormatChanged: (format) => persistSettings(
             projectSettingsUpdateFrom(settings, exportFormat: format),
           ),

@@ -49,12 +49,32 @@ class AppSelect<T> extends StatefulWidget {
 class _AppSelectState<T> extends State<AppSelect<T>> {
   final _controller = AppPopupMenuController();
   final _triggerKey = GlobalKey();
-  var _hovered = false;
   var _focused = false;
   double? _triggerWidth;
 
   bool get _interactive =>
       widget.enabled && widget.onChanged != null && widget.items.isNotEmpty;
+
+  /// 仅键盘导航时展示 focus 描边，避免 Tab 切换或鼠标点击后误显粗边框。
+  bool get _showKeyboardFocus =>
+      _focused &&
+      FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addListener(_onFocusHighlightChanged);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_onFocusHighlightChanged);
+    super.dispose();
+  }
+
+  void _onFocusHighlightChanged() {
+    if (mounted) setState(() {});
+  }
 
   void _syncTriggerWidth() {
     final box = _triggerKey.currentContext?.findRenderObject() as RenderBox?;
@@ -82,8 +102,6 @@ class _AppSelectState<T> extends State<AppSelect<T>> {
     final field = Focus(
       onFocusChange: (focused) => setState(() => _focused = focused),
       child: MouseRegion(
-        onEnter: _interactive ? (_) => setState(() => _hovered = true) : null,
-        onExit: _interactive ? (_) => setState(() => _hovered = false) : null,
         cursor: _interactive
             ? SystemMouseCursors.click
             : SystemMouseCursors.basic,
@@ -105,12 +123,12 @@ class _AppSelectState<T> extends State<AppSelect<T>> {
               color: AppColors.surface,
               borderRadius: AppRadius.mdBorder,
               border: Border.all(
-                color: _focused
+                color: _showKeyboardFocus
                     ? AppColors.primary
-                    : _hovered || showOpen
+                    : showOpen
                         ? AppColors.outlineVariant
                         : AppColors.outline,
-                width: _focused ? 2 : 1,
+                width: 1,
               ),
             ),
             child: Row(

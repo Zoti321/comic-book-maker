@@ -18,6 +18,7 @@ export 'app_empty_state.dart';
 export 'app_icon_button.dart';
 export 'hover_reveal_menu.dart';
 export 'app_inline_error.dart';
+export 'app_labeled_field_row.dart';
 export 'app_sheet.dart';
 export 'app_snack_bar.dart';
 export 'app_text_field.dart';

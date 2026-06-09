@@ -45,8 +45,13 @@ void main() {
       await tester.tap(find.text('导出'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Export 格式'), findsOneWidget);
-      expect(find.text('导出目录'), findsOneWidget);
+      expect(find.text('导出格式'), findsOneWidget);
+      expect(find.text('使用默认导出目录'), findsOneWidget);
+      expect(find.text('导出目录'), findsNothing);
+      expect(
+        find.text('决定导出文件类型与元数据 Tab 的编辑模型'),
+        findsNothing,
+      );
     });
 
     testWidgets('fits content when dialog height is tight', (tester) async {

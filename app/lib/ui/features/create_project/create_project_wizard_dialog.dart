@@ -3,6 +3,7 @@ import 'package:comic_book_maker/domain/models/create_project_draft.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
+import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_dialog.dart';
@@ -104,6 +105,8 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
           settings: settingsForPanel,
           enabled: true,
           exampleBaseName: '未命名',
+          layout: ExportSettingsLayout.horizontal,
+          minimalCopy: true,
           showDeleteAfterExport: false,
           onExportFormatChanged: (format) =>
               setDraft(current.copyWith(exportFormat: format)),
