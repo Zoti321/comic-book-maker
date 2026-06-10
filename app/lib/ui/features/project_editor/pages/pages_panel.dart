@@ -19,21 +19,17 @@ enum PageThumbnailAction {
   delete,
 }
 
-/// 按可用宽度计算缩略图边长（自适应列数）。
-double pageThumbnailWidthFor(double availableWidth) {
+/// 按可用宽度计算缩略图网格列数（2–8 列；单格最小约 96px 宽）。
+int pageThumbnailCrossAxisCount(double availableWidth) {
   const minThumb = 96.0;
-  const maxThumb = 128.0;
-  if (availableWidth <= 0) return maxThumb;
+  if (availableWidth <= 0) return 2;
 
-  var columns = ((availableWidth + _gridSpacing) / (minThumb + _gridSpacing))
+  final columns = ((availableWidth + _gridSpacing) / (minThumb + _gridSpacing))
       .floor();
-  columns = columns.clamp(2, 8);
-  final width =
-      (availableWidth - _gridSpacing * (columns - 1)) / columns;
-  return width.clamp(minThumb, maxThumb);
+  return columns.clamp(2, 8);
 }
 
-/// 图片 Tab：Wrap 网格展示有序 Page 缩略图。
+/// 图片 Tab：SliverGrid 展示有序 Page 缩略图。
 class PageThumbnailGrid extends StatelessWidget {
   const PageThumbnailGrid({
     super.key,
@@ -66,7 +62,8 @@ class PageThumbnailGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final thumbWidth = pageThumbnailWidthFor(constraints.maxWidth);
+        final crossAxisCount =
+            pageThumbnailCrossAxisCount(constraints.maxWidth);
 
         return CustomScrollView(
           slivers: [
@@ -81,22 +78,26 @@ class PageThumbnailGrid extends StatelessWidget {
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Wrap(
-                spacing: _gridSpacing,
-                runSpacing: _gridSpacing,
-                children: [
-                  for (var i = 0; i < sorted.length; i++)
-                    _PageThumbnailTile(
-                      page: sorted[i],
-                      thumbWidth: thumbWidth,
-                      isCover: sorted[i].sortIndex == coverPageIndex,
-                      canMoveEarlier: i > 0,
-                      canMoveLater: i < sorted.length - 1,
-                      onViewOriginal: () => onViewOriginal(sorted[i]),
+            SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: _gridSpacing,
+                crossAxisSpacing: _gridSpacing,
+                childAspectRatio: _thumbAspectRatio,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  if (index < sorted.length) {
+                    final page = sorted[index];
+                    return _PageThumbnailTile(
+                      page: page,
+                      isCover: page.sortIndex == coverPageIndex,
+                      canMoveEarlier: index > 0,
+                      canMoveLater: index < sorted.length - 1,
+                      onViewOriginal: () => onViewOriginal(page),
                       onAction: (action) => _dispatchAction(
                         action,
-                        sorted[i],
+                        page,
                         onReplace: onReplace,
                         onDelete: onDelete,
                         onSetCover: onSetCover,
@@ -104,12 +105,11 @@ class PageThumbnailGrid extends StatelessWidget {
                         onMoveEarlier: onMoveEarlier,
                         onMoveLater: onMoveLater,
                       ),
-                    ),
-                  _AddPageTile(
-                    thumbWidth: thumbWidth,
-                    onAdd: onAdd,
-                  ),
-                ],
+                    );
+                  }
+                  return _AddPageTile(onAdd: onAdd);
+                },
+                childCount: sorted.length + 1,
               ),
             ),
           ],
@@ -146,49 +146,40 @@ void _dispatchAction(
 }
 
 class _AddPageTile extends StatelessWidget {
-  const _AddPageTile({
-    required this.thumbWidth,
-    required this.onAdd,
-  });
+  const _AddPageTile({required this.onAdd});
 
-  final double thumbWidth;
   final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final thumbHeight = thumbWidth / _thumbAspectRatio;
 
-    return SizedBox(
-      width: thumbWidth,
-      height: thumbHeight,
-      child: Material(
-        color: scheme.surfaceContainerLow,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.lgBorder,
-          side: BorderSide(color: scheme.outline),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onAdd,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                LucideIcons.imagePlus,
-                size: 28,
-                color: scheme.onSurfaceVariant,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '添加页面',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ],
-          ),
+    return Material(
+      color: scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.lgBorder,
+        side: BorderSide(color: scheme.outline),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onAdd,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.imagePlus,
+              size: 28,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '添加页面',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ],
         ),
       ),
     );
@@ -198,7 +189,6 @@ class _AddPageTile extends StatelessWidget {
 class _PageThumbnailTile extends StatelessWidget {
   const _PageThumbnailTile({
     required this.page,
-    required this.thumbWidth,
     required this.isCover,
     required this.canMoveEarlier,
     required this.canMoveLater,
@@ -207,7 +197,6 @@ class _PageThumbnailTile extends StatelessWidget {
   });
 
   final PageSummary page;
-  final double thumbWidth;
   final bool isCover;
   final bool canMoveEarlier;
   final bool canMoveLater;
@@ -218,70 +207,61 @@ class _PageThumbnailTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final thumbHeight = thumbWidth / _thumbAspectRatio;
     final menuButtonStyle = RevealMenuButtonStyle(
       iconColor: scheme.onSurface,
       backgroundColor: scheme.surface.withValues(alpha: 0.92),
     );
 
-    return SizedBox(
-      width: thumbWidth,
-      child: Material(
-        color: scheme.surface,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.lgBorder,
-          side: BorderSide(
-            color: isCover
-                ? scheme.onSurface
-                : scheme.outline,
-            width: isCover ? 2 : 1,
-          ),
+    return Material(
+      color: scheme.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: AppRadius.lgBorder,
+        side: BorderSide(
+          color: isCover ? scheme.onSurface : scheme.outline,
+          width: isCover ? 2 : 1,
         ),
-        clipBehavior: Clip.antiAlias,
-        child: HoverRevealMenuAnchor<PageThumbnailAction>(
-          buttonTop: 6,
-          buttonRight: 6,
-          menuButtonStyle: menuButtonStyle,
-          onSelected: onAction,
-          menuItemsBuilder: (context) => _pageThumbnailMenuItems(
-            context: context,
-            isCover: isCover,
-            canMoveEarlier: canMoveEarlier,
-            canMoveLater: canMoveLater,
-          ),
-          child: InkWell(
-            onTap: onViewOriginal,
-            child: Stack(
-              children: [
-                SizedBox(
-                  width: thumbWidth,
-                  height: thumbHeight,
-                  child: _PageThumbnailImage(page: page),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: HoverRevealMenuAnchor<PageThumbnailAction>(
+        buttonTop: 6,
+        buttonRight: 6,
+        menuButtonStyle: menuButtonStyle,
+        onSelected: onAction,
+        menuItemsBuilder: (context) => _pageThumbnailMenuItems(
+          context: context,
+          isCover: isCover,
+          canMoveEarlier: canMoveEarlier,
+          canMoveLater: canMoveLater,
+        ),
+        child: InkWell(
+          onTap: onViewOriginal,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _PageThumbnailImage(page: page),
+              Positioned(
+                left: 6,
+                bottom: 6,
+                child: _Badge(
+                  label: '${page.sortIndex + 1}',
+                  background: scheme.surface.withValues(alpha: 0.92),
+                  foreground: scheme.onSurface,
+                  borderColor: scheme.outline,
                 ),
+              ),
+              if (isCover)
                 Positioned(
                   left: 6,
-                  bottom: 6,
+                  top: 6,
                   child: _Badge(
-                    label: '${page.sortIndex + 1}',
-                    background: scheme.surface.withValues(alpha: 0.92),
-                    foreground: scheme.onSurface,
-                    borderColor: scheme.outline,
+                    label: '封面',
+                    background: scheme.inverseSurface,
+                    foreground: scheme.onInverseSurface,
+                    icon: LucideIcons.bookmark,
                   ),
                 ),
-                if (isCover)
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: _Badge(
-                      label: '封面',
-                      background: scheme.inverseSurface,
-                      foreground: scheme.onInverseSurface,
-                      icon: LucideIcons.bookmark,
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

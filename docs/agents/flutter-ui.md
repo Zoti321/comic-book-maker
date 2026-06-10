@@ -158,7 +158,7 @@ class MyFeature extends _$MyFeature {
 
 ### 图片 Tab
 
-- 组件：`PageThumbnailGrid`（`pages/pages_panel.dart`）。
+- 组件：`PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
 - 页面操作统一走缩略图右上角 overflow 菜单（`PageThumbnailAction`）：查看原图、替换、设封面、前移/后移、删除。
 - 封面页：`sortIndex == coverPageIndex` 时主色描边 +「封面」角标。
 - 排序调用 FRB `reorderPages`（经 `ProjectWorkspace.reorderPages`）。

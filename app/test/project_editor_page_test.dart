@@ -72,11 +72,10 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('thumbnail width adapts to available space', () {
-    expect(pageThumbnailWidthFor(360), lessThanOrEqualTo(128));
-    expect(pageThumbnailWidthFor(360), greaterThanOrEqualTo(96));
-    expect(pageThumbnailWidthFor(900), lessThanOrEqualTo(128));
-    expect(pageThumbnailWidthFor(900), greaterThanOrEqualTo(96));
-    expect(pageThumbnailWidthFor(1200), 128);
+  test('thumbnail cross axis count adapts to available space', () {
+    expect(pageThumbnailCrossAxisCount(360), 3);
+    expect(pageThumbnailCrossAxisCount(900), 8);
+    expect(pageThumbnailCrossAxisCount(1200), 8);
+    expect(pageThumbnailCrossAxisCount(0), 2);
   });
 }
