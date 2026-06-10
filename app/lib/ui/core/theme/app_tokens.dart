@@ -52,3 +52,13 @@ abstract final class AppTypography {
   static const controlHeight = 36.0;
   static const controlHeightCompact = 32.0;
 }
+
+/// 阴影 token（贴顶栏、浮层等共用数值，按场景选用）。
+abstract final class AppElevation {
+  /// [PageHeader] 底部轻阴影，替代底部分割线以制造层次。
+  static const headerShadow = BoxShadow(
+    color: Color(0x12000000),
+    blurRadius: 6,
+    offset: Offset(0, 2),
+  );
+}

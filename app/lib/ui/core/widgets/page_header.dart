@@ -1,7 +1,7 @@
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// 内容区顶栏（surface 底 + 底部分割线 + M3 排版）。
+/// 内容区顶栏（surface 底 + 底部轻阴影 + M3 排版）。
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
@@ -16,6 +16,8 @@ class PageHeader extends StatelessWidget {
   final String? subtitle;
   final List<Widget> actions;
 
+  static const _contentMinHeight = AppTypography.controlHeightCompact;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -25,14 +27,14 @@ class PageHeader extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
-        border: Border(bottom: BorderSide(color: scheme.outline)),
+        boxShadow: const [AppElevation.headerShadow],
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           padding.left,
-          16,
+          AppSpacing.md,
           padding.right,
-          12,
+          AppSpacing.md,
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -41,26 +43,9 @@ class PageHeader extends StatelessWidget {
 
             final titleBlock = Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: scheme.onSurface,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    if (titleTrailing != null) ...[
-                      const SizedBox(width: 8),
-                      titleTrailing!,
-                    ],
-                  ],
-                ),
+                _titleRow(theme: theme, scheme: scheme),
                 if (subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -87,15 +72,46 @@ class PageHeader extends StatelessWidget {
               );
             }
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: titleBlock),
-                ...actions,
-              ],
+            return ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _contentMinHeight),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(child: titleBlock),
+                  ...actions,
+                ],
+              ),
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _titleRow({
+    required ThemeData theme,
+    required ColorScheme scheme,
+  }) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: _contentMinHeight),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (titleTrailing != null) ...[
+            const SizedBox(width: 8),
+            titleTrailing!,
+          ],
+        ],
       ),
     );
   }

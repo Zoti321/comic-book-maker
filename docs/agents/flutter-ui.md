@@ -36,6 +36,14 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
 
 布局仍可用 `Scaffold`、`CustomScrollView`、`TabBar` / `TabBarView`。
 
+## 页面顶栏
+
+漫画库、设置等主壳页面共用 `PageHeader`（`ui/core/widgets/page_header.dart`）：
+
+- **高度**：标题行 `minHeight` 与 `AppButtonSize.sm` 对齐（`32px`）；宽屏单行时与无 `actions` 页同高；窄屏折行时允许增高。
+- **内边距**：水平跟随 `AppSpacing.pagePadding`，上下对称 `16px`。
+- **层次**：`AppElevation.headerShadow` 底部轻阴影；不使用 `outline` 底边线。
+
 ## 状态与路由
 
 与既有约定一致：
