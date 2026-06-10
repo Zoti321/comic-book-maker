@@ -236,7 +236,7 @@ class MyFeature extends _$MyFeature {
 ## 对话框
 
 - `AppDialog` / `showAppDialog` / `showAppFeatureDialog`：标题行底部分隔线；底部操作区为 `outline` 分隔线 + 右对齐按钮行（次要左、主要右，间距 `8px`）；`showAppFeatureDialog` 默认 `barrierDismissible: true`（点遮罩等同取消）。
-- 侧栏 Tab 功能对话框统一 `SideTabFeatureDialog` + `SideTabDialogShell`（新建项目、项目属性等），经 `showAppFeatureDialog` 限制宽屏最大宽度。
+- 侧栏 Tab 功能对话框统一 `SideTabFeatureDialog` + `SideTabDialogShell`（新建项目、项目属性等），经 `showAppFeatureDialog` 限制宽屏最大宽度；限宽在对话框 build 时按当前 `MediaQuery` 断点计算，窗口缩放即时生效。
 - 宽屏（≥560px）：`AppDialog` body `contentPadding: 0`；左侧 Tab 贴左贴顶，左 `primary` 指示条（行级）+ 图标文字，hover `surfaceContainer`；Tab 列与内容区 `outline` 竖线拉满 body 高度（与 header/footer 分隔线相交）；右侧内容区保留 `16px` 内边距。
 - 窄屏（<560px）：Tab 移至 `AppDialog` 标题行右侧（仅文字 + 底部 `primary` 指示条）；body 零外边距，内容区 `16px` 内边距。
 

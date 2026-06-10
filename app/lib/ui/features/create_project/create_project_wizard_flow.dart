@@ -4,7 +4,6 @@ import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:flutter/material.dart';
 
 /// 打开新建项目向导；确认后在后台创建，通过 [AppToast] 反馈进度。
@@ -14,7 +13,6 @@ Future<void> runCreateProjectWizard({
 }) async {
   final draft = await showAppFeatureDialog<CreateProjectDraft>(
     context: context,
-    maxWidth: sideTabFeatureDialogMaxWidth(context),
     builder: (dialogContext) => const CreateProjectWizardDialog(),
   );
   if (draft == null || !draft.canCreate) {

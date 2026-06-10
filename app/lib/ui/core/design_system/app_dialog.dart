@@ -4,32 +4,45 @@ import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// 功能对话框（Export 等）；宽屏限制最大宽度。
+///
+/// 最大宽度在 [_AppFeatureDialogFrame] 的每次 build 时按当前 [MediaQuery] 断点计算
+///（[sideTabFeatureDialogMaxWidth]），窗口缩放后即时生效，无需关闭重开。
 Future<T?> showAppFeatureDialog<T>({
   required BuildContext context,
   required WidgetBuilder builder,
   bool barrierDismissible = true,
-  double? maxWidth,
 }) {
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    builder: (context) {
-      final dialog = builder(context);
-      final width = MediaQuery.sizeOf(context).width;
-      if (width <= 600) return dialog;
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: maxWidth ?? sideTabFeatureDialogMaxWidth(context),
-            ),
-            child: dialog,
-          ),
-        ),
-      );
-    },
+    builder: (dialogContext) => _AppFeatureDialogFrame(
+      child: builder(dialogContext),
+    ),
   );
+}
+
+/// [showAppFeatureDialog] 外层限宽壳；独立 widget 以便 [MediaQuery] 变化时重建。
+class _AppFeatureDialogFrame extends StatelessWidget {
+  const _AppFeatureDialogFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    if (width <= 600) return child;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: sideTabFeatureDialogMaxWidth(context),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
 }
 
 /// 显示 M3 风格对话框。
