@@ -67,11 +67,7 @@ class _AppPopupMenuItemState extends State<AppPopupMenuItem> {
 
   Color? get _backgroundColor {
     if (!widget.enabled) return null;
-    if (widget.selected) {
-      return _hovered
-          ? AppColors.surfaceContainerHigh
-          : AppColors.surfaceContainer;
-    }
+    if (widget.selected) return AppColors.surfaceContainer;
     if (_hovered) return AppColors.surfaceContainer;
     return null;
   }

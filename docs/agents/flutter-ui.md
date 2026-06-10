@@ -238,7 +238,7 @@ class MyFeature extends _$MyFeature {
 - `AppPopupMenu`：菜单左缘对齐锚点左缘、默认 `verticalMargin: 0`；遮罩 `Colors.transparent`（点外关闭）；下方空间不足时自动上翻，右溢时水平 clamp；`Escape` 关闭。
 - 展开时锚点 `AppIconButton` 经 `AppPopupMenuOpenScope` 保持 hover 打开态。
 - `AppPopupMenuPanel`：白底、`outline` 细边框、`md` 圆角、四周 `4px` 内边距、轻阴影（`blur 12` / `offset (0,4)`）；宽度内容自适应。
-- `AppPopupMenuItem`：自绘无 ripple；`px 8` / `py 6`、`sm` 圆角；背景拉满行宽（`AppPopupMenuPanel` 内 `IntrinsicWidth` + 父 `Column(crossAxisAlignment: stretch)`，overlay 中勿对项使用 `width: double.infinity`）；项间 `2px` gap（`Column(spacing: AppSpacing.xs / 2)`）；hover `surfaceContainer`；`selected: true` 常驻浅灰底，hover 时 `surfaceContainerHigh`；可选 `leading`（排序方向 icon）。
+- `AppPopupMenuItem`：自绘无 ripple；`px 8` / `py 6`、`sm` 圆角；背景拉满行宽（`AppPopupMenuPanel` 内 `IntrinsicWidth` + 父 `Column(crossAxisAlignment: stretch)`，overlay 中勿对项使用 `width: double.infinity`）；项间 `2px` gap（`Column(spacing: AppSpacing.xs / 2)`）；未选中 hover `surfaceContainer`；`selected: true` 常驻 `surfaceContainer`，hover 不再加深；可选 `leading`（排序方向 icon）。
 - 漫画库排序按钮：`LibrarySortMenuButton`，无 tooltip（排序图标语义已足够直观）。
 
 ## 表单控件
