@@ -25,7 +25,7 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
 - 根应用：`MaterialApp.router` + `go_router`（见 `app/lib/main.dart`、`app/lib/ui/core/router/`）
 - 主题：`AppTheme.light()`；间距 / 圆角 / 排版见 `app/lib/ui/core/theme/app_tokens.dart`
 - 页面与 feature **禁止** 直接 import 第三方 UI 库；控件通过 `design_system` 暴露：
-  - `AppButton`、`AppIconButton`、`AppPopupMenu`、`AppPopupMenuPanel`、`AppTextField`、`AppCard`、`AppCheckbox`
+  - `AppButton`、`AppIconButton`、`AppPopupMenu`、`AppPopupMenuPanel`、`AppTextField`（自绘单行输入）、`AppSelect`、`AppCard`、`AppCheckbox`
   - `AppInlineErrorBanner`、`AppEmptyState`、`AppPageLoading`、`AppPageErrorState`
   - `showAppDialog` / `showAppConfirmDialog` / `showAppAlertDialog`
   - `showAppToast` / `showAppSnackBar`
@@ -232,6 +232,16 @@ class MyFeature extends _$MyFeature {
 - `AppPopupMenuPanel`：白底、`outline` 细边框、`md` 圆角、四周 `4px` 内边距、轻阴影（`blur 12` / `offset (0,4)`）；宽度内容自适应。
 - `AppPopupMenuItem`：自绘无 ripple；`px 8` / `py 6`、`sm` 圆角；背景拉满行宽（`AppPopupMenuPanel` 内 `IntrinsicWidth` + 父 `Column(crossAxisAlignment: stretch)`，overlay 中勿对项使用 `width: double.infinity`）；项间 `2px` gap（`Column(spacing: AppSpacing.xs / 2)`）；hover `surfaceContainer`；`selected: true` 常驻浅灰底，hover 时 `surfaceContainerHigh`；可选 `leading`（排序方向 icon）。
 - 漫画库排序按钮：`LibrarySortMenuButton`，无 tooltip（排序图标语义已足够直观）。
+
+## 表单控件
+
+`AppTextField`、`AppSelect`、`AppCheckbox` 等表单原语共用以下约定（与 shadcn 控件对齐）：
+
+- **控件高度**：单行触发器 / 输入框 `36px`（`AppTypography.controlHeight`）。
+- **描边容器**：`AppColors.surface` 底、`AppRadius.md` 圆角、`AppColors.outline` 1px 边框；`AnimatedContainer` 过渡 `150ms`。
+- **键盘 focus**：仅 `FocusHighlightMode.traditional` 时显示 `AppColors.primary` 描边；鼠标点击聚焦不显示粗边框（见 `AppSelect` / `AppTextField`）。
+- **标签与说明**：`label` 在控件上方、间距 `6px`；`helper` 在下方、间距 `6px`、`onSurfaceVariant` 小字；有 `errorText` 时优先展示错误文案（`AppColors.error`），不显示 `helper`。
+- **输入框实现**：`AppTextField` 外壳自绘，内部为无边框 `TextField`；`MetadataPanel` 等 schema 驱动表单仍可用主题 `InputDecorationTheme`，迁移另开任务。
 
 ## 对话框
 
