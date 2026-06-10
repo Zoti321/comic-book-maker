@@ -314,7 +314,9 @@ class _AppButtonCoreState extends State<AppButtonCore> {
               minWidth: minWidth,
               minHeight: resolved.height,
             ),
-            width: widget.expanded ? double.infinity : null,
+            width: iconOnly
+                ? resolved.height
+                : (widget.expanded ? double.infinity : null),
             height: resolved.height,
             padding: padding,
             alignment:
@@ -336,7 +338,16 @@ class _AppButtonCoreState extends State<AppButtonCore> {
       ),
     );
 
-    return button;
+    if (!iconOnly) return button;
+
+    // AppBar.leading 等槽位会施加比按钮更大的紧约束；居中固定尺寸，避免 hover 被撑满。
+    return Center(
+      child: SizedBox(
+        width: resolved.height,
+        height: resolved.height,
+        child: button,
+      ),
+    );
   }
 
   Widget _buildContent(

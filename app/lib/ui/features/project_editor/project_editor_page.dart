@@ -82,6 +82,7 @@ class ProjectEditorPage extends HookConsumerWidget {
         ),
         onViewOriginal: (page) => runViewPageOriginal(
           context: context,
+          pages: workspace.pages,
           page: page,
         ),
         onMoveEarlier: (page) => runMovePageEarlier(

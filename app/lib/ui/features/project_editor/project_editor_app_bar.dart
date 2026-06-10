@@ -37,7 +37,11 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
 
     return AppBar(
       surfaceTintColor: Colors.transparent,
+      leadingWidth: 48,
       leading: AppIconButton(
+        size: AppButtonSize.sm,
+        radius: AppButtonRadius.circle,
+        metrics: const AppButtonMetrics(iconSize: 18),
         icon: const Icon(LucideIcons.arrowLeft),
         onPressed: onBack,
       ),

@@ -160,6 +160,7 @@ class MyFeature extends _$MyFeature {
 
 - 组件：`PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
 - 页面操作统一走缩略图右上角 overflow 菜单（`PageThumbnailAction`）：查看原图、替换、设封面、前移/后移、删除。
+- 查看原图（`page_image_viewer.dart`）：全屏黑底；点图片外留白关闭（无顶部关闭按钮）；左右圆形半透明翻页按钮（44px、常见 lightbox 样式，首/末页隐藏不可用侧）；`Escape` 关闭，`←` / `→` 翻页；`InteractiveViewer` 仅覆盖图片显示区域。
 - 封面页：`sortIndex == coverPageIndex` 时主色描边 +「封面」角标。
 - 排序调用 FRB `reorderPages`（经 `ProjectWorkspace.reorderPages`）。
 
