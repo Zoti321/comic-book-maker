@@ -49,7 +49,6 @@ class AppMainSidebar extends StatelessWidget {
               0,
             ),
             child: SidebarGroup(
-              label: '导航',
               child: SidebarMenu(
                 children: [
                   for (var i = 0; i < _items.length; i++)
