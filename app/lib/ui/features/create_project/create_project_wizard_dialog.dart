@@ -295,7 +295,6 @@ class _BehaviorTab extends StatelessWidget {
           value: deleteAfterExport,
           onChanged: (value) => onDeleteAfterExportChanged(value ?? false),
           label: '导出后删除项目',
-          sublabel: 'Export 成功后将永久删除本地 Page 与 Metadata',
         ),
       ],
     );
