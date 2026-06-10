@@ -104,9 +104,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       1 => ProjectExportSettingsPanel(
           settings: settingsForPanel,
           enabled: true,
-          exampleBaseName: '未命名',
           layout: ExportSettingsLayout.horizontal,
-          minimalCopy: true,
           showDeleteAfterExport: false,
           onExportFormatChanged: (format) =>
               setDraft(current.copyWith(exportFormat: format)),

@@ -124,10 +124,6 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
       );
     }
 
-    final exampleName = workspace.project.title
-        .replaceAll(RegExp(r'[<>:"/\\|?*]'), '_')
-        .trim();
-
     final Widget panel = switch (tabIndex.value) {
       0 => _OverviewTab(workspace: workspace),
       1 => _ImportTab(
@@ -138,9 +134,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
       2 => ProjectExportSettingsPanel(
           settings: settings,
           enabled: !saving,
-          exampleBaseName: exampleName.isEmpty ? '未命名' : exampleName,
           layout: ExportSettingsLayout.horizontal,
-          minimalCopy: false,
           onExportFormatChanged: (format) => persistSettings(
             projectSettingsUpdateFrom(settings, exportFormat: format),
           ),

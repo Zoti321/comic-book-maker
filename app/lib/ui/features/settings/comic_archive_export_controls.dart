@@ -15,18 +15,14 @@ class ComicArchiveExportControls extends StatelessWidget {
     required this.enabled,
     required this.onContainerChanged,
     required this.onUseComicExtensionChanged,
-    this.exampleBaseName = '我的漫画',
     this.layout = ExportSettingsLayout.stacked,
-    this.minimalCopy = false,
   });
 
   final ProjectSettings settings;
   final bool enabled;
   final ValueChanged<ComicArchiveContainerFrb> onContainerChanged;
   final ValueChanged<bool> onUseComicExtensionChanged;
-  final String exampleBaseName;
   final ExportSettingsLayout layout;
-  final bool minimalCopy;
 
   static const _containers = ComicArchiveContainerFrb.values;
 
@@ -35,8 +31,6 @@ class ComicArchiveExportControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-    final extension = comicArchiveFileExtension(settings);
     final implemented = isComicArchiveContainerImplemented(settings);
 
     final containerSelect = AppSelect<ComicArchiveContainerFrb>(
@@ -62,9 +56,6 @@ class ComicArchiveExportControls extends StatelessWidget {
           ? (value) => onUseComicExtensionChanged(value ?? false)
           : null,
       label: kComicArchiveExtensionCheckboxLabel,
-      sublabel: minimalCopy
-          ? null
-          : '不勾选时使用通用压缩扩展名（.zip / .rar / .7z）',
     );
 
     return Column(
@@ -94,16 +85,6 @@ class ComicArchiveExportControls extends StatelessWidget {
           )
         else
           extensionCheckbox,
-        if (!minimalCopy) ...[
-          const SizedBox(height: 8),
-          Text(
-            '导出文件名示例：$exampleBaseName.$extension',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ],
     );
   }

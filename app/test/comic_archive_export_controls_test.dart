@@ -22,7 +22,6 @@ void main() {
               useComicArchiveExtension: useComicExt,
             ),
             enabled: true,
-            exampleBaseName: 'Demo',
             onContainerChanged: (value) => container = value,
             onUseComicExtensionChanged: (value) => useComicExt = value,
           ),
@@ -32,7 +31,6 @@ void main() {
 
     expect(find.text('压缩算法'), findsOneWidget);
     expect(find.text('ZIP'), findsOneWidget);
-    expect(find.textContaining('Demo.cbz'), findsOneWidget);
     expect(find.text(kComicArchiveExtensionCheckboxLabel), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
@@ -56,7 +54,6 @@ void main() {
               useComicArchiveExtension: true,
             ),
             enabled: true,
-            exampleBaseName: 'Demo',
             onContainerChanged: (_) {},
             onUseComicExtensionChanged: (_) {},
           ),
@@ -65,7 +62,6 @@ void main() {
     );
 
     expect(find.text('RAR'), findsOneWidget);
-    expect(find.textContaining('Demo.cbr'), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
       findsNothing,
