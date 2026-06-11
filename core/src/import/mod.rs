@@ -1,9 +1,10 @@
 //! Archive import pipeline: scan → stage → commit.
 //!
-//! Format-specific adapters live in [`cbz`], [`cbr`], and [`epub`]; shared staging,
+//! Format-specific adapters live in [`cbz`], [`cbr`], [`cb7`], and [`epub`]; shared staging,
 //! metadata mapping, and transaction orchestration are internal to this module.
 
 pub mod archive_path;
+pub mod cb7;
 pub mod cbz;
 pub mod cbr;
 pub mod epub;
@@ -16,6 +17,7 @@ pub use archive_path::{
     fallback_title_from_path, is_comicinfo_entry, is_ignored_entry, is_page_image_entry,
     normalize_archive_path,
 };
+pub use cb7::{append_cb7, import_cb7};
 pub use cbz::{append_cbz, import_cbz, scan_cbz_entries, ImportCbzOutcome};
 pub use cbr::{append_cbr, import_cbr};
 pub use epub::{append_epub, import_epub, ImportEpubOutcome};
@@ -33,6 +35,7 @@ use crate::db::Library;
 pub enum ArchiveImportFormat {
     Cbz,
     Cbr,
+    Cb7,
     Epub,
 }
 
@@ -44,6 +47,7 @@ pub fn import_archive(
     match format {
         ArchiveImportFormat::Cbz => import_cbz(library, source_path),
         ArchiveImportFormat::Cbr => import_cbr(library, source_path),
+        ArchiveImportFormat::Cb7 => import_cb7(library, source_path),
         ArchiveImportFormat::Epub => import_epub(library, source_path),
     }
 }
@@ -57,6 +61,7 @@ pub fn append_archive(
     match format {
         ArchiveImportFormat::Cbz => append_cbz(library, project_id, source_path),
         ArchiveImportFormat::Cbr => append_cbr(library, project_id, source_path),
+        ArchiveImportFormat::Cb7 => append_cb7(library, project_id, source_path),
         ArchiveImportFormat::Epub => append_epub(library, project_id, source_path),
     }
 }

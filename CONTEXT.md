@@ -1,6 +1,6 @@
 # Comic Book Maker
 
-一款跨平台（桌面 + 移动端）电子漫画制作与编辑工具。用户可在统一的项目工作区中管理页面与元数据，并导入/导出 CBZ、CBR、EPUB、PDF 等格式。
+一款跨平台（桌面 + 移动端）电子漫画制作与编辑工具。用户可在统一的项目工作区中管理页面与元数据，并导入/导出 CBZ、CBR、CB7、EPUB、PDF 等格式。
 
 ## Language
 
@@ -45,7 +45,7 @@ Cover 对应 Page Image 的缩小预览，由 Core 生成并缓存在 Project St
 _Avoid_: Preview, Thumbnail, Icon
 
 **Archive Format（档案格式）**：
-CBZ、CBR、EPUB、PDF 等面向发布的容器格式；通过 Import 转为 Project，或通过 Export 从 Project 生成。不是编辑时的原生形态。
+CBZ、CBR、CB7、EPUB、PDF 等面向发布的容器格式；通过 Import 转为 Project，或通过 Export 从 Project 生成。CB7 为 7z 容器的漫画扩展名（`.cb7`），与容器扩展名 `.7z` 等价，类比 CBZ 与 `.zip`。不是编辑时的原生形态。
 _Avoid_: Comic file, E-book format, Container
 
 **Core（核心层）**：
@@ -57,7 +57,7 @@ _Avoid_: Backend, Engine, Rust layer
 _Avoid_: Home, Gallery, Collection
 
 **Import（导入）**：
-从 Archive Format 读取内容，在 Library Database 中创建新 Project 并填充 Project Storage；不修改源档案。CBR 在 Core 内解压后走与 CBZ 相同的流程。Page Image 按文件路径自然排序确定页序；若源档案含 ComicInfo 且 PageCount 与实际页数不符则警告。
+从 Archive Format 读取内容，在 Library Database 中创建新 Project 并填充 Project Storage；不修改源档案。CBR 与 CB7 在 Core 内解压后走与 CBZ 相同的流程。Page Image 按文件路径自然排序确定页序；若源档案含 ComicInfo 且 PageCount 与实际页数不符则警告。
 _Avoid_: Open, Load, Convert in place
 
 **Create Project（新建项目）**：

@@ -79,6 +79,13 @@ pub fn import_cbr(source_path: String) -> Result<ImportCbzResult> {
 }
 
 #[flutter_rust_bridge::frb(sync)]
+pub fn import_cb7(source_path: String) -> Result<ImportCbzResult> {
+    Library::import_cb7(&source_path)
+        .map(import_outcome_to_result)
+        .map_err(|error| anyhow::anyhow!(error))
+}
+
+#[flutter_rust_bridge::frb(sync)]
 pub fn import_epub(source_path: String) -> Result<ImportCbzResult> {
     Library::import_epub(&source_path)
         .map(import_outcome_to_result)
@@ -102,6 +109,13 @@ pub fn append_cbz(project_id: String, source_path: String) -> Result<AppendImpor
 #[flutter_rust_bridge::frb(sync)]
 pub fn append_cbr(project_id: String, source_path: String) -> Result<AppendImportResult> {
     Library::append_cbr(&project_id, &source_path)
+        .map(append_import_outcome_to_result)
+        .map_err(|error| anyhow::anyhow!(error))
+}
+
+#[flutter_rust_bridge::frb(sync)]
+pub fn append_cb7(project_id: String, source_path: String) -> Result<AppendImportResult> {
+    Library::append_cb7(&project_id, &source_path)
         .map(append_import_outcome_to_result)
         .map_err(|error| anyhow::anyhow!(error))
 }
@@ -152,6 +166,15 @@ pub fn export_cbr(
     delete_project_after_export: bool,
 ) -> Result<(), ExportError> {
     Library::export_cbr(&project_id, &destination_path, delete_project_after_export)
+}
+
+#[flutter_rust_bridge::frb]
+pub fn export_cb7(
+    project_id: String,
+    destination_path: String,
+    delete_project_after_export: bool,
+) -> Result<(), ExportError> {
+    Library::export_cb7(&project_id, &destination_path, delete_project_after_export)
 }
 
 #[flutter_rust_bridge::frb]

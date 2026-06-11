@@ -303,7 +303,7 @@ bool isComicArchiveContainerImplemented(ProjectSettings settings) {
   return switch (settings.comicArchiveContainer) {
     ComicArchiveContainerFrb.zip => true,
     ComicArchiveContainerFrb.rar => true,
-    ComicArchiveContainerFrb.sevenZip => false,
+    ComicArchiveContainerFrb.sevenZip => true,
   };
 }
 
@@ -329,7 +329,7 @@ String comicArchiveExportFormatLabel(ProjectSettings settings) {
     ComicArchiveContainerFrb.rar =>
       settings.useComicArchiveExtension ? 'CBR' : 'RAR',
     ComicArchiveContainerFrb.sevenZip =>
-      comicArchiveContainerLabel(settings.comicArchiveContainer),
+      settings.useComicArchiveExtension ? 'CB7' : '7Z',
   };
 }
 
@@ -345,7 +345,7 @@ bool comicArchiveContainerSelectable(ComicArchiveContainerFrb container) {
   return switch (container) {
     ComicArchiveContainerFrb.zip => true,
     ComicArchiveContainerFrb.rar => true,
-    ComicArchiveContainerFrb.sevenZip => false,
+    ComicArchiveContainerFrb.sevenZip => true,
   };
 }
 

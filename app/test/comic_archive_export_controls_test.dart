@@ -38,6 +38,36 @@ void main() {
     );
   });
 
+  testWidgets('7Z container is selectable without not-implemented warning',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ComicArchiveExportControls(
+            settings: const ProjectSettings(
+              exportFormat: ExportFormatFrb.comicArchive,
+              inferredImportKind: InferredImportKindFrb.images,
+              deleteProjectAfterExport: false,
+              useDefaultExportDirectory: true,
+              exportDirectory: null,
+              comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+              useComicArchiveExtension: true,
+            ),
+            enabled: true,
+            onContainerChanged: (_) {},
+            onUseComicExtensionChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('7Z'), findsOneWidget);
+    expect(
+      find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
+      findsNothing,
+    );
+  });
+
   testWidgets('RAR container is selectable without not-implemented warning',
       (tester) async {
     await tester.pumpWidget(

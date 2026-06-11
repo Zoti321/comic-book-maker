@@ -96,7 +96,7 @@ String comicArchiveContainerMenuLabel(ComicArchiveContainerFrb container) {
     return switch (container) {
       ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
       ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',
-      ComicArchiveContainerFrb.sevenZip => '$name（可用）',
+      ComicArchiveContainerFrb.sevenZip => '$name（可用，对应 CB7 Export）',
     };
   }
   return '$name（尚未实现）';

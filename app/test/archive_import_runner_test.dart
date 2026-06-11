@@ -4,6 +4,36 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
 
+class _RecordingCoreGateway extends InMemoryCoreGateway {
+  _RecordingCoreGateway() : super();
+
+  ArchiveFormatKind? lastImportFormat;
+  ArchiveFormatKind? lastAppendFormat;
+
+  @override
+  ImportCbzResult importArchive({
+    required ArchiveFormatKind format,
+    required String sourcePath,
+  }) {
+    lastImportFormat = format;
+    return super.importArchive(format: format, sourcePath: sourcePath);
+  }
+
+  @override
+  AppendImportResult appendArchive({
+    required String projectId,
+    required ArchiveFormatKind format,
+    required String sourcePath,
+  }) {
+    lastAppendFormat = format;
+    return super.appendArchive(
+      projectId: projectId,
+      format: format,
+      sourcePath: sourcePath,
+    );
+  }
+}
+
 void main() {
   late InMemoryCoreGateway gateway;
   late ArchiveImportRunner runner;
@@ -31,7 +61,19 @@ void main() {
       ImportArchiveFormat.cbr,
     );
     expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.cb7'),
+      ImportArchiveFormat.cb7,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.7z'),
+      ImportArchiveFormat.cb7,
+    );
+    expect(
       ArchiveImportRunner.inferFormatFromPath('/books/comic.epub'),
+      isNull,
+    );
+    expect(
+      ArchiveImportRunner.inferFormatFromPath('/books/comic.tar'),
       isNull,
     );
   });
@@ -42,8 +84,27 @@ void main() {
       'CBZ',
     );
     expect(
+      ArchiveImportRunner.displayName(ImportArchiveFormat.cb7),
+      'CB7',
+    );
+    expect(
       ArchiveImportRunner.allowedExtensions(ImportArchiveFormat.epub),
       ['epub'],
+    );
+    expect(
+      ArchiveImportRunner.allowedExtensions(ImportArchiveFormat.cb7),
+      ['cb7', '7z'],
+    );
+  });
+
+  test('archiveFormatKind maps CB7 to gateway kind', () {
+    expect(
+      ArchiveImportRunner.archiveFormatKind(ImportArchiveFormat.cb7),
+      ArchiveFormatKind.cb7,
+    );
+    expect(
+      ArchiveImportRunner.fromAppendFormat(AppendArchiveFormat.cb7),
+      ImportArchiveFormat.cb7,
     );
   });
 
@@ -55,6 +116,18 @@ void main() {
 
     expect(result.project.id, 'imported-1');
     expect(gateway.projects, isEmpty);
+  });
+
+  test('importNewProject delegates CB7 to gateway', () {
+    final recording = _RecordingCoreGateway();
+    final cb7Runner = ArchiveImportRunner(gateway: recording);
+
+    cb7Runner.importNewProject(
+      format: ImportArchiveFormat.cb7,
+      sourcePath: r'C:\comic.cb7',
+    );
+
+    expect(recording.lastImportFormat, ArchiveFormatKind.cb7);
   });
 
   test('appendToProject delegates to gateway by format', () {
@@ -77,5 +150,27 @@ void main() {
     expect(result.addedPageCount, 1);
     expect(gateway.pages, hasLength(1));
     expect(result.warnings, isEmpty);
+  });
+
+  test('appendToProject delegates CB7 to gateway', () {
+    final recording = _RecordingCoreGateway();
+    recording.projects.add(
+      ProjectSummary(
+        id: 'p1',
+        title: '测试',
+        updatedAtMs: 1,
+        createdAtMs: 1,
+        coverThumbnailPath: null,
+      ),
+    );
+    final cb7Runner = ArchiveImportRunner(gateway: recording);
+
+    cb7Runner.appendToProject(
+      projectId: 'p1',
+      format: ImportArchiveFormat.cb7,
+      sourcePath: r'C:\comic.7z',
+    );
+
+    expect(recording.lastAppendFormat, ArchiveFormatKind.cb7);
   });
 }

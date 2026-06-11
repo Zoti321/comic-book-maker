@@ -5,7 +5,7 @@ import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// 编辑页追加导入：选择 CBZ 或 CBR。
+/// 编辑页追加导入：选择 CBZ、CBR 或 CB7。
 Future<AppendArchiveFormat?> showAppendArchiveSheet(BuildContext context) {
   return showAppBottomSheet<AppendArchiveFormat>(
     context: context,
@@ -29,6 +29,13 @@ Future<AppendArchiveFormat?> showAppendArchiveSheet(BuildContext context) {
           icon: const Icon(LucideIcons.archive),
           onPressed: () => Navigator.pop(context, AppendArchiveFormat.cbr),
           child: const Text('选择 CBR'),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        AppButton(
+          variant: AppButtonVariant.secondary,
+          icon: const Icon(LucideIcons.archive),
+          onPressed: () => Navigator.pop(context, AppendArchiveFormat.cb7),
+          child: const Text('选择 CB7'),
         ),
       ],
     ),

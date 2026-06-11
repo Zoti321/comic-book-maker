@@ -48,6 +48,25 @@ void main() {
     expect(gateway.lastComicArchiveContainer, ComicArchiveContainerFrb.zip);
   });
 
+  test('routes 7Z comic archive to comic CB7 export', () async {
+    await workflow.execute(
+      projectId: 'p1',
+      target: const ResolvedExportTarget(
+        destinationPath: '/tmp/out.cb7',
+        formatLabel: 'CB7',
+        exportComicArchive: true,
+        comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+      ),
+      deleteProjectAfterExport: false,
+    );
+
+    expect(gateway.lastExportComicArchive, isTrue);
+    expect(
+      gateway.lastComicArchiveContainer,
+      ComicArchiveContainerFrb.sevenZip,
+    );
+  });
+
   test('routes RAR comic archive to comic CBR export', () async {
     await workflow.execute(
       projectId: 'p1',

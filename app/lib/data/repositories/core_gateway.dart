@@ -27,7 +27,7 @@ export 'package:comic_book_maker/src/rust/api/simple.dart'
         ProjectSummary;
 
 /// [Archive Format](CONTEXT.md) 种类，供 Import / Export / Append 统一分发。
-enum ArchiveFormatKind { cbz, cbr, epub }
+enum ArchiveFormatKind { cbz, cbr, cb7, epub }
 
 /// [Create Project](CONTEXT.md) 的 Import 来源（用例级，不依赖 UI draft）。
 sealed class CreateProjectImportSpec {
@@ -349,6 +349,8 @@ class FrbCoreGateway implements CoreGateway {
           simple_api.importCbz(sourcePath: sourcePath),
         ArchiveFormatKind.cbr =>
           simple_api.importCbr(sourcePath: sourcePath),
+        ArchiveFormatKind.cb7 =>
+          simple_api.importCb7(sourcePath: sourcePath),
         ArchiveFormatKind.epub =>
           simple_api.importEpub(sourcePath: sourcePath),
       };
@@ -365,6 +367,10 @@ class FrbCoreGateway implements CoreGateway {
             sourcePath: sourcePath,
           ),
         ArchiveFormatKind.cbr => simple_api.appendCbr(
+            projectId: projectId,
+            sourcePath: sourcePath,
+          ),
+        ArchiveFormatKind.cb7 => simple_api.appendCb7(
             projectId: projectId,
             sourcePath: sourcePath,
           ),
@@ -558,8 +564,13 @@ class FrbCoreGateway implements CoreGateway {
               destinationPath: destinationPath,
               deleteProjectAfterExport: deleteProjectAfterExport,
             );
-          case simple_api.ComicArchiveContainerFrb.zip:
           case simple_api.ComicArchiveContainerFrb.sevenZip:
+            await simple_api.exportCb7(
+              projectId: projectId,
+              destinationPath: destinationPath,
+              deleteProjectAfterExport: deleteProjectAfterExport,
+            );
+          case simple_api.ComicArchiveContainerFrb.zip:
           case null:
             await simple_api.exportCbz(
               projectId: projectId,

@@ -39,6 +39,7 @@ class CreateProjectDraft {
       CreateProjectArchiveImport(:final format) => switch (format) {
           ImportArchiveFormat.cbz => InferredImportKindFrb.comicArchive,
           ImportArchiveFormat.cbr => InferredImportKindFrb.comicArchive,
+          ImportArchiveFormat.cb7 => InferredImportKindFrb.comicArchive,
           ImportArchiveFormat.epub => InferredImportKindFrb.epub,
         },
     };

@@ -19,6 +19,7 @@ class ArchiveImportRunner {
     return switch (format) {
       ImportArchiveFormat.cbr => 'CBR',
       ImportArchiveFormat.cbz => 'CBZ',
+      ImportArchiveFormat.cb7 => 'CB7',
       ImportArchiveFormat.epub => 'EPUB',
     };
   }
@@ -27,12 +28,20 @@ class ArchiveImportRunner {
     return switch (format) {
       ImportArchiveFormat.cbr => const ['cbr'],
       ImportArchiveFormat.cbz => const ['cbz'],
+      ImportArchiveFormat.cb7 => const ['cb7', '7z'],
       ImportArchiveFormat.epub => const ['epub'],
     };
   }
 
   /// 漫画压缩包文件选择器允许的扩展名（含容器扩展名）。
-  static const comicArchiveExtensions = ['cbz', 'zip', 'cbr', 'rar'];
+  static const comicArchiveExtensions = [
+    'cbz',
+    'zip',
+    'cbr',
+    'rar',
+    'cb7',
+    '7z',
+  ];
 
   /// 按路径扩展名推断 [ImportArchiveFormat]；无法识别时返回 `null`。
   static ImportArchiveFormat? inferFormatFromPath(String path) {
@@ -42,11 +51,12 @@ class ArchiveImportRunner {
     return switch (path.substring(dot + 1).toLowerCase()) {
       'cbz' || 'zip' => ImportArchiveFormat.cbz,
       'cbr' || 'rar' => ImportArchiveFormat.cbr,
+      'cb7' || '7z' => ImportArchiveFormat.cb7,
       _ => null,
     };
   }
 
-  /// 选择漫画压缩包并推断 CBZ/CBR 格式；取消返回 `null`。
+  /// 选择漫画压缩包并推断 CBZ/CBR/CB7 格式；取消返回 `null`。
   Future<({ImportArchiveFormat format, String path})?> pickComicArchivePath() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -72,6 +82,7 @@ class ArchiveImportRunner {
     return switch (format) {
       AppendArchiveFormat.cbz => ImportArchiveFormat.cbz,
       AppendArchiveFormat.cbr => ImportArchiveFormat.cbr,
+      AppendArchiveFormat.cb7 => ImportArchiveFormat.cb7,
     };
   }
 
@@ -96,6 +107,7 @@ class ArchiveImportRunner {
     return switch (format) {
       ImportArchiveFormat.cbz => ArchiveFormatKind.cbz,
       ImportArchiveFormat.cbr => ArchiveFormatKind.cbr,
+      ImportArchiveFormat.cb7 => ArchiveFormatKind.cb7,
       ImportArchiveFormat.epub => ArchiveFormatKind.epub,
     };
   }

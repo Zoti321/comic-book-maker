@@ -36,7 +36,7 @@ RAR 写入参数：
 ### 4. 范围
 
 - **在范围**：RAR / CBR Export。
-- **不在范围**：7Z / CB7 Export（UI 继续占位禁用）；外部阅读器兼容性作为自动化合并门槛。
+- **不在范围（本 ADR）**：7Z / CB7 Import 与 Export——由 [ADR-0011](0011-cb7-sevenz-archive.md) 定义；在本 ADR 合并时 7Z 容器 UI 仍占位禁用，直至 ADR-0011 实现切片满足往返测试门槛。
 
 ### 5. UI 开放门槛
 
@@ -75,5 +75,6 @@ RAR 写入参数：
 ## 相关
 
 - 修订：[ADR-0002](0002-cbr-import-unrar.md)（Import 不变；移除 Export 仅 CBZ 限制）
+- 7Z / CB7：[ADR-0011](0011-cb7-sevenz-archive.md)
 - 第三方：[`docs/third-party/unrar.md`](../third-party/unrar.md)、[`docs/third-party/rars.md`](../third-party/rars.md)
 - 实现跟踪（本地）：`.scratch/rar-cbr-export/issues/02-core-export-cbr-roundtrip.md`、`03-app-cbr-export-e2e.md`

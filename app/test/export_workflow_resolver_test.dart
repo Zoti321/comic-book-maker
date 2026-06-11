@@ -110,6 +110,34 @@ void main() {
         ),
         'cbr',
       );
+      expect(
+        comicArchiveFileExtension(
+          const ProjectSettings(
+            exportFormat: ExportFormatFrb.comicArchive,
+            inferredImportKind: InferredImportKindFrb.images,
+            deleteProjectAfterExport: false,
+            useDefaultExportDirectory: true,
+            exportDirectory: null,
+            comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+            useComicArchiveExtension: true,
+          ),
+        ),
+        'cb7',
+      );
+      expect(
+        comicArchiveFileExtension(
+          const ProjectSettings(
+            exportFormat: ExportFormatFrb.comicArchive,
+            inferredImportKind: InferredImportKindFrb.images,
+            deleteProjectAfterExport: false,
+            useDefaultExportDirectory: true,
+            exportDirectory: null,
+            comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+            useComicArchiveExtension: false,
+          ),
+        ),
+        '7z',
+      );
     });
 
     test('resolves RAR comic archive to cbr path', () {
@@ -152,8 +180,8 @@ void main() {
       expect(target.formatLabel, 'RAR');
     });
 
-    test('blocks unimplemented 7Z archive container', () {
-      final block = resolveExportBlock(
+    test('resolves 7Z comic archive to cb7 path', () {
+      final target = resolveExportTarget(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -164,13 +192,32 @@ void main() {
           useComicArchiveExtension: true,
         ),
         globalExportDirectory: '/tmp',
-        safeTitle: 'x',
+        safeTitle: '7Z Comic',
       );
 
-      expect(
-        block?.reason,
-        ExportWorkflowBlockReason.archiveContainerNotImplemented,
+      expect(target, isNotNull);
+      expect(target!.destinationPath, p.join('/tmp', '7Z Comic.cb7'));
+      expect(target.formatLabel, 'CB7');
+      expect(target.comicArchiveContainer, ComicArchiveContainerFrb.sevenZip);
+    });
+
+    test('resolves 7Z without comic extension to 7z path', () {
+      final target = resolveExportTarget(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.comicArchive,
+          inferredImportKind: InferredImportKindFrb.comicArchive,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: true,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+          useComicArchiveExtension: false,
+        ),
+        globalExportDirectory: '/tmp',
+        safeTitle: 'Archive',
       );
+
+      expect(target!.destinationPath, p.join('/tmp', 'Archive.7z'));
+      expect(target.formatLabel, '7Z');
     });
   });
 }

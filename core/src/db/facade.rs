@@ -111,6 +111,12 @@ impl Library {
         Self::with_library(|library| crate::import_cbr::import_cbr(library, source_path))
     }
 
+    pub(crate) fn import_cb7(
+        source_path: &str,
+    ) -> Result<crate::import_shared::ImportArchiveOutcome, String> {
+        Self::with_library(|library| crate::import_cb7::import_cb7(library, source_path))
+    }
+
     pub(crate) fn import_epub(
         source_path: &str,
     ) -> Result<crate::import_shared::ImportArchiveOutcome, String> {
@@ -143,6 +149,25 @@ impl Library {
     ) -> Result<(), crate::export_error::ExportError> {
         Self::with_library_export(|library| {
             crate::export_cbr::export_cbr(library, project_id, destination_path)?;
+            if delete_project_after_export {
+                library
+                    .delete_project_inner(project_id)
+                    .map_err(|detail| crate::export_error::ExportError::new(
+                        crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+                        detail,
+                    ))?;
+            }
+            Ok(())
+        })
+    }
+
+    pub(crate) fn export_cb7(
+        project_id: &str,
+        destination_path: &str,
+        delete_project_after_export: bool,
+    ) -> Result<(), crate::export_error::ExportError> {
+        Self::with_library_export(|library| {
+            crate::export_cb7::export_cb7(library, project_id, destination_path)?;
             if delete_project_after_export {
                 library
                     .delete_project_inner(project_id)
@@ -189,6 +214,15 @@ impl Library {
     ) -> Result<crate::import_shared::AppendImportOutcome, String> {
         Self::with_library(|library| {
             crate::import_cbr::append_cbr(library, project_id, source_path)
+        })
+    }
+
+    pub(crate) fn append_cb7(
+        project_id: &str,
+        source_path: &str,
+    ) -> Result<crate::import_shared::AppendImportOutcome, String> {
+        Self::with_library(|library| {
+            crate::import_cb7::append_cb7(library, project_id, source_path)
         })
     }
 
