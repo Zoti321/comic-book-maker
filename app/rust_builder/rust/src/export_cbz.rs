@@ -171,6 +171,27 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     xml
 }
 
+/// Document Info `Author` for PDF: `writer`, then `penciller`, comma-separated when both are set.
+pub(crate) fn pdf_document_author(metadata: &MetadataRecord) -> Option<String> {
+    let writer = metadata
+        .writer
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+    let penciller = metadata
+        .penciller
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty());
+
+    match (writer, penciller) {
+        (Some(writer), Some(penciller)) => Some(format!("{writer}, {penciller}")),
+        (Some(writer), None) => Some(writer.to_string()),
+        (None, Some(penciller)) => Some(penciller.to_string()),
+        (None, None) => None,
+    }
+}
+
 /// ComicInfo.xml for PDF export: whitelisted fields only; omit empty elements except `PageCount`.
 pub(crate) fn metadata_to_pdf_comicinfo_xml(
     metadata: &MetadataRecord,
@@ -184,6 +205,7 @@ pub(crate) fn metadata_to_pdf_comicinfo_xml(
     append_optional_element_if_nonempty(&mut xml, "Number", metadata.issue_number.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Writer", metadata.writer.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Penciller", metadata.penciller.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Summary", metadata.summary.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Characters", metadata.characters.as_deref());
     append_optional_element_if_nonempty(&mut xml, "AgeRating", metadata.age_rating.as_deref());
@@ -311,6 +333,31 @@ mod tests {
     }
 
     #[test]
+    fn pdf_document_author_merges_writer_and_penciller() {
+        let both = MetadataRecord {
+            writer: Some("Alice".to_string()),
+            penciller: Some("Bob".to_string()),
+            ..MetadataRecord::default()
+        };
+        assert_eq!(pdf_document_author(&both).as_deref(), Some("Alice, Bob"));
+
+        let writer_only = MetadataRecord {
+            writer: Some("Alice".to_string()),
+            ..MetadataRecord::default()
+        };
+        assert_eq!(pdf_document_author(&writer_only).as_deref(), Some("Alice"));
+
+        let penciller_only = MetadataRecord {
+            penciller: Some("Bob".to_string()),
+            ..MetadataRecord::default()
+        };
+        assert_eq!(pdf_document_author(&penciller_only).as_deref(), Some("Bob"));
+
+        let empty = MetadataRecord::default();
+        assert_eq!(pdf_document_author(&empty), None);
+    }
+
+    #[test]
     fn serializes_pdf_comicinfo_xml_subset() {
         let metadata = MetadataRecord {
             title: "PDF Title".to_string(),
@@ -331,10 +378,24 @@ mod tests {
         assert!(xml.contains("<Title>PDF Title</Title>"));
         assert!(xml.contains("<Number>7</Number>"));
         assert!(xml.contains("<Count>24</Count>"));
+        assert!(xml.contains("<Writer>Writer</Writer>"));
         assert!(xml.contains("<Tags>tag1,tag2</Tags>"));
         assert!(xml.contains("<PageCount>2</PageCount>"));
         assert!(!xml.contains("Should Not Export"));
         assert!(!xml.contains("<Publisher>"));
+        assert!(!xml.contains("<Penciller>"));
+    }
+
+    #[test]
+    fn serializes_pdf_comicinfo_xml_includes_penciller_when_set() {
+        let metadata = MetadataRecord {
+            penciller: Some("Artist".to_string()),
+            page_count: 1,
+            ..MetadataRecord::default()
+        };
+
+        let xml = metadata_to_pdf_comicinfo_xml(&metadata, "Title", 1);
+        assert!(xml.contains("<Penciller>Artist</Penciller>"));
     }
 
     #[test]

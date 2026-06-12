@@ -7,11 +7,11 @@ use std::path::{Path, PathBuf};
 use image::ImageFormat;
 use image::ImageReader;
 use lopdf::content::{Content, Operation};
-use lopdf::{Dictionary, Document, Object, Stream};
+use lopdf::{text_string, Dictionary, Document, Object, Stream};
 
 use crate::db::{Library, MetadataRecord, PageRecord};
 use crate::export_atomic::atomic_write_destination;
-use crate::export_cbz::metadata_to_pdf_comicinfo_xml;
+use crate::export_cbz::{metadata_to_pdf_comicinfo_xml, pdf_document_author};
 use crate::export_error::{ExportError, ExportErrorKind};
 use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::normalize_extension;
@@ -208,7 +208,7 @@ fn write_pdf(
     let info_id = build_document_info(
         &mut document,
         export_title,
-        optional_trimmed(metadata.writer.as_deref()).as_deref(),
+        pdf_document_author(metadata).as_deref(),
         optional_trimmed(metadata.summary.as_deref()).as_deref(),
         optional_trimmed(normalized_tags.as_deref()).as_deref(),
     );
@@ -228,15 +228,15 @@ fn build_document_info(
     keywords: Option<&str>,
 ) -> (u32, u16) {
     let mut info = Dictionary::new();
-    info.set("Title", Object::string_literal(title));
+    info.set("Title", text_string(title));
     if let Some(author) = author {
-        info.set("Author", Object::string_literal(author));
+        info.set("Author", text_string(author));
     }
     if let Some(subject) = subject {
-        info.set("Subject", Object::string_literal(subject));
+        info.set("Subject", text_string(subject));
     }
     if let Some(keywords) = keywords {
-        info.set("Keywords", Object::string_literal(keywords));
+        info.set("Keywords", text_string(keywords));
     }
     document.add_object(Object::Dictionary(info))
 }
@@ -413,6 +413,7 @@ fn build_pdf_page(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lopdf::decode_text_string;
     use crate::db::Library;
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::import_cbz::import_cbz;
@@ -455,8 +456,7 @@ mod tests {
             .ok()?;
         let info = document.get_object(info_id).ok()?.as_dict().ok()?;
         let value = info.get(field).ok()?;
-        let bytes = value.as_str().ok()?;
-        std::str::from_utf8(bytes).ok().map(str::to_string)
+        decode_text_string(value).ok()
     }
 
     fn write_test_cbz(path: &Path, pages: &[(&str, Vec<u8>)]) {
@@ -641,6 +641,132 @@ mod tests {
         assert_eq!(
             read_document_info_field(&document, b"Keywords").as_deref(),
             Some("action,drama")
+        );
+    }
+
+    #[test]
+    fn export_pdf_document_info_uses_penciller_for_author_when_writer_missing() {
+        let app_data = temp_dir("penciller-author");
+        let mut library = Library::open(app_data.clone()).expect("open library");
+        let fixtures = temp_dir("fixtures");
+        let source_cbz = fixtures.join("penciller.cbz");
+        write_test_cbz(&source_cbz, &[("001.png", png_bytes())]);
+
+        let outcome = import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import");
+        library
+            .update_project_metadata_inner(
+                &outcome.project_id,
+                crate::db::MetadataRecord {
+                    penciller: Some("Pencil Artist".to_string()),
+                    ..library
+                        .get_project_metadata_inner(&outcome.project_id)
+                        .expect("metadata")
+                },
+            )
+            .expect("update metadata");
+
+        let export_path = temp_dir("out").join("penciller.pdf");
+        export_pdf(
+            &library,
+            &outcome.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect("export");
+
+        let bytes = fs::read(&export_path).expect("read pdf");
+        let embedded = String::from_utf8_lossy(&bytes);
+        assert!(embedded.contains("<Penciller>Pencil Artist</Penciller>"));
+        assert!(!embedded.contains("<Writer>"));
+
+        let document = Document::load(&export_path).expect("load pdf");
+        assert_eq!(
+            read_document_info_field(&document, b"Author").as_deref(),
+            Some("Pencil Artist")
+        );
+    }
+
+    #[test]
+    fn export_pdf_document_info_merges_writer_and_penciller_for_author() {
+        let app_data = temp_dir("merged-author");
+        let mut library = Library::open(app_data.clone()).expect("open library");
+        let fixtures = temp_dir("fixtures");
+        let source_cbz = fixtures.join("merged.cbz");
+        write_test_cbz(&source_cbz, &[("001.png", png_bytes())]);
+
+        let outcome = import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import");
+        library
+            .update_project_metadata_inner(
+                &outcome.project_id,
+                crate::db::MetadataRecord {
+                    writer: Some("Script Writer".to_string()),
+                    penciller: Some("Pencil Artist".to_string()),
+                    ..library
+                        .get_project_metadata_inner(&outcome.project_id)
+                        .expect("metadata")
+                },
+            )
+            .expect("update metadata");
+
+        let export_path = temp_dir("out").join("merged.pdf");
+        export_pdf(
+            &library,
+            &outcome.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect("export");
+
+        let bytes = fs::read(&export_path).expect("read pdf");
+        let embedded = String::from_utf8_lossy(&bytes);
+        assert!(embedded.contains("<Writer>Script Writer</Writer>"));
+        assert!(embedded.contains("<Penciller>Pencil Artist</Penciller>"));
+
+        let document = Document::load(&export_path).expect("load pdf");
+        assert_eq!(
+            read_document_info_field(&document, b"Author").as_deref(),
+            Some("Script Writer, Pencil Artist")
+        );
+    }
+
+    #[test]
+    fn export_pdf_document_info_preserves_unicode_text() {
+        let app_data = temp_dir("unicode");
+        let mut library = Library::open(app_data.clone()).expect("open library");
+        let fixtures = temp_dir("fixtures");
+        let source_cbz = fixtures.join("unicode.cbz");
+        write_test_cbz(&source_cbz, &[("001.png", png_bytes())]);
+
+        let outcome = import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import");
+        let title = "(C81) [アカギリ (清一)] 汚";
+        let tags = "同人,漫画";
+        library
+            .update_project_metadata_inner(
+                &outcome.project_id,
+                crate::db::MetadataRecord {
+                    title: title.to_string(),
+                    tags: Some(tags.to_string()),
+                    ..library
+                        .get_project_metadata_inner(&outcome.project_id)
+                        .expect("metadata")
+                },
+            )
+            .expect("update metadata");
+
+        let export_path = temp_dir("out").join("unicode.pdf");
+        export_pdf(
+            &library,
+            &outcome.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect("export");
+
+        let document = Document::load(&export_path).expect("load pdf");
+        assert_eq!(
+            read_document_info_field(&document, b"Title").as_deref(),
+            Some(title)
+        );
+        assert_eq!(
+            read_document_info_field(&document, b"Keywords").as_deref(),
+            Some(tags)
         );
     }
 
