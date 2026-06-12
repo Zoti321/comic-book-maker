@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: "3.38.5"
+  FRB_CODEGEN_VERSION: "2.12.0"
+
+jobs:
+  core:
+    name: core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: cargo test
+        run: cargo test --manifest-path core/Cargo.toml
+
+  dart:
+    name: dart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          version: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter analyze
+        working-directory: app
+        run: flutter analyze --no-fatal-infos
+
+      - name: flutter test
+        working-directory: app
+        run: flutter test
+
+      - name: FRB UI isolation
+        run: bash scripts/check-frb-ui-isolation.sh

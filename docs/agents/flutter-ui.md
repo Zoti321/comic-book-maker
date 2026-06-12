@@ -16,7 +16,7 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
 - **Rust API**：手写入口在 `core/src/api/`（`rust_input: crate::api`），与 FRB 官方目录约定一致。
 - **新增 Core 能力**：改 Rust API → FRB codegen → 扩展 `CoreGateway`，勿在 Widget 直调 FRB。
 
-验收（架构迁移完成后）：`rg 'src/rust' app/lib/ui app/lib/providers` 无匹配。本地/CI 可跑 `scripts/check-frb-ui-isolation.ps1`。
+验收（架构迁移完成后）：`rg 'src/rust' app/lib/ui app/lib/providers` 无匹配。本地/CI 可跑 `scripts/check-frb-ui-isolation.ps1`（Windows）或 `scripts/check-frb-ui-isolation.sh`（Linux/CI）。
 
 ## 组件库
 

@@ -44,7 +44,7 @@ void main() {
         matching: find.byType(DecoratedBox),
       ),
     );
-    final decoration = decorated.decoration! as BoxDecoration;
+    final decoration = decorated.decoration as BoxDecoration;
     expect(decoration.boxShadow, equals(const [AppElevation.headerShadow]));
     expect(decoration.border, isNull);
   });
