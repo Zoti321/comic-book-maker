@@ -469,6 +469,34 @@ fn export_cbz_deletes_project_when_requested() {
 }
 
 #[test]
+fn export_pdf_deletes_project_when_requested() {
+    let app_data = temp_dir("export-pdf-delete");
+    let mut library = Library::open(app_data.clone()).expect("open library");
+
+    let project = library
+        .create_project_inner(None)
+        .expect("create project");
+    let fixtures = temp_dir("export-pdf-delete-fixtures");
+    let png = write_test_png(&fixtures, "page.png");
+    library
+        .add_page_images_inner(&project.id, vec![png.to_string_lossy().into_owned()])
+        .expect("add page");
+
+    let storage = project_storage_dir(&app_data, &project.id);
+    let export_path = temp_dir("export-pdf-delete-out").join("out.pdf");
+
+    crate::export_pdf::export_pdf(&library, &project.id, &export_path.to_string_lossy())
+        .expect("export");
+    library
+        .delete_project_inner(&project.id)
+        .expect("delete after export");
+
+    assert!(export_path.is_file());
+    assert!(!storage.exists());
+    assert!(library.list_projects_inner().expect("list").is_empty());
+}
+
+#[test]
 fn abandon_import_project_removes_partial_disk_and_db_row() {
     let app_data = temp_dir("abandon-import");
     let mut library = Library::open(app_data.clone()).expect("open library");

@@ -59,7 +59,6 @@ class ProjectExportSettingsPanel extends StatelessWidget {
           AppSelectItem(
             value: format,
             label: exportFormatLabel(format),
-            enabled: format != ExportFormatFrb.pdf,
           ),
       ],
     );

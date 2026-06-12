@@ -50,6 +50,27 @@ void main() {
       expect(target.formatLabel, 'ZIP');
     });
 
+    test('pdf export resolves pdf path and label', () {
+      final target = resolveExportTarget(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.pdf,
+          inferredImportKind: InferredImportKindFrb.images,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: true,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.zip,
+          useComicArchiveExtension: true,
+        ),
+        globalExportDirectory: '/tmp',
+        safeTitle: 'Comic',
+      );
+
+      expect(target!.destinationPath, p.join('/tmp', 'Comic.pdf'));
+      expect(target.exportComicArchive, isFalse);
+      expect(target.exportPdf, isTrue);
+      expect(target.formatLabel, 'PDF');
+    });
+
     test('epub export ignores comic archive extension settings', () {
       final target = resolveExportTarget(
         settings: const ProjectSettings(
@@ -79,6 +100,44 @@ void main() {
       );
 
       expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
+    });
+
+    test('blocks pdf export when global directory missing', () {
+      final block = resolveExportBlock(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.pdf,
+          inferredImportKind: InferredImportKindFrb.images,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: true,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.zip,
+          useComicArchiveExtension: true,
+        ),
+        globalExportDirectory: null,
+        safeTitle: 'Comic',
+      );
+
+      expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
+      expect(block?.message, contains('默认导出目录'));
+    });
+
+    test('blocks pdf export when project directory missing', () {
+      final block = resolveExportBlock(
+        settings: const ProjectSettings(
+          exportFormat: ExportFormatFrb.pdf,
+          inferredImportKind: InferredImportKindFrb.images,
+          deleteProjectAfterExport: false,
+          useDefaultExportDirectory: false,
+          exportDirectory: null,
+          comicArchiveContainer: ComicArchiveContainerFrb.zip,
+          useComicArchiveExtension: true,
+        ),
+        globalExportDirectory: '/tmp',
+        safeTitle: 'Comic',
+      );
+
+      expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
+      expect(block?.message, contains('专用导出目录'));
     });
 
     test('comicArchiveFileExtension follows extension strategy', () {

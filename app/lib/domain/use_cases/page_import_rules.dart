@@ -67,5 +67,5 @@ bool canExportProject({
   if (settings == null || pageCount == 0 || operationInProgress) {
     return false;
   }
-  return settings.exportFormat != ExportFormatFrb.pdf;
+  return true;
 }

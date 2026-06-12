@@ -171,6 +171,37 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     xml
 }
 
+/// ComicInfo.xml for PDF export: whitelisted fields only; omit empty elements except `PageCount`.
+pub(crate) fn metadata_to_pdf_comicinfo_xml(
+    metadata: &MetadataRecord,
+    title: &str,
+    page_count: usize,
+) -> String {
+    let mut xml = String::from("<?xml version=\"1.0\"?>\n<ComicInfo>\n");
+
+    append_optional_element_if_nonempty(&mut xml, "Title", Some(title));
+    append_optional_element_if_nonempty(&mut xml, "Series", metadata.series.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Number", metadata.issue_number.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Writer", metadata.writer.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Summary", metadata.summary.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Characters", metadata.characters.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "AgeRating", metadata.age_rating.as_deref());
+    let normalized_tags = metadata
+        .tags
+        .as_deref()
+        .and_then(normalize_comma_separated_tags);
+    append_optional_element_if_nonempty(&mut xml, "Tags", normalized_tags.as_deref());
+    append_element_always(
+        &mut xml,
+        "PageCount",
+        Some(&page_count.to_string()),
+    );
+
+    xml.push_str("</ComicInfo>\n");
+    xml
+}
+
 fn append_pages_section(xml: &mut String, pages: &[PageRecord], cover_page_index: i32) {
     xml.push_str("  <Pages>\n");
     for page in pages {
@@ -234,6 +265,7 @@ fn escape_xml(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::MetadataRecord;
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::import_cbz::{import_cbz, scan_cbz_entries};
@@ -276,6 +308,33 @@ mod tests {
         }
 
         zip.finish().expect("finish cbz");
+    }
+
+    #[test]
+    fn serializes_pdf_comicinfo_xml_subset() {
+        let metadata = MetadataRecord {
+            title: "PDF Title".to_string(),
+            series: Some("Series".to_string()),
+            issue_number: Some("7".to_string()),
+            series_count: Some("24".to_string()),
+            writer: Some("Writer".to_string()),
+            summary: Some("Summary".to_string()),
+            characters: Some("A,B".to_string()),
+            age_rating: Some("Teen".to_string()),
+            tags: Some("tag1, tag2".to_string()),
+            publisher: Some("Should Not Export".to_string()),
+            page_count: 2,
+            ..MetadataRecord::default()
+        };
+
+        let xml = metadata_to_pdf_comicinfo_xml(&metadata, "PDF Title", 2);
+        assert!(xml.contains("<Title>PDF Title</Title>"));
+        assert!(xml.contains("<Number>7</Number>"));
+        assert!(xml.contains("<Count>24</Count>"));
+        assert!(xml.contains("<Tags>tag1,tag2</Tags>"));
+        assert!(xml.contains("<PageCount>2</PageCount>"));
+        assert!(!xml.contains("Should Not Export"));
+        assert!(!xml.contains("<Publisher>"));
     }
 
     #[test]

@@ -7,6 +7,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
 
   switch (exportFormat) {
     case ExportFormatFrb.comicArchive:
+    case ExportFormatFrb.pdf:
       return MetadataEditorSchemaFrb(
         editorTitle: 'ComicInfo',
         editable: true,
@@ -74,15 +75,6 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             ],
           ),
         ],
-        ageRatingPresets: agePresets,
-      );
-    case ExportFormatFrb.pdf:
-      return MetadataEditorSchemaFrb(
-        editorTitle: 'PDF Export',
-        editable: false,
-        pdfMessage:
-            'PDF Export 尚未实现。请将 Export 格式改为 EPUB 或漫画压缩包后再编辑导出元数据。',
-        sections: [],
         ageRatingPresets: agePresets,
       );
   }

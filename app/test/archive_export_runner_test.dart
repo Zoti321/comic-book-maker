@@ -8,6 +8,8 @@ class _RecordingCoreGateway extends InMemoryCoreGateway {
   _RecordingCoreGateway() : super();
 
   bool? lastExportComicArchive;
+  bool? lastExportPdf;
+  bool? lastDeleteProjectAfterExport;
   ComicArchiveContainerFrb? lastComicArchiveContainer;
 
   @override
@@ -16,9 +18,12 @@ class _RecordingCoreGateway extends InMemoryCoreGateway {
     required String destinationPath,
     required bool exportComicArchive,
     ComicArchiveContainerFrb? comicArchiveContainer,
+    required bool exportPdf,
     required bool deleteProjectAfterExport,
   }) async {
     lastExportComicArchive = exportComicArchive;
+    lastExportPdf = exportPdf;
+    lastDeleteProjectAfterExport = deleteProjectAfterExport;
     lastComicArchiveContainer = comicArchiveContainer;
   }
 }
@@ -95,6 +100,39 @@ void main() {
     );
 
     expect(gateway.lastExportComicArchive, isFalse);
+    expect(gateway.lastExportPdf, isFalse);
     expect(gateway.lastComicArchiveContainer, isNull);
+  });
+
+  test('routes PDF to PDF export', () async {
+    await workflow.execute(
+      projectId: 'p1',
+      target: const ResolvedExportTarget(
+        destinationPath: '/tmp/out.pdf',
+        formatLabel: 'PDF',
+        exportComicArchive: false,
+        exportPdf: true,
+      ),
+      deleteProjectAfterExport: false,
+    );
+
+    expect(gateway.lastExportComicArchive, isFalse);
+    expect(gateway.lastExportPdf, isTrue);
+    expect(gateway.lastComicArchiveContainer, isNull);
+  });
+
+  test('passes deleteProjectAfterExport to gateway for pdf', () async {
+    await workflow.execute(
+      projectId: 'p1',
+      target: const ResolvedExportTarget(
+        destinationPath: '/tmp/out.pdf',
+        formatLabel: 'PDF',
+        exportComicArchive: false,
+        exportPdf: true,
+      ),
+      deleteProjectAfterExport: true,
+    );
+
+    expect(gateway.lastDeleteProjectAfterExport, isTrue);
   });
 }

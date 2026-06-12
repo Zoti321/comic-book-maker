@@ -58,7 +58,7 @@ void main() {
     expect(find.text('pre-paginated'), findsOneWidget);
   });
 
-  testWidgets('pdf export format shows placeholder without editable form', (
+  testWidgets('pdf export format uses editable comicinfo form', (
     tester,
   ) async {
     await pumpMetadataPanel(
@@ -67,9 +67,9 @@ void main() {
       exportFormat: ExportFormatFrb.pdf,
     );
 
-    expect(find.textContaining('PDF Export 尚未实现'), findsOneWidget);
-    expect(find.text('保存'), findsNothing);
-    expect(find.text('标题'), findsNothing);
+    expect(find.text('ComicInfo'), findsOneWidget);
+    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('当前格式不支持编辑'), findsNothing);
   });
 
   testWidgets('debounced edit persists metadata without manual save', (

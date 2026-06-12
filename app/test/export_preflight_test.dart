@@ -58,6 +58,18 @@ void main() {
 
       expect(result.status, ExportPreflightStatus.ready);
     });
+
+    test('treats pdf destination like other archive formats', () {
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+      final destination = File(p.join(exportDir.path, 'comic.pdf'));
+      destination.writeAsStringSync('existing');
+
+      final result = checkExportPreflight(destination.path);
+
+      expect(result.needsOverwriteConfirmation, isTrue);
+      expect(result.isBlocked, isFalse);
+    });
   });
 
   group('runExportConfirmations', () {

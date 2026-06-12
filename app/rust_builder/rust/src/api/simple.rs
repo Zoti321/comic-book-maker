@@ -186,6 +186,15 @@ pub fn export_epub(
     Library::export_epub(&project_id, &destination_path, delete_project_after_export)
 }
 
+#[flutter_rust_bridge::frb]
+pub fn export_pdf(
+    project_id: String,
+    destination_path: String,
+    delete_project_after_export: bool,
+) -> Result<(), ExportError> {
+    Library::export_pdf(&project_id, &destination_path, delete_project_after_export)
+}
+
 #[flutter_rust_bridge::frb(sync)]
 pub fn delete_project(project_id: String) -> Result<()> {
     Library::delete_project(&project_id).map_err(|error| anyhow::anyhow!(error))

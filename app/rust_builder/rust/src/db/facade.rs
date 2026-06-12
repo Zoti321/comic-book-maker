@@ -199,6 +199,25 @@ impl Library {
         })
     }
 
+    pub(crate) fn export_pdf(
+        project_id: &str,
+        destination_path: &str,
+        delete_project_after_export: bool,
+    ) -> Result<(), crate::export_error::ExportError> {
+        Self::with_library_export(|library| {
+            crate::export_pdf::export_pdf(library, project_id, destination_path)?;
+            if delete_project_after_export {
+                library
+                    .delete_project_inner(project_id)
+                    .map_err(|detail| crate::export_error::ExportError::new(
+                        crate::export_error::ExportErrorKind::DeleteAfterExportFailed,
+                        detail,
+                    ))?;
+            }
+            Ok(())
+        })
+    }
+
     pub(crate) fn append_cbz(
         project_id: &str,
         source_path: &str,

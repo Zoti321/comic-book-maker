@@ -19,6 +19,7 @@ natord = "1.0.9"
 unrar-ng = "0.7"
 rars = "0.2.0"
 sevenz-rust2 = { version = "0.20", features = ["compress"] }
+lopdf = { version = "0.41", default-features = false }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

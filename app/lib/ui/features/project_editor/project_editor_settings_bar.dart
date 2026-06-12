@@ -7,7 +7,7 @@ String exportFormatLabel(ExportFormatFrb format) {
   return switch (format) {
     ExportFormatFrb.epub => 'EPUB',
     ExportFormatFrb.comicArchive => '漫画压缩包',
-    ExportFormatFrb.pdf => 'PDF（尚未实现）',
+    ExportFormatFrb.pdf => 'PDF',
   };
 }
 
@@ -74,7 +74,6 @@ class ProjectEditorSettingsBar extends StatelessWidget {
                   .map(
                     (format) => DropdownMenuItem(
                       value: format,
-                      enabled: format != ExportFormatFrb.pdf,
                       child: Text(exportFormatLabel(format)),
                     ),
                   )
@@ -82,9 +81,7 @@ class ProjectEditorSettingsBar extends StatelessWidget {
               onChanged: savingExportFormat
                   ? null
                   : (value) {
-                      if (value == null || value == ExportFormatFrb.pdf) {
-                        return;
-                      }
+                      if (value == null) return;
                       onExportFormatChanged(value);
                     },
             );

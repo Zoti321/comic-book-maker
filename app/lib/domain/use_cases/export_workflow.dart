@@ -11,18 +11,19 @@ class ResolvedExportTarget {
     required this.formatLabel,
     required this.exportComicArchive,
     this.comicArchiveContainer,
+    this.exportPdf = false,
   });
 
   final String destinationPath;
   final String formatLabel;
   final bool exportComicArchive;
   final ComicArchiveContainerFrb? comicArchiveContainer;
+  final bool exportPdf;
 }
 
 /// Flutter 侧在调用 Core 前阻断 Export 的原因。
 enum ExportWorkflowBlockReason {
   settingsNotLoaded,
-  pdfNotImplemented,
   archiveContainerNotImplemented,
   exportDirectoryMissing,
   noPages,
@@ -201,6 +202,7 @@ class ExportWorkflow {
         destinationPath: target.destinationPath,
         exportComicArchive: target.exportComicArchive,
         comicArchiveContainer: target.comicArchiveContainer,
+        exportPdf: target.exportPdf,
         deleteProjectAfterExport: deleteProjectAfterExport,
       );
 
@@ -219,15 +221,6 @@ ExportWorkflowBlock? resolveExportBlock({
       title: '无法导出',
       message: '项目设置尚未加载，请稍后重试。',
       nextStepHint: '若问题持续，请返回漫画库后重新打开项目。',
-    );
-  }
-
-  if (settings.exportFormat == ExportFormatFrb.pdf) {
-    return const ExportWorkflowBlock(
-      reason: ExportWorkflowBlockReason.pdfNotImplemented,
-      title: '无法导出 PDF',
-      message: 'PDF Export 尚未实现。',
-      nextStepHint: '请在项目属性中将 Export 格式改为漫画压缩包或 EPUB 后重试。',
     );
   }
 
@@ -283,12 +276,17 @@ ResolvedExportTarget? resolveExportTarget({
   )!;
   final exportComicArchive =
       settings.exportFormat == ExportFormatFrb.comicArchive;
+  final exportPdf = settings.exportFormat == ExportFormatFrb.pdf;
   final fileName = exportComicArchive
       ? comicArchiveExportFileName(settings, safeTitle)
-      : '$safeTitle.epub';
+      : exportPdf
+          ? '$safeTitle.pdf'
+          : '$safeTitle.epub';
   final formatLabel = exportComicArchive
       ? comicArchiveExportFormatLabel(settings)
-      : 'EPUB';
+      : exportPdf
+          ? 'PDF'
+          : 'EPUB';
 
   return ResolvedExportTarget(
     destinationPath: p.join(directory, fileName),
@@ -296,6 +294,7 @@ ResolvedExportTarget? resolveExportTarget({
     exportComicArchive: exportComicArchive,
     comicArchiveContainer:
         exportComicArchive ? settings.comicArchiveContainer : null,
+    exportPdf: exportPdf,
   );
 }
 

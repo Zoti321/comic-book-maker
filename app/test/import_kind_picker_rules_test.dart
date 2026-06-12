@@ -62,4 +62,38 @@ void main() {
       );
     });
   });
+
+  group('canExportProject', () {
+    const pdfSettings = ProjectSettings(
+      exportFormat: ExportFormatFrb.pdf,
+      inferredImportKind: InferredImportKindFrb.pdf,
+      deleteProjectAfterExport: false,
+      useDefaultExportDirectory: true,
+      exportDirectory: null,
+      comicArchiveContainer: ComicArchiveContainerFrb.zip,
+      useComicArchiveExtension: true,
+    );
+
+    test('allows pdf export when pages exist', () {
+      expect(
+        canExportProject(
+          settings: pdfSettings,
+          pageCount: 2,
+          operationInProgress: false,
+        ),
+        isTrue,
+      );
+    });
+
+    test('blocks export without pages regardless of format', () {
+      expect(
+        canExportProject(
+          settings: pdfSettings,
+          pageCount: 0,
+          operationInProgress: false,
+        ),
+        isFalse,
+      );
+    });
+  });
 }

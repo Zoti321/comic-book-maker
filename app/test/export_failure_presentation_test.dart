@@ -55,5 +55,18 @@ void main() {
     test('presentationForCaughtExportFailure returns null for unknown errors', () {
       expect(presentationForCaughtExportFailure(Exception('boom')), isNull);
     });
+
+    test('maps ArchiveWriteFailed with unsupported pdf page format detail', () {
+      const error = ExportFailure(
+        kind: ExportFailureKind.archiveWriteFailed,
+        detail: 'PDF 导出不支持 .webp 页图（pages/002.webp）。请将页面替换为 JPEG 或 PNG 后重试。',
+      );
+
+      final presentation = presentationForExportFailure(error);
+
+      expect(presentation.title, '导出失败');
+      expect(presentation.message, contains('生成档案'));
+      expect(presentation.nextStepHint, contains('JPEG 或 PNG'));
+    });
   });
 }

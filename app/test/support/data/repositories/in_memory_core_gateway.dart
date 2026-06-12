@@ -499,6 +499,7 @@ class InMemoryCoreGateway implements CoreGateway {
     required String destinationPath,
     required bool exportComicArchive,
     ComicArchiveContainerFrb? comicArchiveContainer,
+    required bool exportPdf,
     required bool deleteProjectAfterExport,
   }) async {
     exportCallCount++;

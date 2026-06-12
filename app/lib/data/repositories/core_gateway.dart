@@ -209,6 +209,7 @@ abstract class CoreGateway implements MetadataEditingGateway {
     required String destinationPath,
     required bool exportComicArchive,
     simple_api.ComicArchiveContainerFrb? comicArchiveContainer,
+    required bool exportPdf,
     required bool deleteProjectAfterExport,
   });
 }
@@ -553,10 +554,17 @@ class FrbCoreGateway implements CoreGateway {
     required String destinationPath,
     required bool exportComicArchive,
     simple_api.ComicArchiveContainerFrb? comicArchiveContainer,
+    required bool exportPdf,
     required bool deleteProjectAfterExport,
   }) async {
     try {
-      if (exportComicArchive) {
+      if (exportPdf) {
+        await simple_api.exportPdf(
+          projectId: projectId,
+          destinationPath: destinationPath,
+          deleteProjectAfterExport: deleteProjectAfterExport,
+        );
+      } else if (exportComicArchive) {
         switch (comicArchiveContainer) {
           case simple_api.ComicArchiveContainerFrb.rar:
             await simple_api.exportCbr(

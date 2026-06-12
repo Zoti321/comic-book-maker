@@ -150,10 +150,7 @@ class _ExportButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPdf = exportFormat == ExportFormatFrb.pdf;
     final canExport = workspace.canExport;
-    final disabledTooltip =
-        !canExport && isPdf ? 'PDF Export 尚未实现' : null;
 
     final button = AppButton(
       onPressed: canExport ? onPressed : null,
@@ -162,16 +159,12 @@ class _ExportButton extends StatelessWidget {
     );
 
     if (showLabel) {
-      if (disabledTooltip != null) {
-        return Tooltip(message: disabledTooltip, child: button);
-      }
       return button;
     }
 
     return AppIconButton(
       variant: AppButtonVariant.primary,
       tooltip: canExport ? '导出为 ${exportFormatLabel(exportFormat)}' : null,
-      disabledTooltip: disabledTooltip,
       onPressed: canExport ? onPressed : null,
       icon: const Icon(LucideIcons.upload),
     );

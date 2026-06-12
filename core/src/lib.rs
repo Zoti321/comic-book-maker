@@ -17,6 +17,7 @@ pub mod export_cbz;
 pub mod export_cb7;
 pub mod export_cbr;
 pub mod export_epub;
+pub mod export_pdf;
 pub mod export_error;
 pub mod natural_sort;
 pub mod page_image;

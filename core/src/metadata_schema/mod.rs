@@ -20,9 +20,6 @@ pub const AGE_RATING_PRESETS: &[&str] = &[
     "Unknown",
 ];
 
-pub const PDF_EDITOR_MESSAGE: &str =
-    "PDF Export 尚未实现。请将 Export 格式改为 EPUB 或漫画压缩包后再编辑导出元数据。";
-
 /// EPUB 固定版式 meta（与 `epub_format::append_comic_rendition_metadata` 写入项对齐）。
 pub const OPF_FIXED_LAYOUT_FIELDS: &[(&str, &str)] = &[
     ("rendition:layout", "pre-paginated"),
@@ -337,18 +334,10 @@ const EPUB_SCHEMA: MetadataEditorSchema = MetadataEditorSchema {
     sections: OPF_SECTIONS,
 };
 
-const PDF_SCHEMA: MetadataEditorSchema = MetadataEditorSchema {
-    editor_title: "PDF Export",
-    editable: false,
-    pdf_message: Some(PDF_EDITOR_MESSAGE),
-    sections: &[],
-};
-
 pub fn editor_schema(export_format: ExportFormat) -> &'static MetadataEditorSchema {
     match export_format {
-        ExportFormat::ComicArchive => &COMIC_ARCHIVE_SCHEMA,
+        ExportFormat::ComicArchive | ExportFormat::Pdf => &COMIC_ARCHIVE_SCHEMA,
         ExportFormat::Epub => &EPUB_SCHEMA,
-        ExportFormat::Pdf => &PDF_SCHEMA,
     }
 }
 
@@ -537,7 +526,7 @@ pub fn merge_form_values(
             page_count,
             ..base.clone()
         },
-        ExportFormat::ComicArchive => MetadataRecord {
+        ExportFormat::ComicArchive | ExportFormat::Pdf => MetadataRecord {
             title,
             series: optional_trimmed(values.get("series").map(String::as_str).unwrap_or("")),
             issue_number: optional_trimmed(
@@ -696,9 +685,6 @@ pub fn merge_form_values(
             cover_page_index,
             page_count,
         },
-        ExportFormat::Pdf => {
-            return Err("metadata editor is not editable for PDF export".to_string())
-        }
     };
 
     let normalized = normalize_metadata(merged);
@@ -772,10 +758,11 @@ mod tests {
     }
 
     #[test]
-    fn pdf_schema_is_read_only() {
+    fn pdf_schema_uses_comicinfo_editor() {
         let schema = editor_schema(ExportFormat::Pdf);
-        assert!(!schema.editable);
-        assert!(schema.pdf_message.is_some());
+        assert!(schema.editable);
+        assert_eq!(schema.editor_title, "ComicInfo");
+        assert!(schema.pdf_message.is_none());
     }
 
     #[test]
