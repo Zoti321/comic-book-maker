@@ -209,7 +209,6 @@ class _OverviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(
       workspace.project.updatedAtMs.toInt(),
     );
@@ -227,13 +226,6 @@ class _OverviewTab extends StatelessWidget {
         _PropertyRow(
           label: '最近更新',
           value: _formatDateTime(updatedAt),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Export 与导入格式请在「导出」「导入」Tab 中修改。',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
         ),
       ],
     );
@@ -253,44 +245,19 @@ class _ImportTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final onSurfaceVariant = theme.colorScheme.onSurfaceVariant;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          '导入格式决定追加 / 替换页面时可选择的文件类型。更改后将清空现有内容。',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: onSurfaceVariant,
+    return AppSelect<InferredImportKindFrb>(
+      key: ValueKey(settings.inferredImportKind),
+      label: '导入格式',
+      enabled: !saving,
+      value: settings.inferredImportKind,
+      onChanged: saving ? null : onImportKindChanged,
+      items: [
+        for (final kind in InferredImportKindFrb.values)
+          AppSelectItem(
+            value: kind,
+            label: inferredImportKindLabel(kind),
+            enabled: kind != InferredImportKindFrb.pdf,
           ),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<InferredImportKindFrb>(
-          key: ValueKey(settings.inferredImportKind),
-          initialValue: settings.inferredImportKind,
-          decoration: InputDecoration(
-            labelText: '导入格式',
-            enabled: !saving,
-          ),
-          items: InferredImportKindFrb.values
-              .map(
-                (kind) => DropdownMenuItem(
-                  value: kind,
-                  enabled: kind != InferredImportKindFrb.pdf,
-                  child: Text(inferredImportKindLabel(kind)),
-                ),
-              )
-              .toList(),
-          onChanged: saving ? null : onImportKindChanged,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '本对话框不提供重新导入。清空后请在编辑页使用追加导入或图片 Tab 添加页面。',
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: onSurfaceVariant,
-          ),
-        ),
       ],
     );
   }
