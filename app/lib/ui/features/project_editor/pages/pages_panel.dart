@@ -324,15 +324,12 @@ PopupMenuItem<PageThumbnailAction> _menuRow({
 }) {
   return PopupMenuItem(
     value: value,
-    child: Row(
-      children: [
-        Icon(icon, size: 20, color: foregroundColor),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: foregroundColor != null ? TextStyle(color: foregroundColor) : null,
-        ),
-      ],
+    padding: EdgeInsets.zero,
+    height: RevealPopupMenuRow.menuItemHeight,
+    child: RevealPopupMenuRow(
+      icon: icon,
+      label: label,
+      foregroundColor: foregroundColor,
     ),
   );
 }

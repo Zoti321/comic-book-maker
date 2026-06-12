@@ -1,6 +1,51 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+/// [HoverRevealMenuAnchor] 弹出菜单行：16px 图标、紧凑内边距、[TextTheme.bodySmall]。
+class RevealPopupMenuRow extends StatelessWidget {
+  const RevealPopupMenuRow({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.foregroundColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? foregroundColor;
+
+  static const iconSize = 16.0;
+  static const horizontalPadding = 8.0;
+  static const verticalPadding = 4.0;
+  static const iconGap = 8.0;
+  static const menuItemHeight = 28.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = foregroundColor ?? scheme.onSurface;
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: color,
+        );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: iconSize, color: color),
+          const SizedBox(width: iconGap),
+          Text(label, style: textStyle),
+        ],
+      ),
+    );
+  }
+}
 
 /// 悬停 ⋮ 按钮的中性样式。
 class RevealMenuButtonStyle {
@@ -45,6 +90,7 @@ class HoverRevealMenuAnchor<T> extends StatefulWidget {
 class _HoverRevealMenuAnchorState<T> extends State<HoverRevealMenuAnchor<T>> {
   bool _hovering = false;
   final GlobalKey _anchorKey = GlobalKey();
+  BuildContext? _menuThemeContext;
 
   bool _showHoverButton(BuildContext context) =>
       !isCompact(context);
@@ -54,7 +100,8 @@ class _HoverRevealMenuAnchorState<T> extends State<HoverRevealMenuAnchor<T>> {
 
   Future<void> _openMenu() async {
     final anchorContext = _anchorKey.currentContext;
-    if (anchorContext == null) return;
+    final menuContext = _menuThemeContext;
+    if (anchorContext == null || menuContext == null) return;
 
     final renderBox = anchorContext.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
@@ -73,8 +120,10 @@ class _HoverRevealMenuAnchorState<T> extends State<HoverRevealMenuAnchor<T>> {
     );
 
     final selected = await showMenu<T>(
-      context: anchorContext,
+      context: menuContext,
       position: position,
+      color: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
       items: widget.menuItemsBuilder(anchorContext),
     );
 
@@ -87,34 +136,52 @@ class _HoverRevealMenuAnchorState<T> extends State<HoverRevealMenuAnchor<T>> {
   Widget build(BuildContext context) {
     final showHover = _showHoverButton(context);
     final longPress = _showLongPressMenu(context);
+    final baseTheme = Theme.of(context);
+    final localTheme = baseTheme.copyWith(
+      popupMenuTheme: baseTheme.popupMenuTheme.copyWith(
+        color: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        textStyle: baseTheme.textTheme.bodySmall,
+      ),
+    );
 
-    return KeyedSubtree(
-      key: _anchorKey,
-      child: MouseRegion(
-        onEnter: showHover ? (_) => setState(() => _hovering = true) : null,
-        onExit: showHover ? (_) => setState(() => _hovering = false) : null,
-        child: GestureDetector(
-          onLongPress: longPress ? _openMenu : null,
-          behavior: HitTestBehavior.deferToChild,
-          child: Stack(
-            clipBehavior: Clip.none,
-            fit: StackFit.passthrough,
-            children: [
-              widget.child,
-              if (showHover && _hovering)
-                Positioned(
-                  top: widget.buttonTop,
-                  right: widget.buttonRight,
-                  child: RevealMenuIconButton(
-                    onPressed: _openMenu,
-                    iconColor:
-                        widget.menuButtonStyle?.iconColor ?? widget.menuIconColor,
-                    backgroundColor: widget.menuButtonStyle?.backgroundColor,
-                  ),
+    return Theme(
+      data: localTheme,
+      child: Builder(
+        builder: (menuContext) {
+          _menuThemeContext = menuContext;
+
+          return KeyedSubtree(
+            key: _anchorKey,
+            child: MouseRegion(
+              onEnter: showHover ? (_) => setState(() => _hovering = true) : null,
+              onExit: showHover ? (_) => setState(() => _hovering = false) : null,
+              child: GestureDetector(
+                onLongPress: longPress ? _openMenu : null,
+                behavior: HitTestBehavior.deferToChild,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  fit: StackFit.passthrough,
+                  children: [
+                    widget.child,
+                    if (showHover && _hovering)
+                      Positioned(
+                        top: widget.buttonTop,
+                        right: widget.buttonRight,
+                        child: RevealMenuIconButton(
+                          onPressed: _openMenu,
+                          iconColor: widget.menuButtonStyle?.iconColor ??
+                              widget.menuIconColor,
+                          backgroundColor:
+                              widget.menuButtonStyle?.backgroundColor,
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

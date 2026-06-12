@@ -70,12 +70,12 @@ class _ProjectCardState extends State<ProjectCard> {
         menuItemsBuilder: (context) => [
           PopupMenuItem(
             value: _ProjectCardMenuAction.delete,
-            child: Row(
-              children: [
-                Icon(LucideIcons.trash2, size: 20, color: scheme.error),
-                const SizedBox(width: 12),
-                Text('删除', style: TextStyle(color: scheme.error)),
-              ],
+            padding: EdgeInsets.zero,
+            height: RevealPopupMenuRow.menuItemHeight,
+            child: RevealPopupMenuRow(
+              icon: LucideIcons.trash2,
+              label: '删除',
+              foregroundColor: scheme.error,
             ),
           ),
         ],
