@@ -231,7 +231,7 @@ mod tests {
         )
         .expect("export");
 
-        let (page_paths, _, _, _) = scan_epub_page_paths(&export_path).expect("scan export");
+        let (page_paths, _, _, _, _) = scan_epub_page_paths(&export_path).expect("scan export");
         assert!(!page_paths.is_empty());
 
         let file = File::open(&export_path).expect("open epub");

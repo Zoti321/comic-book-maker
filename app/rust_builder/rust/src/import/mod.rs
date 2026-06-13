@@ -8,6 +8,7 @@ pub mod cb7;
 pub mod cbz;
 pub mod cbr;
 pub mod epub;
+pub mod pdf;
 mod metadata;
 mod orchestration;
 mod staging;
@@ -21,11 +22,12 @@ pub use cb7::{append_cb7, import_cb7};
 pub use cbz::{append_cbz, import_cbz, scan_cbz_entries, ImportCbzOutcome};
 pub use cbr::{append_cbr, import_cbr};
 pub use epub::{append_epub, import_epub, ImportEpubOutcome};
+pub use pdf::{import_pdf, ImportPdfOutcome};
 pub use metadata::build_import_metadata;
 pub use orchestration::{
     finalize_import, run_append_import, run_import_with_rollback,
 };
-pub use staging::{remove_staged_page_assets, scan_archive_tree, stage_pages_from_files, stage_zip_pages};
+pub use staging::{remove_staged_page_assets, scan_archive_tree, stage_pages_from_files, stage_pdf_pages, stage_zip_pages};
 pub use types::{AppendImportOutcome, ImportArchiveOutcome, StagedImportPage};
 
 use crate::db::Library;

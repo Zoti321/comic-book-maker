@@ -1,9 +1,7 @@
-import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
@@ -53,30 +51,6 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
     final settings = workspace.settings;
     final saving = workspace.savingExportFormat;
 
-    final importSnapshot = useState<ImportMetadataSnapshotFrb?>(null);
-    final importLoadError = useState<String?>(null);
-    final importLoading = useState(true);
-
-    Future<void> loadImportSnapshot() async {
-      importLoading.value = true;
-      importLoadError.value = null;
-      try {
-        importSnapshot.value = ref
-            .read(coreGatewayProvider)
-            .getImportMetadataSnapshot(projectId: projectId);
-      } catch (e) {
-        importSnapshot.value = null;
-        importLoadError.value = e.toString();
-      } finally {
-        importLoading.value = false;
-      }
-    }
-
-    useEffect(() {
-      loadImportSnapshot();
-      return null;
-    }, [projectId, settings?.inferredImportKind]);
-
     Future<void> persistSettings(ProjectSettingsUpdate update) async {
       await notifier.saveProjectSettings(update);
     }
@@ -102,9 +76,6 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
 
       try {
         await notifier.changeInferredImportKind(value);
-        if (context.mounted) {
-          await loadImportSnapshot();
-        }
       } catch (_) {}
     }
 
@@ -171,12 +142,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
             ),
           ),
         ),
-      _ => _MetadataTab(
-          settings: settings,
-          snapshot: importSnapshot.value,
-          loading: importLoading.value,
-          loadError: importLoadError.value,
-        ),
+      _ => _MetadataTab(settings: settings),
     };
 
     return SideTabFeatureDialog(
@@ -264,35 +230,39 @@ class _ImportTab extends StatelessWidget {
 }
 
 class _MetadataTab extends StatelessWidget {
-  const _MetadataTab({
-    required this.settings,
-    required this.snapshot,
-    required this.loading,
-    required this.loadError,
-  });
+  const _MetadataTab({required this.settings});
 
   final ProjectSettings settings;
-  final ImportMetadataSnapshotFrb? snapshot;
-  final bool loading;
-  final String? loadError;
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const AppPageLoading(
-        message: '正在读取导入元数据…',
-        compact: true,
-      );
-    }
+    final theme = Theme.of(context);
 
-    if (loadError != null) {
-      return Text('无法读取导入元数据：$loadError');
-    }
-
-    return ImportMetadataPreview(
-      snapshot: snapshot!,
-      inferredImportKind: settings.inferredImportKind,
-      exportFormatLabel: exportFormatLabel(settings.exportFormat),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '导入时已将归档元数据映射为应用内 canonical 字段并写入数据库。',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '查看与编辑书目元数据请前往项目编辑页的「元数据」Tab。',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        _PropertyRow(
+          label: '推断导入类型',
+          value: inferredImportKindLabel(settings.inferredImportKind),
+        ),
+        _PropertyRow(
+          label: 'Export 格式',
+          value: exportFormatLabel(settings.exportFormat),
+        ),
+      ],
     );
   }
 }

@@ -3,7 +3,6 @@
 use super::library::Library;
 use super::metadata::MetadataRecord;
 use super::records::{PageRecord, ProjectRecord, ProjectSettingsPatch, ProjectSettingsRecord};
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 impl Library {
@@ -84,12 +83,6 @@ impl Library {
         Self::with_library(|library| {
             library.change_inferred_import_kind_inner(project_id, inferred_import_kind)
         })
-    }
-
-    pub(crate) fn get_import_metadata_snapshot(
-        project_id: &str,
-    ) -> Result<ImportMetadataSnapshot, String> {
-        Self::with_library(|library| library.get_import_metadata_snapshot_inner(project_id))
     }
 
     pub(crate) fn update_project_metadata(

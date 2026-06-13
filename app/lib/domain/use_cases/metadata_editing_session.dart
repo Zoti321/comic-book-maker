@@ -56,8 +56,6 @@ class MetadataEditingSession extends ChangeNotifier {
   bool _dirty = false;
   String? _loadError;
   String? _saveError;
-  ImportMetadataSnapshotFrb? _importSnapshot;
-  InferredImportKindFrb? _inferredImportKind;
 
   Timer? _debounceTimer;
   Set<String> _skipSyncFieldIds = const {};
@@ -71,8 +69,6 @@ class MetadataEditingSession extends ChangeNotifier {
   bool get dirty => _dirty;
   String? get loadError => _loadError;
   String? get saveError => _saveError;
-  ImportMetadataSnapshotFrb? get importSnapshot => _importSnapshot;
-  InferredImportKindFrb? get inferredImportKind => _inferredImportKind;
   int get pageCount => _pageCount;
 
   /// 消费最近一次写回后不应覆盖的文本字段 id（供 UI 同步 controller）。
@@ -131,8 +127,6 @@ class MetadataEditingSession extends ChangeNotifier {
     try {
       final context = _gateway.loadMetadataEditingContext(projectId: projectId);
       _metadata = _withPageCount(context.metadata);
-      _importSnapshot = context.importSnapshot;
-      _inferredImportKind = context.inferredImportKind;
       _loading = false;
       _dirty = false;
       _bumpFormSyncGeneration();
@@ -152,23 +146,10 @@ class MetadataEditingSession extends ChangeNotifier {
       _metadata = _withPageCount(current);
       notifyListeners();
     }
-    try {
-      _importSnapshot =
-          _gateway.getImportMetadataSnapshot(projectId: projectId);
-      notifyListeners();
-    } catch (_) {}
   }
 
   void _bumpFormSyncGeneration() {
     _formSyncGeneration++;
-  }
-
-  void refreshImportSnapshot() {
-    try {
-      _importSnapshot =
-          _gateway.getImportMetadataSnapshot(projectId: projectId);
-      notifyListeners();
-    } catch (_) {}
   }
 
   MetadataFieldSyncResult applyServerMetadata(

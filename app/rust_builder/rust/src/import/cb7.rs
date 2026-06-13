@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use sevenz_rust2::{decompress_file, Archive, Error as SevenZError};
 
 use crate::db::Library;
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 use super::archive_path::fallback_title_from_path;
@@ -84,7 +83,6 @@ fn append_cb7_from_extracted(
         page_rel_paths.len() as i32,
         &page_rel_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
 
     run_append_import(
         library,
@@ -97,7 +95,7 @@ fn append_cb7_from_extracted(
                 &page_files,
                 start_sort_index,
             )?;
-            Ok((staged, warnings, snapshot))
+            Ok((staged, warnings))
         },
     )
 }
@@ -126,7 +124,6 @@ fn import_cb7_from_extracted(
         page_rel_paths.len() as i32,
         &page_rel_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
 
     run_import_with_rollback(
         library,
@@ -140,7 +137,7 @@ fn import_cb7_from_extracted(
                 &page_files,
                 0,
             )?;
-            Ok((metadata, staged, warnings, snapshot))
+            Ok((metadata, staged, warnings))
         },
     )
 }
@@ -248,6 +245,10 @@ mod tests {
 <ComicInfo>
   <Title>CB7 Title</Title>
   <Series>CB7 Series</Series>
+  <Year>2023</Year>
+  <Month>6</Month>
+  <Writer>W1</Writer>
+  <Penciller>W2</Penciller>
   <PageCount>2</PageCount>
 </ComicInfo>"#;
 
@@ -263,6 +264,12 @@ mod tests {
         assert_eq!(before, after);
 
         assert_eq!(outcome.title, "CB7 Title");
+        let metadata = library
+            .get_project_metadata_inner(&outcome.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.series.as_deref(), Some("CB7 Series"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2023-06"));
+        assert_eq!(metadata.author.as_deref(), Some("W1, W2"));
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
         assert_eq!(pages.len(), 2);
         assert!(project_cache_dir(&crate::paths::project_storage_dir(

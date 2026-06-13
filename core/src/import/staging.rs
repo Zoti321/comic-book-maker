@@ -9,7 +9,7 @@ use zip::read::ZipArchive;
 
 use crate::epub_format::find_zip_entry;
 use crate::natural_sort;
-use crate::page_image::{import_asset_file_name, normalize_extension, relative_asset_path};
+use crate::page_image::{cbz_page_number, import_asset_file_name, normalize_extension, relative_asset_path};
 use crate::paths::{project_assets_dir, project_storage_dir};
 
 use super::archive_path::{
@@ -177,6 +177,41 @@ pub fn stage_pages_from_files(
                 source.display()
             )
         })?;
+
+        staged.push(StagedImportPage {
+            page_id,
+            sort_index,
+            asset_path,
+        });
+        sort_index += 1;
+    }
+
+    Ok(staged)
+}
+
+pub fn stage_pdf_pages(
+    app_data_dir: &Path,
+    project_id: &str,
+    pages: &[crate::pdf_format::ExtractedPdfPage],
+    start_sort_index: i32,
+) -> Result<Vec<StagedImportPage>, String> {
+    let storage_dir = project_storage_dir(app_data_dir, project_id);
+    let assets_dir = project_assets_dir(&storage_dir);
+    std::fs::create_dir_all(&assets_dir).map_err(|error| format!("create assets dir: {error}"))?;
+
+    let mut staged = Vec::with_capacity(pages.len());
+    let mut sort_index = start_sort_index;
+    for page in pages {
+        let page_id = Uuid::new_v4().to_string();
+        let file_name = format!(
+            "{}.{}",
+            cbz_page_number(sort_index, pages.len()),
+            page.extension
+        );
+        let asset_path = relative_asset_path(&file_name);
+        let destination = assets_dir.join(&file_name);
+        std::fs::write(&destination, &page.bytes)
+            .map_err(|error| format!("write page asset {}: {error}", destination.display()))?;
 
         staged.push(StagedImportPage {
             page_id,

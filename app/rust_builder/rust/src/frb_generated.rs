@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1128189173;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 849765027;
 
 // Section: executor
 
@@ -571,39 +571,6 @@ fn wire__crate__api__simple__export_pdf_impl(
                     Ok(output_ok)
                 })())
             }
-        },
-    )
-}
-fn wire__crate__api__simple__get_import_metadata_snapshot_impl(
-    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
-    rust_vec_len_: i32,
-    data_len_: i32,
-) -> flutter_rust_bridge::for_generated::WireSyncRust2DartSse {
-    FLUTTER_RUST_BRIDGE_HANDLER.wrap_sync::<flutter_rust_bridge::for_generated::SseCodec, _>(
-        flutter_rust_bridge::for_generated::TaskInfo {
-            debug_name: "get_import_metadata_snapshot",
-            port: None,
-            mode: flutter_rust_bridge::for_generated::FfiCallMode::Sync,
-        },
-        move || {
-            let message = unsafe {
-                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
-                    ptr_,
-                    rust_vec_len_,
-                    data_len_,
-                )
-            };
-            let mut deserializer =
-                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
-            let api_project_id = <String>::sse_decode(&mut deserializer);
-            deserializer.end();
-            transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
-                (move || {
-                    let output_ok =
-                        crate::api::simple::get_import_metadata_snapshot(api_project_id)?;
-                    Ok(output_ok)
-                })(),
-            )
         },
     )
 }
@@ -1540,31 +1507,6 @@ impl SseDecode for crate::api::simple::ImportCbzResult {
     }
 }
 
-impl SseDecode for crate::api::simple::ImportMetadataKindFrb {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut inner = <i32>::sse_decode(deserializer);
-        return match inner {
-            0 => crate::api::simple::ImportMetadataKindFrb::Comicinfo,
-            1 => crate::api::simple::ImportMetadataKindFrb::Opf,
-            2 => crate::api::simple::ImportMetadataKindFrb::None,
-            _ => unreachable!("Invalid variant for ImportMetadataKindFrb: {}", inner),
-        };
-    }
-}
-
-impl SseDecode for crate::api::simple::ImportMetadataSnapshotFrb {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_kind = <crate::api::simple::ImportMetadataKindFrb>::sse_decode(deserializer);
-        let mut var_xml = <Option<String>>::sse_decode(deserializer);
-        return crate::api::simple::ImportMetadataSnapshotFrb {
-            kind: var_kind,
-            xml: var_xml,
-        };
-    }
-}
-
 impl SseDecode for crate::api::simple::InferredImportKindFrb {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1934,8 +1876,8 @@ fn pde_ffi_dispatcher_primary_impl(
         13 => wire__crate__api__simple__export_cbz_impl(port, ptr, rust_vec_len, data_len),
         14 => wire__crate__api__simple__export_epub_impl(port, ptr, rust_vec_len, data_len),
         15 => wire__crate__api__simple__export_pdf_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__metadata__metadata_default_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__simple__init_app_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__metadata__metadata_default_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1963,50 +1905,47 @@ fn pde_ffi_dispatcher_sync_impl(
         9 => wire__crate__api__simple__delete_page_impl(ptr, rust_vec_len, data_len),
         10 => wire__crate__api__simple__delete_project_impl(ptr, rust_vec_len, data_len),
         16 => {
-            wire__crate__api__simple__get_import_metadata_snapshot_impl(ptr, rust_vec_len, data_len)
-        }
-        17 => {
             wire__crate__api__metadata__get_metadata_editor_schema_impl(ptr, rust_vec_len, data_len)
         }
-        18 => wire__crate__api__metadata__get_project_metadata_impl(ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__simple__get_project_settings_impl(ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__simple__import_cb7_impl(ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__simple__import_cbr_impl(ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__simple__import_cbz_impl(ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__simple__import_epub_impl(ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__simple__init_library_impl(ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__simple__list_pages_impl(ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__simple__list_projects_impl(ptr, rust_vec_len, data_len),
-        29 => {
+        17 => wire__crate__api__metadata__get_project_metadata_impl(ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__simple__get_project_settings_impl(ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__simple__greet_impl(ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__simple__import_cb7_impl(ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__simple__import_cbr_impl(ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__simple__import_cbz_impl(ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__simple__import_epub_impl(ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__simple__init_library_impl(ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__simple__list_pages_impl(ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__simple__list_projects_impl(ptr, rust_vec_len, data_len),
+        28 => {
             wire__crate__api__metadata__merge_metadata_from_form_impl(ptr, rust_vec_len, data_len)
         }
-        31 => wire__crate__api__metadata__metadata_field_display_value_impl(
+        30 => wire__crate__api__metadata__metadata_field_display_value_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        32 => wire__crate__api__metadata__metadata_with_cover_page_index_impl(
+        31 => wire__crate__api__metadata__metadata_with_cover_page_index_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        33 => wire__crate__api__metadata__metadata_with_dropdown_field_impl(
+        32 => wire__crate__api__metadata__metadata_with_dropdown_field_impl(
             ptr,
             rust_vec_len,
             data_len,
         ),
-        34 => {
+        33 => {
             wire__crate__api__metadata__metadata_with_page_count_impl(ptr, rust_vec_len, data_len)
         }
-        35 => wire__crate__api__simple__reorder_pages_impl(ptr, rust_vec_len, data_len),
-        36 => wire__crate__api__simple__replace_page_image_impl(ptr, rust_vec_len, data_len),
-        37 => wire__crate__api__simple__touch_project_impl(ptr, rust_vec_len, data_len),
-        38 => {
+        34 => wire__crate__api__simple__reorder_pages_impl(ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__simple__replace_page_image_impl(ptr, rust_vec_len, data_len),
+        36 => wire__crate__api__simple__touch_project_impl(ptr, rust_vec_len, data_len),
+        37 => {
             wire__crate__api__simple__update_project_export_format_impl(ptr, rust_vec_len, data_len)
         }
-        39 => wire__crate__api__metadata__update_project_metadata_impl(ptr, rust_vec_len, data_len),
-        40 => wire__crate__api__simple__update_project_settings_impl(ptr, rust_vec_len, data_len),
+        38 => wire__crate__api__metadata__update_project_metadata_impl(ptr, rust_vec_len, data_len),
+        39 => wire__crate__api__simple__update_project_settings_impl(ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -2148,49 +2087,6 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::simple::ImportCbzResult>
     for crate::api::simple::ImportCbzResult
 {
     fn into_into_dart(self) -> crate::api::simple::ImportCbzResult {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::api::simple::ImportMetadataKindFrb {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        match self {
-            Self::Comicinfo => 0.into_dart(),
-            Self::Opf => 1.into_dart(),
-            Self::None => 2.into_dart(),
-            _ => unreachable!(),
-        }
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::api::simple::ImportMetadataKindFrb
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::api::simple::ImportMetadataKindFrb>
-    for crate::api::simple::ImportMetadataKindFrb
-{
-    fn into_into_dart(self) -> crate::api::simple::ImportMetadataKindFrb {
-        self
-    }
-}
-// Codec=Dco (DartCObject based), see doc to use other codecs
-impl flutter_rust_bridge::IntoDart for crate::api::simple::ImportMetadataSnapshotFrb {
-    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
-        [
-            self.kind.into_into_dart().into_dart(),
-            self.xml.into_into_dart().into_dart(),
-        ]
-        .into_dart()
-    }
-}
-impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
-    for crate::api::simple::ImportMetadataSnapshotFrb
-{
-}
-impl flutter_rust_bridge::IntoIntoDart<crate::api::simple::ImportMetadataSnapshotFrb>
-    for crate::api::simple::ImportMetadataSnapshotFrb
-{
-    fn into_into_dart(self) -> crate::api::simple::ImportMetadataSnapshotFrb {
         self
     }
 }
@@ -2599,31 +2495,6 @@ impl SseEncode for crate::api::simple::ImportCbzResult {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <crate::api::simple::ProjectSummary>::sse_encode(self.project, serializer);
         <Vec<String>>::sse_encode(self.warnings, serializer);
-    }
-}
-
-impl SseEncode for crate::api::simple::ImportMetadataKindFrb {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <i32>::sse_encode(
-            match self {
-                crate::api::simple::ImportMetadataKindFrb::Comicinfo => 0,
-                crate::api::simple::ImportMetadataKindFrb::Opf => 1,
-                crate::api::simple::ImportMetadataKindFrb::None => 2,
-                _ => {
-                    unimplemented!("");
-                }
-            },
-            serializer,
-        );
-    }
-}
-
-impl SseEncode for crate::api::simple::ImportMetadataSnapshotFrb {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <crate::api::simple::ImportMetadataKindFrb>::sse_encode(self.kind, serializer);
-        <Option<String>>::sse_encode(self.xml, serializer);
     }
 }
 

@@ -1,9 +1,5 @@
 use rusqlite::{params, TransactionBehavior};
 
-use crate::import_metadata_snapshot::{
-    read_import_metadata_snapshot, write_import_metadata_snapshot, ImportMetadataKind,
-    ImportMetadataSnapshot,
-};
 use crate::paths::project_storage_dir;
 
 use super::library::{now_ms, Library};
@@ -16,7 +12,6 @@ impl Library {
         project_id: &str,
         metadata: &MetadataRecord,
         pages: &[crate::import_shared::StagedImportPage],
-        snapshot: &ImportMetadataSnapshot,
     ) -> Result<(), String> {
         let page_count = pages.len() as i32;
         metadata.validate(page_count)?;
@@ -42,28 +37,13 @@ impl Library {
             .commit()
             .map_err(|error| format!("commit import transaction: {error}"))?;
 
-        let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
-        write_import_metadata_snapshot(&storage_dir, snapshot)?;
-
         Ok(())
-    }
-
-    pub(crate) fn get_import_metadata_snapshot_inner(
-        &self,
-        project_id: &str,
-    ) -> Result<ImportMetadataSnapshot, String> {
-        if !self.project_exists(project_id)? {
-            return Err(format!("project not found: {project_id}"));
-        }
-        let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
-        Ok(read_import_metadata_snapshot(&storage_dir))
     }
 
     pub(crate) fn commit_append_pages(
         &mut self,
         project_id: &str,
         pages: &[crate::import_shared::StagedImportPage],
-        snapshot: &ImportMetadataSnapshot,
     ) -> Result<(), String> {
         if pages.is_empty() {
             return Ok(());
@@ -99,16 +79,6 @@ impl Library {
         transaction
             .commit()
             .map_err(|error| format!("commit append import transaction: {error}"))?;
-
-        if snapshot.kind != ImportMetadataKind::None
-            && snapshot
-                .xml
-                .as_ref()
-                .is_some_and(|value| !value.trim().is_empty())
-        {
-            let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
-            write_import_metadata_snapshot(&storage_dir, snapshot)?;
-        }
 
         Ok(())
     }

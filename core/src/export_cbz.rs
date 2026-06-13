@@ -84,13 +84,9 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     append_optional_element_always(&mut xml, "Number", metadata.number.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
     if let Some(published_date) = metadata.published_date.as_deref() {
-        append_int_element_always(&mut xml, "Year", published_date_year(published_date));
-        append_int_element_always(&mut xml, "Month", published_date_month(published_date));
-        append_int_element_always(&mut xml, "Day", published_date_day(published_date));
-    } else {
-        append_int_element_always(&mut xml, "Year", None);
-        append_int_element_always(&mut xml, "Month", None);
-        append_int_element_always(&mut xml, "Day", None);
+        append_int_element_if_present(&mut xml, "Year", published_date_year(published_date));
+        append_int_element_if_present(&mut xml, "Month", published_date_month(published_date));
+        append_int_element_if_present(&mut xml, "Day", published_date_day(published_date));
     }
     append_optional_element_always(&mut xml, "Penciller", metadata.author.as_deref());
     append_optional_element_always(&mut xml, "Summary", metadata.description.as_deref());
@@ -124,7 +120,7 @@ pub(crate) fn pdf_document_author(metadata: &MetadataRecord) -> Option<String> {
         .map(str::to_string)
 }
 
-/// ComicInfo.xml for PDF export: whitelisted fields only; omit empty elements except `PageCount`.
+/// ComicInfo.xml for PDF export: minimal reader-facing fields only.
 pub(crate) fn metadata_to_pdf_comicinfo_xml(
     metadata: &MetadataRecord,
     title: &str,
@@ -133,13 +129,8 @@ pub(crate) fn metadata_to_pdf_comicinfo_xml(
     let mut xml = String::from("<?xml version=\"1.0\"?>\n<ComicInfo>\n");
 
     append_optional_element_if_nonempty(&mut xml, "Title", Some(title));
-    append_optional_element_if_nonempty(&mut xml, "Series", metadata.series.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Number", metadata.number.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Penciller", metadata.author.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Summary", metadata.description.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Characters", metadata.characters.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "AgeRating", metadata.age_rating.as_deref());
     let normalized_tags = metadata
         .tags
         .as_deref()
@@ -190,9 +181,10 @@ fn append_optional_element_if_nonempty(xml: &mut String, tag: &str, value: Optio
     }
 }
 
-fn append_int_element_always(xml: &mut String, tag: &str, value: Option<i32>) {
-    let text = value.map(|number| number.to_string());
-    append_element_always(xml, tag, text.as_deref());
+fn append_int_element_if_present(xml: &mut String, tag: &str, value: Option<i32>) {
+    if let Some(number) = value {
+        append_element_always(xml, tag, Some(&number.to_string()));
+    }
 }
 
 fn append_element_always(xml: &mut String, tag: &str, value: Option<&str>) {
@@ -291,12 +283,16 @@ mod tests {
 
         let xml = metadata_to_pdf_comicinfo_xml(&metadata, "PDF Title", 2);
         assert!(xml.contains("<Title>PDF Title</Title>"));
-        assert!(xml.contains("<Number>7</Number>"));
-        assert!(xml.contains("<Count>24</Count>"));
         assert!(xml.contains("<Penciller>Writer</Penciller>"));
+        assert!(xml.contains("<Summary>Summary</Summary>"));
         assert!(xml.contains("<Tags>tag1,tag2</Tags>"));
         assert!(xml.contains("<PageCount>2</PageCount>"));
         assert!(!xml.contains("<Writer>"));
+        assert!(!xml.contains("<Series>"));
+        assert!(!xml.contains("<Number>"));
+        assert!(!xml.contains("<Count>"));
+        assert!(!xml.contains("<Characters>"));
+        assert!(!xml.contains("<AgeRating>"));
     }
 
     #[test]
@@ -337,6 +333,8 @@ mod tests {
         assert!(xml.contains("<Number>3</Number>"));
         assert!(xml.contains("<Penciller>Alice</Penciller>"));
         assert!(xml.contains("<Year>2024</Year>"));
+        assert!(!xml.contains("<Month>"));
+        assert!(!xml.contains("<Day>"));
         assert!(!xml.contains("<Writer>"));
         assert!(!xml.contains("<Notes>"));
         assert!(!xml.contains("<Inker>"));
@@ -349,6 +347,180 @@ mod tests {
         assert_eq!(parsed.year.as_deref(), Some("2024"));
         assert_eq!(cover_page_index_from_pages(&parsed.pages, 2, &[]), 1);
         assert!(parsed.pages.iter().any(|page| page.image == "1"));
+    }
+
+    fn sample_page(sort_index: i32, absolute_path: PathBuf) -> PageRecord {
+        PageRecord {
+            id: format!("p{sort_index}"),
+            sort_index,
+            asset_path: format!("assets/{sort_index:03}.png"),
+            absolute_path: absolute_path.to_string_lossy().into_owned(),
+        }
+    }
+
+    #[test]
+    fn author_is_written_to_penciller_not_writer() {
+        let metadata = MetadataRecord {
+            title: "T".to_string(),
+            author: Some("Canonical Author".to_string()),
+            ..Default::default()
+        };
+        let xml = metadata_to_comicinfo_xml(&metadata, &[]);
+        assert!(xml.contains("<Penciller>Canonical Author</Penciller>"));
+        assert!(!xml.contains("<Writer>"));
+    }
+
+    #[test]
+    fn published_date_export_respects_iso_precision() {
+        let page = sample_page(0, temp_dir("date-page").join("001.png"));
+        let pages = vec![page];
+
+        let year_only = metadata_to_comicinfo_xml(
+            &MetadataRecord {
+                title: "T".to_string(),
+                published_date: Some("2024".to_string()),
+                ..Default::default()
+            },
+            &pages,
+        );
+        assert!(year_only.contains("<Year>2024</Year>"));
+        assert!(!year_only.contains("<Month>"));
+        assert!(!year_only.contains("<Day>"));
+
+        let year_month = metadata_to_comicinfo_xml(
+            &MetadataRecord {
+                title: "T".to_string(),
+                published_date: Some("2024-05".to_string()),
+                ..Default::default()
+            },
+            &pages,
+        );
+        assert!(year_month.contains("<Year>2024</Year>"));
+        assert!(year_month.contains("<Month>5</Month>"));
+        assert!(!year_month.contains("<Day>"));
+
+        let full_date = metadata_to_comicinfo_xml(
+            &MetadataRecord {
+                title: "T".to_string(),
+                published_date: Some("2024-05-31".to_string()),
+                ..Default::default()
+            },
+            &pages,
+        );
+        assert!(full_date.contains("<Year>2024</Year>"));
+        assert!(full_date.contains("<Month>5</Month>"));
+        assert!(full_date.contains("<Day>31</Day>"));
+    }
+
+    #[test]
+    fn page_count_uses_actual_pages_not_stale_metadata_field() {
+        let metadata = MetadataRecord {
+            title: "T".to_string(),
+            page_count: 99,
+            ..Default::default()
+        };
+        let pages = vec![
+            sample_page(0, temp_dir("pc0").join("001.png")),
+            sample_page(1, temp_dir("pc1").join("002.png")),
+            sample_page(2, temp_dir("pc2").join("003.png")),
+        ];
+        let xml = metadata_to_comicinfo_xml(&metadata, &pages);
+        assert!(xml.contains("<PageCount>3</PageCount>"));
+        assert!(!xml.contains("<PageCount>99</PageCount>"));
+    }
+
+    #[test]
+    fn cbz_import_edit_export_reimport_preserves_canonical_metadata() {
+        let app_data = temp_dir("roundtrip-edit");
+        let mut library = Library::open(app_data.clone()).expect("open library");
+        let fixtures = temp_dir("roundtrip-edit-fixtures");
+        let source_cbz = fixtures.join("source.cbz");
+        let png = png_bytes();
+
+        let comicinfo = r#"<?xml version="1.0"?>
+<ComicInfo>
+  <Title>Original</Title>
+  <Series>Series A</Series>
+  <Number>1</Number>
+  <Count>10</Count>
+  <Year>2020</Year>
+  <LanguageISO>en</LanguageISO>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <Tags>tag1</Tags>
+  <Characters>Hero</Characters>
+  <AgeRating>Everyone</AgeRating>
+  <Summary>Original summary</Summary>
+  <PageCount>2</PageCount>
+</ComicInfo>"#;
+
+        write_test_cbz(
+            &source_cbz,
+            &[("001.png", png.clone()), ("002.png", png)],
+            Some(comicinfo),
+        );
+
+        let outcome = import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import");
+        let edited = MetadataRecord {
+            title: "Edited Title".to_string(),
+            series: Some("Series B".to_string()),
+            number: Some("7".to_string()),
+            series_count: Some("12".to_string()),
+            published_date: Some("2024-06-15".to_string()),
+            language_iso: Some("zh-CN".to_string()),
+            author: Some("Edited Author".to_string()),
+            tags: Some("tag2".to_string()),
+            characters: Some("Villain".to_string()),
+            age_rating: Some("Teen".to_string()),
+            description: Some("Edited summary".to_string()),
+            cover_page_index: 1,
+            page_count: 2,
+        };
+        library
+            .update_project_metadata_inner(&outcome.project_id, edited)
+            .expect("update metadata");
+
+        let export_path = temp_dir("roundtrip-edit-out").join("edited.cbz");
+        export_cbz(
+            &library,
+            &outcome.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect("export");
+
+        let reimport_app_data = temp_dir("roundtrip-edit-reimport");
+        let mut reimport_library = Library::open(reimport_app_data).expect("open reimport library");
+        let reimport = import_cbz(
+            &mut reimport_library,
+            &export_path.to_string_lossy(),
+        )
+        .expect("reimport");
+
+        let metadata = reimport_library
+            .get_project_metadata_inner(&reimport.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.title, "Edited Title");
+        assert_eq!(metadata.series.as_deref(), Some("Series B"));
+        assert_eq!(metadata.number.as_deref(), Some("7"));
+        assert_eq!(metadata.series_count.as_deref(), Some("12"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024-06-15"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("zh-CN"));
+        assert_eq!(metadata.author.as_deref(), Some("Edited Author"));
+        assert_eq!(metadata.tags.as_deref(), Some("tag2"));
+        assert_eq!(metadata.characters.as_deref(), Some("Villain"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Teen"));
+        assert_eq!(metadata.description.as_deref(), Some("Edited summary"));
+        assert_eq!(metadata.page_count, 2);
+        assert_eq!(metadata.cover_page_index, 1);
+
+        let (_, comicinfo_xml) = scan_cbz_entries(&export_path).expect("scan export");
+        let parsed = parse_comicinfo_xml(&comicinfo_xml.expect("comicinfo")).expect("parse");
+        assert_eq!(parsed.penciller.as_deref(), Some("Edited Author"));
+        assert!(parsed.writer.is_none());
+        assert_eq!(parsed.year.as_deref(), Some("2024"));
+        assert_eq!(parsed.month.as_deref(), Some("6"));
+        assert_eq!(parsed.day.as_deref(), Some("15"));
+        assert_eq!(parsed.page_count.as_deref(), Some("2"));
     }
 
     #[test]

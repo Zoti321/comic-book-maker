@@ -618,12 +618,16 @@ mod tests {
 
         let bytes = fs::read(&export_path).expect("read pdf");
         let embedded = String::from_utf8_lossy(&bytes);
-        assert!(embedded.contains("<Series>Series A</Series>"));
-        assert!(embedded.contains("<Number>3</Number>"));
-        assert!(embedded.contains("<Count>12</Count>"));
         assert!(embedded.contains("<Penciller>Author Name</Penciller>"));
         assert!(!embedded.contains("<Writer>"));
+        assert!(embedded.contains("<Summary>About this comic</Summary>"));
+        assert!(embedded.contains("<Tags>action,drama</Tags>"));
         assert!(embedded.contains("<PageCount>1</PageCount>"));
+        assert!(!embedded.contains("<Series>"));
+        assert!(!embedded.contains("<Number>"));
+        assert!(!embedded.contains("<Count>"));
+        assert!(!embedded.contains("<Characters>"));
+        assert!(!embedded.contains("<AgeRating>"));
         assert!(!embedded.contains("<Publisher>"));
 
         let document = Document::load(&export_path).expect("load pdf");

@@ -83,6 +83,8 @@ fn comicinfo_to_metadata(
             parsed.inker.as_deref(),
             parsed.colorist.as_deref(),
             parsed.letterer.as_deref(),
+            parsed.editor.as_deref(),
+            parsed.translator.as_deref(),
         ]),
         tags: optional_copy(&parsed.tags),
         characters: optional_copy(&parsed.characters),
@@ -117,5 +119,111 @@ fn join_non_empty(values: &[Option<&str>]) -> Option<String> {
         None
     } else {
         Some(parts.join(", "))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FULL_COMICINFO: &str = r#"<?xml version="1.0"?>
+<ComicInfo>
+  <Title>Imported Title</Title>
+  <Series>Sample Series</Series>
+  <Number>7</Number>
+  <Count>12</Count>
+  <Year>2024</Year>
+  <Month>5</Month>
+  <Day>31</Day>
+  <LanguageISO>zh-CN</LanguageISO>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <CoverArtist>Carol</CoverArtist>
+  <Tags>tag1,tag2</Tags>
+  <Characters>CharA</Characters>
+  <AgeRating>Everyone</AgeRating>
+  <Summary>A summary</Summary>
+  <PageCount>2</PageCount>
+  <Pages>
+    <Page Image="0" Type="FrontCover"/>
+    <Page Image="1"/>
+  </Pages>
+</ComicInfo>"#;
+
+    #[test]
+    fn maps_comicinfo_to_canonical_metadata() {
+        let page_paths = vec!["0.png".to_string(), "1.png".to_string()];
+        let (metadata, _, warnings) = build_import_metadata(
+            &Some(FULL_COMICINFO.to_string()),
+            "fallback.cbz",
+            2,
+            &page_paths,
+        );
+
+        assert!(warnings.is_empty());
+        assert_eq!(metadata.title, "Imported Title");
+        assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
+        assert_eq!(metadata.number.as_deref(), Some("7"));
+        assert_eq!(metadata.series_count.as_deref(), Some("12"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024-05-31"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("zh-CN"));
+        assert_eq!(metadata.tags.as_deref(), Some("tag1,tag2"));
+        assert_eq!(metadata.characters.as_deref(), Some("CharA"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Everyone"));
+        assert_eq!(metadata.description.as_deref(), Some("A summary"));
+        assert_eq!(metadata.page_count, 2);
+        assert_eq!(metadata.cover_page_index, 0);
+    }
+
+    #[test]
+    fn joins_multiple_credit_roles_into_author() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo>
+  <Title>T</Title>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <CoverArtist>Carol</CoverArtist>
+  <Editor>Dana</Editor>
+</ComicInfo>"#;
+        let (metadata, _, _) =
+            build_import_metadata(&Some(xml.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(
+            metadata.author.as_deref(),
+            Some("Alice, Bob, Carol, Dana")
+        );
+    }
+
+    #[test]
+    fn published_date_supports_graded_iso_on_import() {
+        let page_paths = vec!["001.png".to_string()];
+
+        let year_only = r#"<ComicInfo><Title>T</Title><Year>2024</Year></ComicInfo>"#;
+        let (year_metadata, _, _) =
+            build_import_metadata(&Some(year_only.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(year_metadata.published_date.as_deref(), Some("2024"));
+
+        let year_month = r#"<ComicInfo><Title>T</Title><Year>2024</Year><Month>5</Month></ComicInfo>"#;
+        let (month_metadata, _, _) =
+            build_import_metadata(&Some(year_month.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(month_metadata.published_date.as_deref(), Some("2024-05"));
+    }
+
+    #[test]
+    fn pagecount_mismatch_emits_warning() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo><Title>T</Title><PageCount>99</PageCount></ComicInfo>"#;
+        let (_, _, warnings) =
+            build_import_metadata(&Some(xml.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("PageCount"));
+    }
+
+    #[test]
+    fn uses_filename_fallback_when_title_missing() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo><Series>S</Series></ComicInfo>"#;
+        let (metadata, _, _) =
+            build_import_metadata(&Some(xml.to_string()), "My Comic", 1, &page_paths);
+        assert_eq!(metadata.title, "My Comic");
     }
 }

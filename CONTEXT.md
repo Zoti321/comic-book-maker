@@ -33,8 +33,24 @@ _Avoid_: Image, Asset, Picture
 _Avoid_: Image URL, File path, Resource link
 
 **Metadata（元数据）**：
-描述 Project 的书目信息（标题、作者、系列、卷号、封面页索引等），存于 Library Database；与各 Archive Format 的字段映射在 Import/Export 时完成。`cover_page_index` 默认为 0，指向作为 Cover 的 Page。
-_Avoid_: Tags, Properties, ComicInfo
+描述 Project 的书目信息，存于 Library Database 的 **canonical 模型**（与 ComicInfo / OPF 等档案字段解耦）。应用内编辑、校验与持久化仅使用下列字段；与各 Archive Format 的映射在 **Import / Export 边界**完成，元数据 Tab 不按 Export 格式切换字段表。
+
+可编辑字段（SQLite 持久化）：
+
+- `title`（必填）
+- `series`、`number`、`series_count`（TEXT，支持 `1A` 等非整数期号）
+- `published_date`（TEXT NULL，**分级 ISO**：`YYYY` / `YYYY-MM` / `YYYY-MM-DD`；UI 以年 / 月 / 日三栏展示，缺省精度留空，不补假默认值）
+- `language_iso`、`author`、`tags`、`characters`、`age_rating`、`description`
+
+系统字段（元数据 Tab 只读；不由用户直接键入 canonical 列）：
+
+- `page_count`：不持久化于 `projects` 表；由 Page 序列计算并注入 `MetadataRecord`
+- `cover_page_index`：持久化；在图片 Tab 指定 Cover，元数据 Tab 只读展示
+
+`author` 在 canonical 中表示**单一创作人员字符串**（可含逗号分隔的多人）；Import 时从 ComicInfo 多角色或 OPF 多 `dc:creator` **逗号拼接**写入；Export 时按目标格式拆分或映射（见 ADR-0012）。应用内 UI 标签为「作者」，不区分 Writer / Penciller 等 ComicInfo 角色名。
+
+Import **不再**持久化原始 ComicInfo / OPF XML 快照；无法映射进 canonical 的档案字段在 Import 时丢弃。
+_Avoid_: Tags, Properties, ComicInfo（作为应用内模型名）
 
 **Cover（封面）**：
 Library 与 Export 中代表 Project 的展示用 Page；由 Metadata 的 `cover_page_index` 指定，默认为第一页。
@@ -57,7 +73,7 @@ _Avoid_: Backend, Engine, Rust layer
 _Avoid_: Home, Gallery, Collection
 
 **Import（导入）**：
-从 Archive Format 读取内容，在 Library Database 中创建新 Project 并填充 Project Storage；不修改源档案。CBR 与 CB7 在 Core 内解压后走与 CBZ 相同的流程。Page Image 按文件路径自然排序确定页序；若源档案含 ComicInfo 且 PageCount 与实际页数不符则警告。
+从 Archive Format 读取内容，在 Library Database 中创建新 Project 并填充 Project Storage；不修改源档案。CBR 与 CB7 在 Core 内解压后走与 CBZ 相同的流程。Page Image 按文件路径自然排序确定页序；若源档案含 ComicInfo 且 PageCount 与实际页数不符则警告。各格式的元数据在 Import 边界映射为 canonical 字段写入 Library Database（ComicInfo 多角色 → `author` 拼接、OPF 多 creator → `author` 拼接、PDF 仅 Document Info 最小子集等；详见 ADR-0012）；**不**保存原始 ComicInfo / OPF XML 快照。EPUB 若同时含 ComicInfo 与 OPF，ComicInfo 优先。
 _Avoid_: Open, Load, Convert in place
 
 **Create Project（新建项目）**：
@@ -65,5 +81,5 @@ _Avoid_: Open, Load, Convert in place
 _Avoid_: New comic, Blank import, Start from scratch
 
 **Export（导出）**：
-从 Library Database 与 Project Storage 生成指定 Archive Format 文件；不修改 Project 或 Library Database 中的编辑状态。
+从 Library Database 与 Project Storage 生成指定 Archive Format 文件；不修改 Project 或 Library Database 中的编辑状态。canonical 元数据在 Export 边界映射为目标格式（ComicInfo `Penciller`、OPF 多 `dc:creator`、PDF Document Info 最小集等；详见 ADR-0012）；`page_count` 始终以当前 Page 序列为准。
 _Avoid_: Save as archive, Publish only

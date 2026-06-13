@@ -2,7 +2,6 @@ use anyhow::Result;
 
 use crate::db::Library;
 use crate::export_error::ExportError;
-use crate::import_metadata_snapshot::{ImportMetadataKind, ImportMetadataSnapshot};
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 pub use crate::api::metadata::{
@@ -289,47 +288,6 @@ pub fn change_project_inferred_import_kind(
     Library::change_inferred_import_kind(&project_id, inferred_import_kind.into())
         .map(project_settings_from_record)
         .map_err(|error| anyhow::anyhow!(error))
-}
-
-#[derive(Clone, Debug)]
-#[flutter_rust_bridge::frb]
-pub enum ImportMetadataKindFrb {
-    Comicinfo,
-    Opf,
-    None,
-}
-
-#[flutter_rust_bridge::frb(non_final)]
-#[derive(Clone, Debug)]
-pub struct ImportMetadataSnapshotFrb {
-    pub kind: ImportMetadataKindFrb,
-    pub xml: Option<String>,
-}
-
-#[flutter_rust_bridge::frb(sync)]
-pub fn get_import_metadata_snapshot(project_id: String) -> Result<ImportMetadataSnapshotFrb> {
-    Library::get_import_metadata_snapshot(&project_id)
-        .map(import_metadata_snapshot_to_frb)
-        .map_err(|error| anyhow::anyhow!(error))
-}
-
-fn import_metadata_snapshot_to_frb(
-    snapshot: ImportMetadataSnapshot,
-) -> ImportMetadataSnapshotFrb {
-    ImportMetadataSnapshotFrb {
-        kind: snapshot.kind.into(),
-        xml: snapshot.xml,
-    }
-}
-
-impl From<ImportMetadataKind> for ImportMetadataKindFrb {
-    fn from(value: ImportMetadataKind) -> Self {
-        match value {
-            ImportMetadataKind::ComicInfo => Self::Comicinfo,
-            ImportMetadataKind::Opf => Self::Opf,
-            ImportMetadataKind::None => Self::None,
-        }
-    }
 }
 
 fn project_settings_from_record(

@@ -233,7 +233,6 @@ class InMemoryCoreGateway implements CoreGateway {
   }) {
     return MetadataEditingContext(
       metadata: getProjectMetadata(projectId: projectId),
-      importSnapshot: getImportMetadataSnapshot(projectId: projectId),
       inferredImportKind:
           getProjectSettings(projectId: projectId).inferredImportKind,
     );
@@ -320,15 +319,6 @@ class InMemoryCoreGateway implements CoreGateway {
     metadataByProjectId[projectId] = metadata;
     return metadata;
   }
-
-  @override
-  ImportMetadataSnapshotFrb getImportMetadataSnapshot({
-    required String projectId,
-  }) =>
-      const ImportMetadataSnapshotFrb(
-        kind: ImportMetadataKindFrb.none,
-        xml: null,
-      );
 
   @override
   MetadataEditorSchemaFrb getMetadataEditorSchema({

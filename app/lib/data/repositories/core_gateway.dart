@@ -18,8 +18,6 @@ export 'package:comic_book_maker/src/rust/api/simple.dart'
         ComicArchiveContainerFrb,
         ExportFormatFrb,
         ImportCbzResult,
-        ImportMetadataKindFrb,
-        ImportMetadataSnapshotFrb,
         InferredImportKindFrb,
         PageSummary,
         ProjectSettings,
@@ -82,12 +80,10 @@ class ProjectEditorSnapshot {
 class MetadataEditingContext {
   const MetadataEditingContext({
     required this.metadata,
-    required this.importSnapshot,
     required this.inferredImportKind,
   });
 
   final metadata_api.Metadata metadata;
-  final simple_api.ImportMetadataSnapshotFrb importSnapshot;
   final simple_api.InferredImportKindFrb inferredImportKind;
 }
 
@@ -166,14 +162,11 @@ abstract class CoreGateway implements MetadataEditingGateway {
     required simple_api.InferredImportKindFrb inferredImportKind,
   });
 
-  // —— Metadata（持久化 + 导入快照）——
+  // —— Metadata（持久化）——
   metadata_api.Metadata getProjectMetadata({required String projectId});
   metadata_api.Metadata updateProjectMetadata({
     required String projectId,
     required metadata_api.Metadata metadata,
-  });
-  simple_api.ImportMetadataSnapshotFrb getImportMetadataSnapshot({
-    required String projectId,
   });
 
   /// 设置 Cover 并持久化；返回更新后的 `coverPageIndex`。
@@ -332,9 +325,6 @@ class FrbCoreGateway implements CoreGateway {
   }) {
     return MetadataEditingContext(
       metadata: metadata_api.getProjectMetadata(projectId: projectId),
-      importSnapshot: simple_api.getImportMetadataSnapshot(
-        projectId: projectId,
-      ),
       inferredImportKind:
           simple_api.getProjectSettings(projectId: projectId).inferredImportKind,
     );
@@ -418,12 +408,6 @@ class FrbCoreGateway implements CoreGateway {
         projectId: projectId,
         metadata: metadata,
       );
-
-  @override
-  simple_api.ImportMetadataSnapshotFrb getImportMetadataSnapshot({
-    required String projectId,
-  }) =>
-      simple_api.getImportMetadataSnapshot(projectId: projectId);
 
   @override
   metadata_api.MetadataEditorSchemaFrb getMetadataEditorSchema({
