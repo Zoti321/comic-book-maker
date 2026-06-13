@@ -34,6 +34,13 @@ Future<void> _openProjectEditor(
   await tester.pumpAndSettle();
 }
 
+Future<void> _selectSeriesMetadataSection(WidgetTester tester) async {
+  await tester.tap(find.text('系列'));
+  await tester.pumpAndSettle();
+}
+
+Finder seriesNumberField() => find.byType(TextFormField).at(1);
+
 void main() {
   late InMemoryCoreGateway gateway;
 
@@ -65,7 +72,9 @@ void main() {
   ) async {
     await _openProjectEditor(tester, gateway);
 
-    await tester.enterText(find.byType(TextFormField).at(2), '7');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '7');
     await tester.pump(const Duration(milliseconds: 100));
 
     await tester.tap(find.text('图片'));
@@ -79,8 +88,8 @@ void main() {
     await tester.tap(find.text('元数据'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(TextFormField).at(2), findsOneWidget);
-    expect(tester.widget<TextFormField>(find.byType(TextFormField).at(2)).controller?.text, '7');
+    expect(find.byType(TextFormField).at(1), findsOneWidget);
+    expect(tester.widget<TextFormField>(seriesNumberField()).controller?.text, '7');
   });
 
   testWidgets('blocks tab switch when metadata validation fails', (
@@ -105,7 +114,9 @@ void main() {
 
     gateway.failMetadataUpdates = true;
 
-    await tester.enterText(find.byType(TextFormField).at(2), '8');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '8');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
@@ -123,7 +134,9 @@ void main() {
   testWidgets('flushes pending metadata before export', (tester) async {
     await _openProjectEditor(tester, gateway);
 
-    await tester.enterText(find.byType(TextFormField).at(2), '55');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '55');
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(gateway.metadataUpdateCallCount, 0);

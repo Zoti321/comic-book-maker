@@ -27,12 +27,8 @@ pub enum MetadataFieldKind {
     Text,
     MultilineText,
     Integer,
-    Dropdown,
-    ReadOnly,
     AgeRating,
     PublishedDate,
-    CoverPageIndex,
-    PageCountInfo,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -104,14 +100,8 @@ macro_rules! multiline_field {
     };
 }
 
-const CANONICAL_BASIC: &[MetadataFieldSpec] = &[
+const GENERAL_FIELDS: &[MetadataFieldSpec] = &[
     text_field!("title", "标题", required),
-    text_field!("series", "系列"),
-    text_field!("number", "期号"),
-    text_field!("series_count", "系列总期数"),
-];
-
-const CANONICAL_PUBLISHING: &[MetadataFieldSpec] = &[
     MetadataFieldSpec {
         id: "published_date",
         label: "发布日期",
@@ -123,13 +113,6 @@ const CANONICAL_PUBLISHING: &[MetadataFieldSpec] = &[
         read_only_value: None,
     },
     text_field!("language_iso", "语言 (ISO，如 zh-CN)"),
-];
-
-const CANONICAL_PEOPLE: &[MetadataFieldSpec] = &[text_field!("author", "作者")];
-
-const CANONICAL_CLASSIFICATION: &[MetadataFieldSpec] = &[
-    text_field!("tags", "标签（逗号分隔）"),
-    text_field!("characters", "登场人物"),
     MetadataFieldSpec {
         id: "age_rating",
         label: "年龄分级",
@@ -140,63 +123,36 @@ const CANONICAL_CLASSIFICATION: &[MetadataFieldSpec] = &[
         int_max: None,
         read_only_value: None,
     },
+    multiline_field!("description", "描述"),
 ];
 
-const CANONICAL_DESCRIPTION: &[MetadataFieldSpec] = &[multiline_field!("description", "描述")];
+const SERIES_FIELDS: &[MetadataFieldSpec] = &[
+    text_field!("series", "系列"),
+    text_field!("number", "期号"),
+    text_field!("series_count", "系列总期数"),
+];
 
-const CANONICAL_SYSTEM: &[MetadataFieldSpec] = &[
-    MetadataFieldSpec {
-        id: "page_count",
-        label: "页数",
-        kind: MetadataFieldKind::PageCountInfo,
-        required: false,
-        options: &[],
-        int_min: None,
-        int_max: None,
-        read_only_value: None,
-    },
-    MetadataFieldSpec {
-        id: "cover_page_index",
-        label: "封面页",
-        kind: MetadataFieldKind::CoverPageIndex,
-        required: false,
-        options: &[],
-        int_min: None,
-        int_max: None,
-        read_only_value: None,
-    },
+const CREATIVE_FIELDS: &[MetadataFieldSpec] = &[
+    text_field!("author", "作者"),
+    text_field!("tags", "标签（逗号分隔）"),
+    text_field!("characters", "登场人物"),
 ];
 
 const CANONICAL_SECTIONS: &[MetadataSectionSpec] = &[
     MetadataSectionSpec {
-        id: "basic",
-        label: "基本",
-        fields: CANONICAL_BASIC,
+        id: "general",
+        label: "常规",
+        fields: GENERAL_FIELDS,
     },
     MetadataSectionSpec {
-        id: "publishing",
-        label: "出版",
-        fields: CANONICAL_PUBLISHING,
+        id: "series",
+        label: "系列",
+        fields: SERIES_FIELDS,
     },
     MetadataSectionSpec {
-        id: "people",
-        label: "人员",
-        fields: CANONICAL_PEOPLE,
-    },
-    MetadataSectionSpec {
-        id: "classification",
-        label: "分类",
-        fields: CANONICAL_CLASSIFICATION,
-    },
-    MetadataSectionSpec {
-        id: "description",
-        label: "描述",
-        fields: CANONICAL_DESCRIPTION,
-    },
-    MetadataSectionSpec {
-        id: "system",
-        label: "系统",
-        fields: CANONICAL_SYSTEM,
+        id: "creative",
+        label: "创作",
+        fields: CREATIVE_FIELDS,
     },
 ];
 
@@ -268,13 +224,6 @@ pub fn normalize_comma_separated_tags(raw: &str) -> Option<String> {
     }
 }
 
-fn parse_cover_page_index(values: &HashMap<String, String>, base: &MetadataRecord) -> i32 {
-    values
-        .get("cover_page_index")
-        .and_then(|text| text.trim().parse().ok())
-        .unwrap_or(base.cover_page_index)
-}
-
 /// 同步 UI 页数到 Metadata（不写入数据库）。
 pub fn with_page_count(mut record: MetadataRecord, page_count: i32) -> MetadataRecord {
     record.page_count = page_count;
@@ -328,7 +277,7 @@ pub fn merge_form_values(
             .unwrap_or(""),
     )?;
 
-    let cover_page_index = parse_cover_page_index(values, base);
+    let cover_page_index = base.cover_page_index;
 
     let merged = MetadataRecord {
         title,
@@ -387,7 +336,10 @@ mod tests {
         let comic = editor_schema(ExportFormat::ComicArchive);
         let epub = editor_schema(ExportFormat::Epub);
         assert_eq!(comic.editor_title, epub.editor_title);
-        assert_eq!(comic.sections.len(), 6);
+        assert_eq!(comic.sections.len(), 3);
+        assert_eq!(comic.sections[0].id, "general");
+        assert_eq!(comic.sections[1].id, "series");
+        assert_eq!(comic.sections[2].id, "creative");
     }
 
     #[test]

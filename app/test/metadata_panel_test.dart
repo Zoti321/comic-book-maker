@@ -7,16 +7,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
 import 'support/data/repositories/in_memory_core_gateway.dart';
 
-Finder numberTextField() => find.byType(TextFormField).at(2);
+Finder numberTextField() => find.byType(TextFormField).at(1);
+
+Future<void> selectSeriesSection(WidgetTester tester) async {
+  await selectMetadataSection(tester, '系列');
+}
 
 Future<void> selectMetadataSection(WidgetTester tester, String label) async {
   await tester.tap(find.text(label));
   await tester.pumpAndSettle();
 }
 
-Finder publishingYearField() => find.byType(TextFormField).at(0);
-Finder publishingMonthField() => find.byType(TextFormField).at(1);
-Finder publishingDayField() => find.byType(TextFormField).at(2);
+Finder publishingYearField() => find.byType(TextFormField).at(1);
+Finder publishingMonthField() => find.byType(TextFormField).at(2);
+Finder publishingDayField() => find.byType(TextFormField).at(3);
 
 void main() {
   late InMemoryCoreGateway gateway;
@@ -40,6 +44,8 @@ void main() {
     );
 
     expect(find.text('元数据'), findsWidgets);
+    expect(find.text('标题'), findsOneWidget);
+    await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('ComicInfo'), findsNothing);
     expect(find.text('OPF Metadata'), findsNothing);
@@ -56,6 +62,8 @@ void main() {
     );
 
     expect(find.text('元数据'), findsWidgets);
+    expect(find.text('标题'), findsOneWidget);
+    await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('OPF Metadata'), findsNothing);
     expect(find.text('固定版式'), findsNothing);
@@ -85,7 +93,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
-    await selectMetadataSection(tester, '出版');
+    await selectMetadataSection(tester, '常规');
 
     expect(
       tester.widget<TextFormField>(publishingYearField()).controller?.text,
@@ -117,7 +125,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.epub,
     );
-    await selectMetadataSection(tester, '出版');
+    await selectMetadataSection(tester, '常规');
 
     expect(
       tester.widget<TextFormField>(publishingYearField()).controller?.text,
@@ -149,7 +157,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
-    await selectMetadataSection(tester, '出版');
+    await selectMetadataSection(tester, '常规');
 
     expect(
       tester.widget<TextFormField>(publishingYearField()).controller?.text,
@@ -171,22 +179,6 @@ void main() {
     expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-05-15');
   });
 
-  testWidgets('system section shows read-only page count and cover page', (
-    tester,
-  ) async {
-    await pumpMetadataPanel(
-      tester,
-      gateway: gateway,
-      exportFormat: ExportFormatFrb.comicArchive,
-      pageCount: 5,
-    );
-    await selectMetadataSection(tester, '系统');
-
-    expect(find.text('5'), findsOneWidget);
-    expect(find.text('0'), findsOneWidget);
-    expect(find.byType(TextFormField), findsNothing);
-  });
-
   testWidgets('debounced edit persists metadata without manual save', (
     tester,
   ) async {
@@ -195,6 +187,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
+    await selectSeriesSection(tester);
 
     await tester.enterText(numberTextField(), '2');
     await tester.pump(const Duration(milliseconds: 500));
@@ -238,6 +231,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
+    await selectSeriesSection(tester);
 
     gateway.nextMetadataUpdateError = Exception('磁盘写入失败');
 
@@ -275,6 +269,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await selectSeriesSection(tester);
     await tester.enterText(numberTextField(), '6');
     await tester.tap(find.text('增加页数'));
     await tester.pump();
@@ -299,6 +294,7 @@ void main() {
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
+    await selectSeriesSection(tester);
 
     final numberField = numberTextField();
     final controller = tester.widget<TextFormField>(numberField).controller!;

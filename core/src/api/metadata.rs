@@ -87,12 +87,8 @@ pub enum MetadataFieldKindFrb {
     Text,
     MultilineText,
     Integer,
-    Dropdown,
-    ReadOnly,
     AgeRating,
     PublishedDate,
-    CoverPageIndex,
-    PageCountInfo,
 }
 
 #[flutter_rust_bridge::frb(non_final)]
@@ -203,12 +199,8 @@ impl From<metadata_schema::MetadataFieldKind> for MetadataFieldKindFrb {
             metadata_schema::MetadataFieldKind::Text => Self::Text,
             metadata_schema::MetadataFieldKind::MultilineText => Self::MultilineText,
             metadata_schema::MetadataFieldKind::Integer => Self::Integer,
-            metadata_schema::MetadataFieldKind::Dropdown => Self::Dropdown,
-            metadata_schema::MetadataFieldKind::ReadOnly => Self::ReadOnly,
             metadata_schema::MetadataFieldKind::AgeRating => Self::AgeRating,
             metadata_schema::MetadataFieldKind::PublishedDate => Self::PublishedDate,
-            metadata_schema::MetadataFieldKind::CoverPageIndex => Self::CoverPageIndex,
-            metadata_schema::MetadataFieldKind::PageCountInfo => Self::PageCountInfo,
         }
     }
 }

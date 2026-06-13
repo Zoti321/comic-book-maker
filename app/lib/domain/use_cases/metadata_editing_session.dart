@@ -86,7 +86,6 @@ class MetadataEditingSession extends ChangeNotifier {
       MetadataFieldKindFrb.ageRating ||
       MetadataFieldKindFrb.publishedDate =>
         true,
-      _ => false,
     };
   }
 
@@ -314,7 +313,6 @@ class MetadataEditingSession extends ChangeNotifier {
   List<MetadataFieldValueFrb> _collectFormValues(
     Map<String, String> textFieldValues,
   ) {
-    final current = _metadata!;
     final values = <MetadataFieldValueFrb>[];
 
     for (final section in _schema.sections) {
@@ -339,20 +337,6 @@ class MetadataEditingSession extends ChangeNotifier {
                 ),
               );
             }
-          case MetadataFieldKindFrb.dropdown:
-            values.add(
-              MetadataFieldValueFrb(
-                fieldId: field.id,
-                value: _gateway.metadataFieldDisplayValue(
-                  metadata: current,
-                  fieldId: field.id,
-                ),
-              ),
-            );
-          case MetadataFieldKindFrb.readOnly:
-          case MetadataFieldKindFrb.coverPageIndex:
-          case MetadataFieldKindFrb.pageCountInfo:
-            break;
         }
       }
     }

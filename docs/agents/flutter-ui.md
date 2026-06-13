@@ -168,9 +168,12 @@ class MyFeature extends _$MyFeature {
 ### 元数据 Tab
 
 - 组件：`MetadataPanel`；字段与分段由 Core `getMetadataEditorSchema` 驱动，禁止在 Flutter 硬编码字段表。
+- **分区（3 Tab）**：`常规`（`general`）→ 标题、发布日期、语言、年龄分级、描述；`系列`（`series`）→ 系列、期号、系列总期数；`创作`（`creative`）→ 作者、标签、登场人物。PDF 与 CBZ/EPUB 共用同一 schema（`editable: true`）。
+- Chip 栏切换分区；**不**在 Chip 下方重复显示分区标题。
 - 未保存：`onDirtyChanged` 同步至编辑页；切换 Tab / 返回漫画库前 `confirmDiscardMetadataEdits`（`metadata_unsaved_guard.dart`）。
 - 导入元数据：`ImportMetadataPreview` 为只读归档预览；可编辑区为「导出元数据」表单。
-- **页数 / 封面**：不在元数据 Tab 编辑；页数随页面列表与导入由应用写入，封面在图片 Tab「设为封面」。
+- **页数 / 封面**：不在元数据 Tab 展示或编辑；页数见编辑页顶栏，封面在图片 Tab「设为封面」。schema 不含 `PageCountInfo` / `CoverPageIndex` 字段类型。
+- `editable: false` 时仍显示「当前格式不支持编辑」空状态（基础设施保留，当前各格式均为可编辑）。
 - 保存成功用 SnackBar；保存失败用表单上方的 `AppInlineErrorBanner`。
 
 ### 图片 Tab

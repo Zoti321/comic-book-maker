@@ -174,18 +174,6 @@ class MetadataPanel extends HookConsumerWidget {
       return panelController.detach;
     }, [controller, session]);
 
-    Widget readOnlyField(String label, String value) {
-      return InputDecorator(
-        decoration: InputDecoration(labelText: label),
-        child: Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
     void onTextFieldChanged() {
       session.scheduleDebouncedSave(
         validateForm: validateForm,
@@ -242,26 +230,6 @@ class MetadataPanel extends HookConsumerWidget {
         },
         onChanged: (_) => onTextFieldChanged(),
         onEditingComplete: () => unawaited(saveNow()),
-      );
-    }
-
-    Widget dropdownField(MetadataFieldSpecFrb field) {
-      final value = session.displayValueForField(field.id);
-      final selected = value.isEmpty ? null : value;
-
-      return DropdownButtonFormField<String>(
-        key: ValueKey('${field.id}-$selected'),
-        initialValue:
-            selected != null && field.options.contains(selected) ? selected : null,
-        decoration: InputDecoration(labelText: field.label),
-        items: [
-          const DropdownMenuItem<String>(value: null, child: Text('未设置')),
-          ...field.options.map((o) => DropdownMenuItem(value: o, child: Text(o))),
-        ],
-        onChanged: (next) {
-          session.patchDropdownField(fieldId: field.id, value: next);
-          unawaited(saveNow());
-        },
       );
     }
 
@@ -335,19 +303,8 @@ class MetadataPanel extends HookConsumerWidget {
         MetadataFieldKindFrb.text => textField(field),
         MetadataFieldKindFrb.multilineText => textField(field, maxLines: 5),
         MetadataFieldKindFrb.integer => intField(field),
-        MetadataFieldKindFrb.dropdown => dropdownField(field),
         MetadataFieldKindFrb.ageRating => ageRatingField(field),
         MetadataFieldKindFrb.publishedDate => publishedDateField(field),
-        MetadataFieldKindFrb.readOnly => readOnlyField(
-          field.label,
-          field.readOnlyValue ?? '',
-        ),
-        MetadataFieldKindFrb.pageCountInfo ||
-        MetadataFieldKindFrb.coverPageIndex =>
-          readOnlyField(
-            field.label,
-            session.displayValueForField(field.id),
-          ),
       };
     }
 
@@ -453,20 +410,6 @@ class MetadataPanel extends HookConsumerWidget {
                 ),
               ),
             ),
-            if (sectionIndex.value < session.schema.sections.length)
-              SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    session.schema.sections[sectionIndex.value].label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
             if (session.saveError != null)
               SliverPadding(
                 padding:

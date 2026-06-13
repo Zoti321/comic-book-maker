@@ -1708,12 +1708,8 @@ impl SseDecode for crate::api::metadata::MetadataFieldKindFrb {
             0 => crate::api::metadata::MetadataFieldKindFrb::Text,
             1 => crate::api::metadata::MetadataFieldKindFrb::MultilineText,
             2 => crate::api::metadata::MetadataFieldKindFrb::Integer,
-            3 => crate::api::metadata::MetadataFieldKindFrb::Dropdown,
-            4 => crate::api::metadata::MetadataFieldKindFrb::ReadOnly,
-            5 => crate::api::metadata::MetadataFieldKindFrb::AgeRating,
-            6 => crate::api::metadata::MetadataFieldKindFrb::PublishedDate,
-            7 => crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex,
-            8 => crate::api::metadata::MetadataFieldKindFrb::PageCountInfo,
+            3 => crate::api::metadata::MetadataFieldKindFrb::AgeRating,
+            4 => crate::api::metadata::MetadataFieldKindFrb::PublishedDate,
             _ => unreachable!("Invalid variant for MetadataFieldKindFrb: {}", inner),
         };
     }
@@ -2211,12 +2207,8 @@ impl flutter_rust_bridge::IntoDart for crate::api::metadata::MetadataFieldKindFr
             Self::Text => 0.into_dart(),
             Self::MultilineText => 1.into_dart(),
             Self::Integer => 2.into_dart(),
-            Self::Dropdown => 3.into_dart(),
-            Self::ReadOnly => 4.into_dart(),
-            Self::AgeRating => 5.into_dart(),
-            Self::PublishedDate => 6.into_dart(),
-            Self::CoverPageIndex => 7.into_dart(),
-            Self::PageCountInfo => 8.into_dart(),
+            Self::AgeRating => 3.into_dart(),
+            Self::PublishedDate => 4.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -2659,12 +2651,8 @@ impl SseEncode for crate::api::metadata::MetadataFieldKindFrb {
                 crate::api::metadata::MetadataFieldKindFrb::Text => 0,
                 crate::api::metadata::MetadataFieldKindFrb::MultilineText => 1,
                 crate::api::metadata::MetadataFieldKindFrb::Integer => 2,
-                crate::api::metadata::MetadataFieldKindFrb::Dropdown => 3,
-                crate::api::metadata::MetadataFieldKindFrb::ReadOnly => 4,
-                crate::api::metadata::MetadataFieldKindFrb::AgeRating => 5,
-                crate::api::metadata::MetadataFieldKindFrb::PublishedDate => 6,
-                crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex => 7,
-                crate::api::metadata::MetadataFieldKindFrb::PageCountInfo => 8,
+                crate::api::metadata::MetadataFieldKindFrb::AgeRating => 3,
+                crate::api::metadata::MetadataFieldKindFrb::PublishedDate => 4,
                 _ => {
                     unimplemented!("");
                 }

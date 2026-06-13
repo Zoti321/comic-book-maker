@@ -10,8 +10,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
     editable: true,
     sections: [
       MetadataSectionSpecFrb(
-        id: 'basic',
-        label: '基本',
+        id: 'general',
+        label: '常规',
         fields: [
           MetadataFieldSpecFrb(
             id: 'title',
@@ -20,6 +20,40 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             required_: true,
             options: [],
           ),
+          MetadataFieldSpecFrb(
+            id: 'published_date',
+            label: '发布日期',
+            kind: MetadataFieldKindFrb.publishedDate,
+            required_: false,
+            options: [],
+          ),
+          MetadataFieldSpecFrb(
+            id: 'language_iso',
+            label: '语言 (ISO，如 zh-CN)',
+            kind: MetadataFieldKindFrb.text,
+            required_: false,
+            options: [],
+          ),
+          MetadataFieldSpecFrb(
+            id: 'age_rating',
+            label: '年龄分级',
+            kind: MetadataFieldKindFrb.ageRating,
+            required_: false,
+            options: [],
+          ),
+          MetadataFieldSpecFrb(
+            id: 'description',
+            label: '描述',
+            kind: MetadataFieldKindFrb.multilineText,
+            required_: false,
+            options: [],
+          ),
+        ],
+      ),
+      MetadataSectionSpecFrb(
+        id: 'series',
+        label: '系列',
+        fields: [
           MetadataFieldSpecFrb(
             id: 'series',
             label: '系列',
@@ -44,28 +78,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
         ],
       ),
       MetadataSectionSpecFrb(
-        id: 'publishing',
-        label: '出版',
-        fields: [
-          MetadataFieldSpecFrb(
-            id: 'published_date',
-            label: '发布日期',
-            kind: MetadataFieldKindFrb.publishedDate,
-            required_: false,
-            options: [],
-          ),
-          MetadataFieldSpecFrb(
-            id: 'language_iso',
-            label: '语言 (ISO，如 zh-CN)',
-            kind: MetadataFieldKindFrb.text,
-            required_: false,
-            options: [],
-          ),
-        ],
-      ),
-      MetadataSectionSpecFrb(
-        id: 'people',
-        label: '人员',
+        id: 'creative',
+        label: '创作',
         fields: [
           MetadataFieldSpecFrb(
             id: 'author',
@@ -74,36 +88,17 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             required_: false,
             options: [],
           ),
-        ],
-      ),
-      MetadataSectionSpecFrb(
-        id: 'description',
-        label: '描述',
-        fields: [
           MetadataFieldSpecFrb(
-            id: 'description',
-            label: '描述',
-            kind: MetadataFieldKindFrb.multilineText,
-            required_: false,
-            options: [],
-          ),
-        ],
-      ),
-      MetadataSectionSpecFrb(
-        id: 'system',
-        label: '系统',
-        fields: [
-          MetadataFieldSpecFrb(
-            id: 'page_count',
-            label: '页数',
-            kind: MetadataFieldKindFrb.pageCountInfo,
+            id: 'tags',
+            label: '标签（逗号分隔）',
+            kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
           ),
           MetadataFieldSpecFrb(
-            id: 'cover_page_index',
-            label: '封面页',
-            kind: MetadataFieldKindFrb.coverPageIndex,
+            id: 'characters',
+            label: '登场人物',
+            kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
           ),
@@ -165,6 +160,9 @@ String mockMetadataFieldDisplayValue({
     'published_date_day' => _publishedDatePart(metadata.publishedDate, 2),
     'language_iso' => metadata.languageIso ?? '',
     'author' => metadata.author ?? '',
+    'tags' => metadata.tags ?? '',
+    'characters' => metadata.characters ?? '',
+    'age_rating' => metadata.ageRating ?? '',
     'description' => metadata.description ?? '',
     'cover_page_index' => metadata.coverPageIndex.toString(),
     'page_count' => metadata.pageCount.toString(),
