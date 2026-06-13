@@ -320,7 +320,7 @@ mod tests {
             .expect("metadata");
         assert_eq!(metadata.title, "Export Me");
         assert_eq!(metadata.series.as_deref(), Some("Exported Series"));
-        assert_eq!(metadata.writer.as_deref(), Some("Bob"));
+        assert_eq!(metadata.author.as_deref(), Some("Bob"));
 
         let extract_root = temp_dir("roundtrip-scan");
         let archive = unrar_ng::Archive::new(&export_path).as_first_part();
@@ -335,7 +335,7 @@ mod tests {
         let parsed = parse_comicinfo_xml(&comicinfo_xml.expect("comicinfo")).expect("parse");
         assert_eq!(parsed.title.as_deref(), Some("Export Me"));
         assert_eq!(parsed.series.as_deref(), Some("Exported Series"));
-        assert_eq!(parsed.writer.as_deref(), Some("Bob"));
+        assert_eq!(parsed.penciller.as_deref(), Some("Bob"));
         assert_eq!(cover_page_index_from_pages(&parsed.pages, 2, &[]), 0);
     }
 

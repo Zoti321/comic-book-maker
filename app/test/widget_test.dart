@@ -110,7 +110,7 @@ void main() {
       await tester.tap(find.text('元数据'));
       await tester.pumpAndSettle();
 
-      expect(find.text('ComicInfo'), findsWidgets);
+      expect(find.text('元数据'), findsWidgets);
       expect(find.text('添加页面'), findsNothing);
     });
   });

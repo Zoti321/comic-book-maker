@@ -4,9 +4,8 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_published_date_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/section_chip_bar.dart';
@@ -128,8 +127,8 @@ class MetadataPanel extends HookConsumerWidget {
     Map<String, String> captureTextFieldValues() {
       final values = <String, String>{};
       for (final field in session.schema.sections.expand((s) => s.fields)) {
-        if (MetadataEditingSession.fieldUsesTextController(field.kind)) {
-          values[field.id] = fieldController(field.id).text;
+        for (final fieldId in MetadataEditingSession.textFieldIdsFor(field)) {
+          values[fieldId] = fieldController(fieldId).text;
         }
       }
       return values;
@@ -139,14 +138,10 @@ class MetadataPanel extends HookConsumerWidget {
 
     void syncControllersFromSession({Set<String> skipFieldIds = const {}}) {
       for (final field in session.schema.sections.expand((s) => s.fields)) {
-        if (!MetadataEditingSession.fieldUsesTextController(field.kind)) {
-          continue;
+        for (final fieldId in MetadataEditingSession.textFieldIdsFor(field)) {
+          if (skipFieldIds.contains(fieldId)) continue;
+          syncController(fieldId, session.displayValueForField(fieldId));
         }
-        if (skipFieldIds.contains(field.id)) continue;
-        syncController(
-          field.id,
-          session.displayValueForField(field.id),
-        );
       }
     }
 
@@ -320,6 +315,20 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
+    Widget publishedDateField(MetadataFieldSpecFrb field) {
+      return MetadataPublishedDateField(
+        label: field.label,
+        yearController: fieldController(publishedDateYearFieldId),
+        monthController: fieldController(publishedDateMonthFieldId),
+        dayController: fieldController(publishedDateDayFieldId),
+        yearFocusNode: focusNodeFor(publishedDateYearFieldId),
+        monthFocusNode: focusNodeFor(publishedDateMonthFieldId),
+        dayFocusNode: focusNodeFor(publishedDateDayFieldId),
+        onChanged: onTextFieldChanged,
+        onEditingComplete: () => unawaited(saveNow()),
+      );
+    }
+
     Widget fieldWidget(MetadataFieldSpecFrb field) {
       return switch (field.kind) {
         MetadataFieldKindFrb.text when field.id == 'tags' => tagsField(field),
@@ -328,13 +337,17 @@ class MetadataPanel extends HookConsumerWidget {
         MetadataFieldKindFrb.integer => intField(field),
         MetadataFieldKindFrb.dropdown => dropdownField(field),
         MetadataFieldKindFrb.ageRating => ageRatingField(field),
+        MetadataFieldKindFrb.publishedDate => publishedDateField(field),
         MetadataFieldKindFrb.readOnly => readOnlyField(
           field.label,
           field.readOnlyValue ?? '',
         ),
         MetadataFieldKindFrb.pageCountInfo ||
         MetadataFieldKindFrb.coverPageIndex =>
-          const SizedBox.shrink(),
+          readOnlyField(
+            field.label,
+            session.displayValueForField(field.id),
+          ),
       };
     }
 
@@ -372,24 +385,13 @@ class MetadataPanel extends HookConsumerWidget {
       return Row(
         children: [
           Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  session.schema.editorTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Export：${exportFormatLabel(exportFormat)}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            child: Text(
+              session.schema.editorTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (session.schema.editable && session.saving) ...[
@@ -440,29 +442,6 @@ class MetadataPanel extends HookConsumerWidget {
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
               sliver: SliverToBoxAdapter(child: headerRow()),
-            ),
-            if (session.importSnapshot != null)
-              SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-                sliver: SliverToBoxAdapter(
-                  child: ImportMetadataPreview(
-                    snapshot: session.importSnapshot!,
-                    inferredImportKind: session.inferredImportKind,
-                    exportFormatLabel: exportFormatLabel(exportFormat),
-                  ),
-                ),
-              ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  '导出元数据',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),

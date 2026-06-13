@@ -450,9 +450,8 @@ pub fn metadata_from_opf(
 
     crate::db::MetadataRecord {
         title,
-        writer: opf.creator.clone(),
-        publisher: opf.publisher.clone(),
-        summary: opf.description.clone(),
+        author: opf.creator.clone(),
+        description: opf.description.clone(),
         language_iso: opf.language.clone(),
         characters: opf
             .characters
@@ -699,13 +698,18 @@ fn build_content_opf(
         escape_xml(language),
     ));
 
-    append_dc_element(&mut opf, "creator", metadata.writer.as_deref());
-    append_dc_element(&mut opf, "publisher", metadata.publisher.as_deref());
-    append_dc_element(&mut opf, "description", metadata.summary.as_deref());
+    append_dc_element(&mut opf, "creator", metadata.author.as_deref());
+    append_dc_element(&mut opf, "description", metadata.description.as_deref());
     append_dc_element(&mut opf, "series", metadata.series.as_deref());
-    append_dc_element(&mut opf, "number", metadata.issue_number.as_deref());
-    append_dc_element(&mut opf, "source", metadata.web.as_deref());
-    append_meta_name_content(&mut opf, "comic:volume", metadata.volume.as_deref());
+    append_dc_element(&mut opf, "number", metadata.number.as_deref());
+    if let Some(published_date) = metadata.published_date.as_deref() {
+        append_dc_element(&mut opf, "date", Some(published_date));
+    }
+    append_meta_name_content(
+        &mut opf,
+        "series-count",
+        metadata.series_count.as_deref(),
+    );
     append_meta_name_content(
         &mut opf,
         "characters",
@@ -757,36 +761,16 @@ fn build_content_opf(
     opf
 }
 
-fn opf_identifier_id(metadata: &crate::db::MetadataRecord) -> String {
-    if metadata
-        .gtin
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        "KSBN".to_string()
-    } else {
-        "book-id".to_string()
-    }
+fn opf_identifier_id(_metadata: &crate::db::MetadataRecord) -> String {
+    "book-id".to_string()
 }
 
-fn opf_identifier_scheme(metadata: &crate::db::MetadataRecord) -> Option<String> {
-    if metadata
-        .gtin
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        Some("KSBN".to_string())
-    } else {
-        None
-    }
+fn opf_identifier_scheme(_metadata: &crate::db::MetadataRecord) -> Option<String> {
+    None
 }
 
 fn opf_identifier_value(metadata: &crate::db::MetadataRecord) -> &str {
-    metadata
-        .gtin
-        .as_deref()
-        .filter(|v| !v.trim().is_empty())
-        .unwrap_or(metadata.title.as_str())
+    metadata.title.as_str()
 }
 
 fn append_dc_element(opf: &mut String, tag: &str, value: Option<&str>) {

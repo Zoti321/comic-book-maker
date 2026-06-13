@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -5,6 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
 import 'support/data/repositories/in_memory_core_gateway.dart';
+
+Finder numberTextField() => find.byType(TextFormField).at(2);
+
+Future<void> selectMetadataSection(WidgetTester tester, String label) async {
+  await tester.tap(find.text(label));
+  await tester.pumpAndSettle();
+}
+
+Finder publishingYearField() => find.byType(TextFormField).at(0);
+Finder publishingMonthField() => find.byType(TextFormField).at(1);
+Finder publishingDayField() => find.byType(TextFormField).at(2);
 
 void main() {
   late InMemoryCoreGateway gateway;
@@ -18,27 +30,23 @@ void main() {
     gateway.onMetadataUpdate = null;
   });
 
-  testWidgets('comic archive export format shows ComicInfo fields', (tester) async {
+  testWidgets('shows canonical metadata fields regardless of export format', (
+    tester,
+  ) async {
     await pumpMetadataPanel(
       tester,
       gateway: gateway,
       exportFormat: ExportFormatFrb.comicArchive,
     );
 
-    expect(find.text('导入元数据（只读）'), findsOneWidget);
-    expect(
-      find.textContaining('导入资源中没有元数据'),
-      findsOneWidget,
-    );
-    expect(find.text('导出元数据'), findsOneWidget);
-    expect(find.text('ComicInfo'), findsWidgets);
-    expect(find.text('卷号'), findsOneWidget);
-    expect(find.text('编辑模型'), findsNothing);
-    expect(find.text('保存'), findsNothing);
-    expect(find.text('未保存'), findsNothing);
+    expect(find.text('元数据'), findsWidgets);
+    expect(find.text('期号'), findsOneWidget);
+    expect(find.text('ComicInfo'), findsNothing);
+    expect(find.text('OPF Metadata'), findsNothing);
+    expect(find.text('导出元数据'), findsNothing);
   });
 
-  testWidgets('epub export format shows OPF and fixed-layout sections', (
+  testWidgets('epub export format uses the same canonical schema', (
     tester,
   ) async {
     await pumpMetadataPanel(
@@ -47,18 +55,13 @@ void main() {
       exportFormat: ExportFormatFrb.epub,
     );
 
-    expect(find.text('OPF Metadata'), findsWidgets);
-    expect(find.text('标识符 (GTIN/ISBN)'), findsOneWidget);
-    expect(find.text('rendition:layout'), findsNothing);
-
-    await tester.tap(find.text('固定版式'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('rendition:layout'), findsOneWidget);
-    expect(find.text('pre-paginated'), findsOneWidget);
+    expect(find.text('元数据'), findsWidgets);
+    expect(find.text('期号'), findsOneWidget);
+    expect(find.text('OPF Metadata'), findsNothing);
+    expect(find.text('固定版式'), findsNothing);
   });
 
-  testWidgets('pdf export format uses editable comicinfo form', (
+  testWidgets('pdf export format uses the same canonical schema', (
     tester,
   ) async {
     await pumpMetadataPanel(
@@ -67,9 +70,121 @@ void main() {
       exportFormat: ExportFormatFrb.pdf,
     );
 
-    expect(find.text('ComicInfo'), findsOneWidget);
+    expect(find.text('元数据'), findsWidgets);
     expect(find.text('标题'), findsOneWidget);
     expect(find.text('当前格式不支持编辑'), findsNothing);
+  });
+
+  testWidgets('published date year-only round trip', (tester) async {
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+      publishedDate: '2024',
+    );
+
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
+    await selectMetadataSection(tester, '出版');
+
+    expect(
+      tester.widget<TextFormField>(publishingYearField()).controller?.text,
+      '2024',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
+      '',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingDayField()).controller?.text,
+      '',
+    );
+
+    await tester.enterText(publishingYearField(), '2025');
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2025');
+  });
+
+  testWidgets('published date year-month round trip', (tester) async {
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+      publishedDate: '2024-05',
+    );
+
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.epub,
+    );
+    await selectMetadataSection(tester, '出版');
+
+    expect(
+      tester.widget<TextFormField>(publishingYearField()).controller?.text,
+      '2024',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
+      '5',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingDayField()).controller?.text,
+      '',
+    );
+
+    await tester.enterText(publishingMonthField(), '6');
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-06');
+  });
+
+  testWidgets('published date full date round trip', (tester) async {
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+      publishedDate: '2024-05-31',
+    );
+
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
+    await selectMetadataSection(tester, '出版');
+
+    expect(
+      tester.widget<TextFormField>(publishingYearField()).controller?.text,
+      '2024',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
+      '5',
+    );
+    expect(
+      tester.widget<TextFormField>(publishingDayField()).controller?.text,
+      '31',
+    );
+
+    await tester.enterText(publishingDayField(), '15');
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-05-15');
+  });
+
+  testWidgets('system section shows read-only page count and cover page', (
+    tester,
+  ) async {
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+      pageCount: 5,
+    );
+    await selectMetadataSection(tester, '系统');
+
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text('0'), findsOneWidget);
+    expect(find.byType(TextFormField), findsNothing);
   });
 
   testWidgets('debounced edit persists metadata without manual save', (
@@ -81,7 +196,7 @@ void main() {
       exportFormat: ExportFormatFrb.comicArchive,
     );
 
-    await tester.enterText(find.byType(TextFormField).last, '2');
+    await tester.enterText(numberTextField(), '2');
     await tester.pump(const Duration(milliseconds: 500));
     expect(gateway.metadataUpdateCallCount, 0);
 
@@ -89,7 +204,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 1);
-    expect(gateway.metadataByProjectId['p1']?.volume, '2');
+    expect(gateway.metadataByProjectId['p1']?.number, '2');
     expect(find.text('保存中…'), findsNothing);
   });
 
@@ -126,20 +241,20 @@ void main() {
 
     gateway.nextMetadataUpdateError = Exception('磁盘写入失败');
 
-    await tester.enterText(find.byType(TextFormField).last, '9');
+    await tester.enterText(numberTextField(), '9');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 1);
     expect(find.textContaining('保存失败'), findsOneWidget);
     expect(find.text('重试'), findsOneWidget);
-    expect(gateway.metadataByProjectId['p1']?.volume, '1');
+    expect(gateway.metadataByProjectId['p1']?.number, '01');
 
     await tester.tap(find.text('重试'));
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 2);
-    expect(gateway.metadataByProjectId['p1']?.volume, '9');
+    expect(gateway.metadataByProjectId['p1']?.number, '9');
     expect(find.textContaining('保存失败'), findsNothing);
   });
 
@@ -160,12 +275,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextFormField).last, '6');
+    await tester.enterText(numberTextField(), '6');
     await tester.tap(find.text('增加页数'));
     await tester.pump();
 
     expect(
-      tester.widget<TextFormField>(find.byType(TextFormField).last).controller?.text,
+      tester.widget<TextFormField>(numberTextField()).controller?.text,
       '6',
     );
 
@@ -173,7 +288,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 1);
-    expect(gateway.metadataByProjectId['p1']?.volume, '6');
+    expect(gateway.metadataByProjectId['p1']?.number, '6');
   });
 
   testWidgets('preserves field edits made while save result is applied', (
@@ -185,10 +300,10 @@ void main() {
       exportFormat: ExportFormatFrb.comicArchive,
     );
 
-    final volumeField = find.byType(TextFormField).last;
-    final controller = tester.widget<TextFormField>(volumeField).controller!;
+    final numberField = numberTextField();
+    final controller = tester.widget<TextFormField>(numberField).controller!;
 
-    await tester.enterText(volumeField, '12');
+    await tester.enterText(numberField, '12');
     gateway.onMetadataUpdate = () {
       controller.text = '123';
       controller.selection = const TextSelection.collapsed(offset: 3);
@@ -198,12 +313,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.text, '123');
-    expect(gateway.metadataByProjectId['p1']?.volume, '12');
+    expect(gateway.metadataByProjectId['p1']?.number, '12');
 
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(gateway.metadataByProjectId['p1']?.volume, '123');
+    expect(gateway.metadataByProjectId['p1']?.number, '123');
   });
 }
 
@@ -244,6 +359,26 @@ class _MetadataPanelPageCountHarnessState
           child: const Text('增加页数'),
         ),
       ],
+    );
+  }
+}
+
+extension on Metadata {
+  Metadata copyWith({String? publishedDate}) {
+    return Metadata(
+      title: title,
+      series: series,
+      number: number,
+      seriesCount: seriesCount,
+      publishedDate: publishedDate ?? this.publishedDate,
+      languageIso: languageIso,
+      author: author,
+      tags: tags,
+      characters: characters,
+      ageRating: ageRating,
+      description: description,
+      coverPageIndex: coverPageIndex,
+      pageCount: pageCount,
     );
   }
 }

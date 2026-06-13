@@ -214,7 +214,7 @@ mod tests {
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");
         assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
-        assert_eq!(metadata.writer.as_deref(), Some("Bob"));
+        assert_eq!(metadata.author.as_deref(), Some("Bob"));
 
         let storage = crate::paths::project_storage_dir(&app_data, &outcome.project_id);
         assert!(project_cache_dir(&storage).join("cover.webp").is_file());

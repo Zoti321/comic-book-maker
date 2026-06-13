@@ -12,6 +12,7 @@ use crate::export_atomic::atomic_write_destination;
 use crate::export_error::ExportError;
 use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::{cbz_zip_entry_name, normalize_extension};
+use crate::published_date::{published_date_day, published_date_month, published_date_year};
 
 pub fn export_cbz(
     library: &Library,
@@ -78,19 +79,21 @@ fn write_cbz_archive(
 pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[PageRecord]) -> String {
     let mut xml = String::from("<?xml version=\"1.0\"?>\n<ComicInfo>\n");
 
-    // Whitelist: always emitted (empty element when unset).
     append_element_always(&mut xml, "Title", Some(metadata.title.as_str()));
     append_optional_element_always(&mut xml, "Series", metadata.series.as_deref());
-    append_optional_element_always(&mut xml, "Number", metadata.issue_number.as_deref());
-    append_optional_element_always(&mut xml, "Volume", metadata.volume.as_deref());
-    append_optional_element_always(&mut xml, "Summary", metadata.summary.as_deref());
-    append_int_element_always(&mut xml, "Year", metadata.year);
-    append_int_element_always(&mut xml, "Month", metadata.month);
-    append_int_element_always(&mut xml, "Day", metadata.day);
-    append_optional_element_always(&mut xml, "Writer", metadata.writer.as_deref());
-    append_optional_element_always(&mut xml, "Penciller", metadata.penciller.as_deref());
-    append_optional_element_always(&mut xml, "Publisher", metadata.publisher.as_deref());
-    append_optional_element_always(&mut xml, "Genre", metadata.genre.as_deref());
+    append_optional_element_always(&mut xml, "Number", metadata.number.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
+    if let Some(published_date) = metadata.published_date.as_deref() {
+        append_int_element_always(&mut xml, "Year", published_date_year(published_date));
+        append_int_element_always(&mut xml, "Month", published_date_month(published_date));
+        append_int_element_always(&mut xml, "Day", published_date_day(published_date));
+    } else {
+        append_int_element_always(&mut xml, "Year", None);
+        append_int_element_always(&mut xml, "Month", None);
+        append_int_element_always(&mut xml, "Day", None);
+    }
+    append_optional_element_always(&mut xml, "Penciller", metadata.author.as_deref());
+    append_optional_element_always(&mut xml, "Summary", metadata.description.as_deref());
     let normalized_tags = metadata
         .tags
         .as_deref()
@@ -99,71 +102,11 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     append_element_always(
         &mut xml,
         "PageCount",
-        Some(&metadata.page_count.to_string()),
+        Some(&pages.len().to_string()),
     );
     append_optional_element_always(&mut xml, "LanguageISO", metadata.language_iso.as_deref());
-    append_optional_element_always(&mut xml, "Manga", metadata.manga.as_deref());
     append_optional_element_always(&mut xml, "Characters", metadata.characters.as_deref());
     append_optional_element_always(&mut xml, "AgeRating", metadata.age_rating.as_deref());
-    append_optional_element_always(&mut xml, "Format", metadata.format.as_deref());
-
-    // Non-whitelist: only when non-empty.
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "AlternateSeries",
-        metadata.alternate_series.as_deref(),
-    );
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "AlternateNumber",
-        metadata.alternate_number.as_deref(),
-    );
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "AlternateCount",
-        metadata.alternate_count.as_deref(),
-    );
-    append_optional_element_if_nonempty(&mut xml, "StoryArc", metadata.story_arc.as_deref());
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "StoryArcNumber",
-        metadata.story_arc_number.as_deref(),
-    );
-    append_optional_element_if_nonempty(&mut xml, "SeriesGroup", metadata.series_group.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Notes", metadata.notes.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Inker", metadata.inker.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Colorist", metadata.colorist.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Letterer", metadata.letterer.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "CoverArtist", metadata.cover_artist.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Editor", metadata.editor.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Translator", metadata.translator.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Imprint", metadata.imprint.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Web", metadata.web.as_deref());
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "BlackAndWhite",
-        metadata.black_and_white.as_deref(),
-    );
-    append_optional_element_if_nonempty(&mut xml, "Teams", metadata.teams.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Locations", metadata.locations.as_deref());
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "MainCharacterOrTeam",
-        metadata.main_character_or_team.as_deref(),
-    );
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "ScanInformation",
-        metadata.scan_information.as_deref(),
-    );
-    append_optional_element_if_nonempty(
-        &mut xml,
-        "CommunityRating",
-        metadata.community_rating.as_deref(),
-    );
-    append_optional_element_if_nonempty(&mut xml, "Review", metadata.review.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "GTIN", metadata.gtin.as_deref());
 
     append_pages_section(&mut xml, pages, metadata.cover_page_index);
 
@@ -171,25 +114,14 @@ pub(crate) fn metadata_to_comicinfo_xml(metadata: &MetadataRecord, pages: &[Page
     xml
 }
 
-/// Document Info `Author` for PDF: `writer`, then `penciller`, comma-separated when both are set.
+/// Document Info `Author` for PDF.
 pub(crate) fn pdf_document_author(metadata: &MetadataRecord) -> Option<String> {
-    let writer = metadata
-        .writer
+    metadata
+        .author
         .as_deref()
         .map(str::trim)
-        .filter(|value| !value.is_empty());
-    let penciller = metadata
-        .penciller
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty());
-
-    match (writer, penciller) {
-        (Some(writer), Some(penciller)) => Some(format!("{writer}, {penciller}")),
-        (Some(writer), None) => Some(writer.to_string()),
-        (None, Some(penciller)) => Some(penciller.to_string()),
-        (None, None) => None,
-    }
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
 }
 
 /// ComicInfo.xml for PDF export: whitelisted fields only; omit empty elements except `PageCount`.
@@ -202,11 +134,10 @@ pub(crate) fn metadata_to_pdf_comicinfo_xml(
 
     append_optional_element_if_nonempty(&mut xml, "Title", Some(title));
     append_optional_element_if_nonempty(&mut xml, "Series", metadata.series.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Number", metadata.issue_number.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Number", metadata.number.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Count", metadata.series_count.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Writer", metadata.writer.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Penciller", metadata.penciller.as_deref());
-    append_optional_element_if_nonempty(&mut xml, "Summary", metadata.summary.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Penciller", metadata.author.as_deref());
+    append_optional_element_if_nonempty(&mut xml, "Summary", metadata.description.as_deref());
     append_optional_element_if_nonempty(&mut xml, "Characters", metadata.characters.as_deref());
     append_optional_element_if_nonempty(&mut xml, "AgeRating", metadata.age_rating.as_deref());
     let normalized_tags = metadata
@@ -333,28 +264,13 @@ mod tests {
     }
 
     #[test]
-    fn pdf_document_author_merges_writer_and_penciller() {
-        let both = MetadataRecord {
-            writer: Some("Alice".to_string()),
-            penciller: Some("Bob".to_string()),
+    fn pdf_document_author_returns_author_field() {
+        let metadata = MetadataRecord {
+            author: Some("Alice".to_string()),
             ..MetadataRecord::default()
         };
-        assert_eq!(pdf_document_author(&both).as_deref(), Some("Alice, Bob"));
-
-        let writer_only = MetadataRecord {
-            writer: Some("Alice".to_string()),
-            ..MetadataRecord::default()
-        };
-        assert_eq!(pdf_document_author(&writer_only).as_deref(), Some("Alice"));
-
-        let penciller_only = MetadataRecord {
-            penciller: Some("Bob".to_string()),
-            ..MetadataRecord::default()
-        };
-        assert_eq!(pdf_document_author(&penciller_only).as_deref(), Some("Bob"));
-
-        let empty = MetadataRecord::default();
-        assert_eq!(pdf_document_author(&empty), None);
+        assert_eq!(pdf_document_author(&metadata).as_deref(), Some("Alice"));
+        assert_eq!(pdf_document_author(&MetadataRecord::default()), None);
     }
 
     #[test]
@@ -362,14 +278,13 @@ mod tests {
         let metadata = MetadataRecord {
             title: "PDF Title".to_string(),
             series: Some("Series".to_string()),
-            issue_number: Some("7".to_string()),
+            number: Some("7".to_string()),
             series_count: Some("24".to_string()),
-            writer: Some("Writer".to_string()),
-            summary: Some("Summary".to_string()),
+            author: Some("Writer".to_string()),
+            description: Some("Summary".to_string()),
             characters: Some("A,B".to_string()),
             age_rating: Some("Teen".to_string()),
             tags: Some("tag1, tag2".to_string()),
-            publisher: Some("Should Not Export".to_string()),
             page_count: 2,
             ..MetadataRecord::default()
         };
@@ -378,24 +293,10 @@ mod tests {
         assert!(xml.contains("<Title>PDF Title</Title>"));
         assert!(xml.contains("<Number>7</Number>"));
         assert!(xml.contains("<Count>24</Count>"));
-        assert!(xml.contains("<Writer>Writer</Writer>"));
+        assert!(xml.contains("<Penciller>Writer</Penciller>"));
         assert!(xml.contains("<Tags>tag1,tag2</Tags>"));
         assert!(xml.contains("<PageCount>2</PageCount>"));
-        assert!(!xml.contains("Should Not Export"));
-        assert!(!xml.contains("<Publisher>"));
-        assert!(!xml.contains("<Penciller>"));
-    }
-
-    #[test]
-    fn serializes_pdf_comicinfo_xml_includes_penciller_when_set() {
-        let metadata = MetadataRecord {
-            penciller: Some("Artist".to_string()),
-            page_count: 1,
-            ..MetadataRecord::default()
-        };
-
-        let xml = metadata_to_pdf_comicinfo_xml(&metadata, "Title", 1);
-        assert!(xml.contains("<Penciller>Artist</Penciller>"));
+        assert!(!xml.contains("<Writer>"));
     }
 
     #[test]
@@ -403,9 +304,9 @@ mod tests {
         let metadata = MetadataRecord {
             title: "Export Title".to_string(),
             series: Some("Series".to_string()),
-            issue_number: Some("3".to_string()),
-            writer: Some("Alice".to_string()),
-            year: Some(2024),
+            number: Some("3".to_string()),
+            author: Some("Alice".to_string()),
+            published_date: Some("2024".to_string()),
             page_count: 2,
             cover_page_index: 1,
             ..Default::default()
@@ -434,8 +335,9 @@ mod tests {
         let xml = metadata_to_comicinfo_xml(&metadata, &pages);
         assert!(xml.contains("<Series>Series</Series>"));
         assert!(xml.contains("<Number>3</Number>"));
-        assert!(xml.contains("<Writer>Alice</Writer>"));
-        assert!(xml.contains("<Volume></Volume>"));
+        assert!(xml.contains("<Penciller>Alice</Penciller>"));
+        assert!(xml.contains("<Year>2024</Year>"));
+        assert!(!xml.contains("<Writer>"));
         assert!(!xml.contains("<Notes>"));
         assert!(!xml.contains("<Inker>"));
         assert!(xml.contains("<Page Image=\"1\" Type=\"FrontCover\""));
@@ -443,7 +345,7 @@ mod tests {
         let parsed = parse_comicinfo_xml(&xml).expect("parse exported xml");
         assert_eq!(parsed.title.as_deref(), Some("Export Title"));
         assert_eq!(parsed.series.as_deref(), Some("Series"));
-        assert_eq!(parsed.writer.as_deref(), Some("Alice"));
+        assert_eq!(parsed.penciller.as_deref(), Some("Alice"));
         assert_eq!(parsed.year.as_deref(), Some("2024"));
         assert_eq!(cover_page_index_from_pages(&parsed.pages, 2, &[]), 1);
         assert!(parsed.pages.iter().any(|page| page.image == "1"));
@@ -560,7 +462,7 @@ mod tests {
         let parsed = parse_comicinfo_xml(&comicinfo.expect("comicinfo")).expect("parse");
         assert_eq!(parsed.title.as_deref(), Some("Export Me"));
         assert_eq!(parsed.series.as_deref(), Some("Exported Series"));
-        assert_eq!(parsed.writer.as_deref(), Some("Bob"));
+        assert_eq!(parsed.penciller.as_deref(), Some("Bob"));
         assert_eq!(cover_page_index_from_pages(&parsed.pages, 2, &[]), 0);
         assert!(parsed
             .pages

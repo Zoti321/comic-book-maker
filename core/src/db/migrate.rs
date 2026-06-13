@@ -7,10 +7,15 @@ pub fn migrate(connection: &Connection) -> Result<(), String> {
     migrate_project_format_columns(connection)?;
     migrate_project_workflow_columns(connection)?;
     copy_legacy_metadata(connection)?;
+    migrate_canonical_metadata(connection)?;
     Ok(())
 }
 
 fn migrate_comicinfo_columns(connection: &Connection) -> Result<(), String> {
+    if column_exists(connection, "number")? {
+        return Ok(());
+    }
+
     let columns = [
         ("series", "TEXT"),
         ("issue_number", "TEXT"),
@@ -122,6 +127,10 @@ fn migrate_project_workflow_columns(connection: &Connection) -> Result<(), Strin
 }
 
 fn copy_legacy_metadata(connection: &Connection) -> Result<(), String> {
+    if column_exists(connection, "number")? {
+        return Ok(());
+    }
+
     if column_exists(connection, "series_name")? {
         connection
             .execute_batch(
@@ -143,6 +152,150 @@ fn copy_legacy_metadata(connection: &Connection) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn migrate_canonical_metadata(connection: &Connection) -> Result<(), String> {
+    if column_exists(connection, "number")? {
+        return Ok(());
+    }
+
+    if !column_exists(connection, "issue_number")? {
+        add_canonical_columns(connection)?;
+        return Ok(());
+    }
+
+    let published_date_expr = published_date_migration_expr(connection)?;
+    let author_expr = author_migration_expr(connection)?;
+
+    connection
+        .execute_batch(
+            &format!(
+                "
+                CREATE TABLE projects_canonical (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    series TEXT,
+                    number TEXT,
+                    series_count TEXT,
+                    published_date TEXT,
+                    language_iso TEXT,
+                    author TEXT,
+                    tags TEXT,
+                    characters TEXT,
+                    age_rating TEXT,
+                    description TEXT,
+                    cover_page_index INTEGER NOT NULL DEFAULT 0,
+                    export_format TEXT NOT NULL DEFAULT 'comic_archive',
+                    inferred_import_kind TEXT NOT NULL DEFAULT 'images',
+                    delete_project_after_export INTEGER NOT NULL DEFAULT 0,
+                    use_default_export_directory INTEGER NOT NULL DEFAULT 1,
+                    export_directory TEXT,
+                    comic_archive_container TEXT NOT NULL DEFAULT 'zip',
+                    use_comic_archive_extension INTEGER NOT NULL DEFAULT 1,
+                    created_at_ms INTEGER NOT NULL,
+                    updated_at_ms INTEGER NOT NULL,
+                    last_opened_at_ms INTEGER
+                );
+
+                INSERT INTO projects_canonical (
+                    id, title, series, number, series_count, published_date,
+                    language_iso, author, tags, characters, age_rating, description,
+                    cover_page_index, export_format, inferred_import_kind,
+                    delete_project_after_export, use_default_export_directory,
+                    export_directory, comic_archive_container, use_comic_archive_extension,
+                    created_at_ms, updated_at_ms, last_opened_at_ms
+                )
+                SELECT
+                    id,
+                    title,
+                    series,
+                    issue_number,
+                    series_count,
+                    {published_date_expr},
+                    language_iso,
+                    {author_expr},
+                    tags,
+                    characters,
+                    age_rating,
+                    summary,
+                    cover_page_index,
+                    export_format,
+                    inferred_import_kind,
+                    delete_project_after_export,
+                    use_default_export_directory,
+                    export_directory,
+                    comic_archive_container,
+                    use_comic_archive_extension,
+                    created_at_ms,
+                    updated_at_ms,
+                    last_opened_at_ms
+                FROM projects;
+
+                DROP TABLE projects;
+                ALTER TABLE projects_canonical RENAME TO projects;
+                "
+            ),
+        )
+        .map_err(|error| format!("migrate canonical metadata: {error}"))?;
+
+    Ok(())
+}
+
+fn add_canonical_columns(connection: &Connection) -> Result<(), String> {
+    let columns = [
+        ("number", "TEXT"),
+        ("published_date", "TEXT"),
+        ("author", "TEXT"),
+        ("description", "TEXT"),
+    ];
+
+    for (name, kind) in columns {
+        add_column_if_missing(connection, name, kind)?;
+    }
+
+    Ok(())
+}
+
+fn published_date_migration_expr(connection: &Connection) -> Result<String, String> {
+    if column_exists(connection, "year")? {
+        let when_year_null = if column_exists(connection, "publication_date")? {
+            "CASE WHEN publication_date IS NOT NULL AND TRIM(publication_date) != '' THEN TRIM(publication_date) ELSE NULL END"
+        } else {
+            "NULL"
+        };
+        Ok(format!(
+            "CASE
+                    WHEN year IS NULL THEN {when_year_null}
+                    WHEN month IS NULL THEN CAST(year AS TEXT)
+                    WHEN day IS NULL THEN printf('%04d-%02d', year, month)
+                    ELSE printf('%04d-%02d-%02d', year, month, day)
+                 END"
+        ))
+    } else if column_exists(connection, "publication_date")? {
+        Ok(
+            "CASE
+                WHEN publication_date IS NOT NULL AND TRIM(publication_date) != '' THEN TRIM(publication_date)
+                ELSE NULL
+             END"
+                .to_string(),
+        )
+    } else {
+        Ok("NULL".to_string())
+    }
+}
+
+fn author_migration_expr(connection: &Connection) -> Result<String, String> {
+    let has_writer = column_exists(connection, "writer")?;
+    let has_legacy_author = column_exists(connection, "author")?;
+
+    match (has_writer, has_legacy_author) {
+        (true, true) => Ok(
+            "COALESCE(NULLIF(TRIM(writer), ''), NULLIF(TRIM(author), ''))".to_string(),
+        ),
+        (true, false) => Ok("writer".to_string()),
+        (false, true) => Ok("author".to_string()),
+        (false, false) => Ok("NULL".to_string()),
+    }
 }
 
 fn add_column_if_missing(
@@ -174,11 +327,10 @@ fn column_exists(connection: &Connection, name: &str) -> Result<bool, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::published_date::merge_year_month_day;
     use rusqlite::Connection;
 
-    #[test]
-    fn migrate_adds_comicinfo_columns() {
-        let connection = Connection::open_in_memory().expect("open memory db");
+    fn create_legacy_projects_table(connection: &Connection) {
         connection
             .execute_batch(
                 "CREATE TABLE projects (
@@ -192,28 +344,105 @@ mod tests {
                 );",
             )
             .expect("create legacy table");
+    }
+
+    #[test]
+    fn migrate_adds_workflow_columns_on_legacy_db() {
+        let connection = Connection::open_in_memory().expect("open memory db");
+        create_legacy_projects_table(&connection);
 
         migrate(&connection).expect("migrate");
 
-        assert!(column_exists(&connection, "writer").expect("check writer"));
-        assert!(column_exists(&connection, "language_iso").expect("check language"));
-        assert!(column_exists(&connection, "story_arc").expect("check story arc"));
-        assert!(
-            column_exists(&connection, "last_opened_at_ms").expect("check last opened")
-        );
-        assert!(
-            column_exists(&connection, "export_format").expect("check export format")
-        );
-        assert!(
-            column_exists(&connection, "inferred_import_kind").expect("check inferred import")
-        );
+        assert!(column_exists(&connection, "number").expect("check number"));
+        assert!(column_exists(&connection, "published_date").expect("check published_date"));
+        assert!(column_exists(&connection, "author").expect("check author"));
         assert!(
             column_exists(&connection, "delete_project_after_export")
                 .expect("check delete after export")
         );
-        assert!(
-            column_exists(&connection, "comic_archive_container")
-                .expect("check comic archive container")
+        assert!(!column_exists(&connection, "issue_number").expect("check issue_number removed"));
+        assert!(!column_exists(&connection, "writer").expect("check writer removed"));
+    }
+
+    #[test]
+    fn migrate_renames_and_merges_metadata_columns() {
+        let connection = Connection::open_in_memory().expect("open memory db");
+        connection
+            .execute_batch(
+                "CREATE TABLE projects (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    series TEXT,
+                    issue_number TEXT,
+                    series_count TEXT,
+                    summary TEXT,
+                    year INTEGER,
+                    month INTEGER,
+                    day INTEGER,
+                    writer TEXT,
+                    language_iso TEXT,
+                    tags TEXT,
+                    characters TEXT,
+                    age_rating TEXT,
+                    cover_page_index INTEGER NOT NULL DEFAULT 0,
+                    export_format TEXT NOT NULL DEFAULT 'comic_archive',
+                    inferred_import_kind TEXT NOT NULL DEFAULT 'images',
+                    delete_project_after_export INTEGER NOT NULL DEFAULT 0,
+                    use_default_export_directory INTEGER NOT NULL DEFAULT 1,
+                    export_directory TEXT,
+                    comic_archive_container TEXT NOT NULL DEFAULT 'zip',
+                    use_comic_archive_extension INTEGER NOT NULL DEFAULT 1,
+                    created_at_ms INTEGER NOT NULL,
+                    updated_at_ms INTEGER NOT NULL,
+                    last_opened_at_ms INTEGER
+                );",
+            )
+            .expect("create comicinfo table");
+
+        connection
+            .execute(
+                "INSERT INTO projects (
+                    id, title, series, issue_number, series_count, summary,
+                    year, month, day, writer, language_iso, cover_page_index,
+                    created_at_ms, updated_at_ms
+                 ) VALUES (
+                    'p1', 'Title', 'Series', '7', '12', 'Summary text',
+                    2024, 5, NULL, 'Alice', 'zh-CN', 0, 1, 1
+                 )",
+                [],
+            )
+            .expect("insert project");
+
+        migrate_canonical_metadata(&connection).expect("migrate canonical");
+
+        let (number, published_date, author, description): (Option<String>, Option<String>, Option<String>, Option<String>) =
+            connection
+                .query_row(
+                    "SELECT number, published_date, author, description FROM projects WHERE id = 'p1'",
+                    [],
+                    |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+                )
+                .expect("load migrated row");
+
+        assert_eq!(number.as_deref(), Some("7"));
+        assert_eq!(published_date.as_deref(), Some("2024-05"));
+        assert_eq!(author.as_deref(), Some("Alice"));
+        assert_eq!(description.as_deref(), Some("Summary text"));
+    }
+
+    #[test]
+    fn merge_year_month_day_matches_migration_rules() {
+        assert_eq!(
+            merge_year_month_day(Some(2024), None, None).as_deref(),
+            Some("2024")
+        );
+        assert_eq!(
+            merge_year_month_day(Some(2024), Some(5), None).as_deref(),
+            Some("2024-05")
+        );
+        assert_eq!(
+            merge_year_month_day(Some(2024), Some(5), Some(31)).as_deref(),
+            Some("2024-05-31")
         );
     }
 }

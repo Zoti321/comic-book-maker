@@ -6,6 +6,16 @@ import 'package:flutter/foundation.dart';
 const metadataAutosaveDebounce = Duration(milliseconds: 600);
 const metadataSaveIdlePoll = Duration(milliseconds: 16);
 
+const publishedDateYearFieldId = 'published_date_year';
+const publishedDateMonthFieldId = 'published_date_month';
+const publishedDateDayFieldId = 'published_date_day';
+
+const publishedDatePartFieldIds = [
+  publishedDateYearFieldId,
+  publishedDateMonthFieldId,
+  publishedDateDayFieldId,
+];
+
 /// 保存结果写回表单时，哪些文本字段因并发编辑不应被覆盖。
 class MetadataFieldSyncResult {
   const MetadataFieldSyncResult({
@@ -77,16 +87,28 @@ class MetadataEditingSession extends ChangeNotifier {
       MetadataFieldKindFrb.text ||
       MetadataFieldKindFrb.multilineText ||
       MetadataFieldKindFrb.integer ||
-      MetadataFieldKindFrb.ageRating =>
+      MetadataFieldKindFrb.ageRating ||
+      MetadataFieldKindFrb.publishedDate =>
         true,
       _ => false,
     };
   }
 
+  static bool fieldUsesTextField(MetadataFieldSpecFrb field) =>
+      fieldUsesTextController(field.kind);
+
+  static Iterable<String> textFieldIdsFor(MetadataFieldSpecFrb field) sync* {
+    if (field.kind == MetadataFieldKindFrb.publishedDate) {
+      yield* publishedDatePartFieldIds;
+    } else if (fieldUsesTextController(field.kind)) {
+      yield field.id;
+    }
+  }
+
   Iterable<MetadataFieldSpecFrb> get _editableFields sync* {
     for (final section in _schema.sections) {
       for (final field in section.fields) {
-        if (fieldUsesTextController(field.kind)) yield field;
+        if (fieldUsesTextField(field)) yield field;
       }
     }
   }
@@ -160,10 +182,12 @@ class MetadataEditingSession extends ChangeNotifier {
     final skipSync = <String>{};
     if (submittedTextFieldValues != null) {
       for (final field in _editableFields) {
-        final submitted = submittedTextFieldValues[field.id];
-        if (submitted != null &&
-            currentTextFieldValues[field.id] != submitted) {
-          skipSync.add(field.id);
+        for (final fieldId in textFieldIdsFor(field)) {
+          final submitted = submittedTextFieldValues[fieldId];
+          if (submitted != null &&
+              currentTextFieldValues[fieldId] != submitted) {
+            skipSync.add(fieldId);
+          }
         }
       }
     }
@@ -325,6 +349,15 @@ class MetadataEditingSession extends ChangeNotifier {
                 value: textFieldValues[field.id] ?? '',
               ),
             );
+          case MetadataFieldKindFrb.publishedDate:
+            for (final fieldId in publishedDatePartFieldIds) {
+              values.add(
+                MetadataFieldValueFrb(
+                  fieldId: fieldId,
+                  value: textFieldValues[fieldId] ?? '',
+                ),
+              );
+            }
           case MetadataFieldKindFrb.dropdown:
             values.add(
               MetadataFieldValueFrb(

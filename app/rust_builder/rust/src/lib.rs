@@ -23,5 +23,6 @@ pub mod natural_sort;
 pub mod page_image;
 pub mod metadata_schema;
 pub mod paths;
+pub mod published_date;
 pub mod project_format;
 pub mod project_workflow;

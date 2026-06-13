@@ -211,7 +211,7 @@ mod tests {
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");
-        assert_eq!(metadata.writer.as_deref(), Some("Test Author"));
+        assert_eq!(metadata.author.as_deref(), Some("Test Author"));
 
         let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
             &crate::paths::project_storage_dir(&app_data, &outcome.project_id),

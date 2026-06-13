@@ -1676,91 +1676,29 @@ impl SseDecode for crate::api::metadata::Metadata {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_title = <String>::sse_decode(deserializer);
         let mut var_series = <Option<String>>::sse_decode(deserializer);
-        let mut var_issueNumber = <Option<String>>::sse_decode(deserializer);
+        let mut var_number = <Option<String>>::sse_decode(deserializer);
         let mut var_seriesCount = <Option<String>>::sse_decode(deserializer);
-        let mut var_volume = <Option<String>>::sse_decode(deserializer);
-        let mut var_alternateSeries = <Option<String>>::sse_decode(deserializer);
-        let mut var_alternateNumber = <Option<String>>::sse_decode(deserializer);
-        let mut var_alternateCount = <Option<String>>::sse_decode(deserializer);
-        let mut var_summary = <Option<String>>::sse_decode(deserializer);
-        let mut var_notes = <Option<String>>::sse_decode(deserializer);
-        let mut var_year = <Option<i32>>::sse_decode(deserializer);
-        let mut var_month = <Option<i32>>::sse_decode(deserializer);
-        let mut var_day = <Option<i32>>::sse_decode(deserializer);
-        let mut var_writer = <Option<String>>::sse_decode(deserializer);
-        let mut var_penciller = <Option<String>>::sse_decode(deserializer);
-        let mut var_inker = <Option<String>>::sse_decode(deserializer);
-        let mut var_colorist = <Option<String>>::sse_decode(deserializer);
-        let mut var_letterer = <Option<String>>::sse_decode(deserializer);
-        let mut var_coverArtist = <Option<String>>::sse_decode(deserializer);
-        let mut var_editor = <Option<String>>::sse_decode(deserializer);
-        let mut var_translator = <Option<String>>::sse_decode(deserializer);
-        let mut var_publisher = <Option<String>>::sse_decode(deserializer);
-        let mut var_imprint = <Option<String>>::sse_decode(deserializer);
-        let mut var_genre = <Option<String>>::sse_decode(deserializer);
-        let mut var_tags = <Option<String>>::sse_decode(deserializer);
-        let mut var_web = <Option<String>>::sse_decode(deserializer);
+        let mut var_publishedDate = <Option<String>>::sse_decode(deserializer);
         let mut var_languageIso = <Option<String>>::sse_decode(deserializer);
-        let mut var_format = <Option<String>>::sse_decode(deserializer);
-        let mut var_blackAndWhite = <Option<String>>::sse_decode(deserializer);
-        let mut var_manga = <Option<String>>::sse_decode(deserializer);
+        let mut var_author = <Option<String>>::sse_decode(deserializer);
+        let mut var_tags = <Option<String>>::sse_decode(deserializer);
         let mut var_characters = <Option<String>>::sse_decode(deserializer);
-        let mut var_teams = <Option<String>>::sse_decode(deserializer);
-        let mut var_locations = <Option<String>>::sse_decode(deserializer);
-        let mut var_mainCharacterOrTeam = <Option<String>>::sse_decode(deserializer);
-        let mut var_scanInformation = <Option<String>>::sse_decode(deserializer);
-        let mut var_storyArc = <Option<String>>::sse_decode(deserializer);
-        let mut var_storyArcNumber = <Option<String>>::sse_decode(deserializer);
-        let mut var_seriesGroup = <Option<String>>::sse_decode(deserializer);
         let mut var_ageRating = <Option<String>>::sse_decode(deserializer);
-        let mut var_communityRating = <Option<String>>::sse_decode(deserializer);
-        let mut var_review = <Option<String>>::sse_decode(deserializer);
-        let mut var_gtin = <Option<String>>::sse_decode(deserializer);
+        let mut var_description = <Option<String>>::sse_decode(deserializer);
         let mut var_coverPageIndex = <i32>::sse_decode(deserializer);
         let mut var_pageCount = <i32>::sse_decode(deserializer);
         return crate::api::metadata::Metadata {
             title: var_title,
             series: var_series,
-            issue_number: var_issueNumber,
+            number: var_number,
             series_count: var_seriesCount,
-            volume: var_volume,
-            alternate_series: var_alternateSeries,
-            alternate_number: var_alternateNumber,
-            alternate_count: var_alternateCount,
-            summary: var_summary,
-            notes: var_notes,
-            year: var_year,
-            month: var_month,
-            day: var_day,
-            writer: var_writer,
-            penciller: var_penciller,
-            inker: var_inker,
-            colorist: var_colorist,
-            letterer: var_letterer,
-            cover_artist: var_coverArtist,
-            editor: var_editor,
-            translator: var_translator,
-            publisher: var_publisher,
-            imprint: var_imprint,
-            genre: var_genre,
-            tags: var_tags,
-            web: var_web,
+            published_date: var_publishedDate,
             language_iso: var_languageIso,
-            format: var_format,
-            black_and_white: var_blackAndWhite,
-            manga: var_manga,
+            author: var_author,
+            tags: var_tags,
             characters: var_characters,
-            teams: var_teams,
-            locations: var_locations,
-            main_character_or_team: var_mainCharacterOrTeam,
-            scan_information: var_scanInformation,
-            story_arc: var_storyArc,
-            story_arc_number: var_storyArcNumber,
-            series_group: var_seriesGroup,
             age_rating: var_ageRating,
-            community_rating: var_communityRating,
-            review: var_review,
-            gtin: var_gtin,
+            description: var_description,
             cover_page_index: var_coverPageIndex,
             page_count: var_pageCount,
         };
@@ -1797,8 +1735,9 @@ impl SseDecode for crate::api::metadata::MetadataFieldKindFrb {
             3 => crate::api::metadata::MetadataFieldKindFrb::Dropdown,
             4 => crate::api::metadata::MetadataFieldKindFrb::ReadOnly,
             5 => crate::api::metadata::MetadataFieldKindFrb::AgeRating,
-            6 => crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex,
-            7 => crate::api::metadata::MetadataFieldKindFrb::PageCountInfo,
+            6 => crate::api::metadata::MetadataFieldKindFrb::PublishedDate,
+            7 => crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex,
+            8 => crate::api::metadata::MetadataFieldKindFrb::PageCountInfo,
             _ => unreachable!("Invalid variant for MetadataFieldKindFrb: {}", inner),
         };
     }
@@ -2284,46 +2223,15 @@ impl flutter_rust_bridge::IntoDart for crate::api::metadata::Metadata {
         [
             self.title.into_into_dart().into_dart(),
             self.series.into_into_dart().into_dart(),
-            self.issue_number.into_into_dart().into_dart(),
+            self.number.into_into_dart().into_dart(),
             self.series_count.into_into_dart().into_dart(),
-            self.volume.into_into_dart().into_dart(),
-            self.alternate_series.into_into_dart().into_dart(),
-            self.alternate_number.into_into_dart().into_dart(),
-            self.alternate_count.into_into_dart().into_dart(),
-            self.summary.into_into_dart().into_dart(),
-            self.notes.into_into_dart().into_dart(),
-            self.year.into_into_dart().into_dart(),
-            self.month.into_into_dart().into_dart(),
-            self.day.into_into_dart().into_dart(),
-            self.writer.into_into_dart().into_dart(),
-            self.penciller.into_into_dart().into_dart(),
-            self.inker.into_into_dart().into_dart(),
-            self.colorist.into_into_dart().into_dart(),
-            self.letterer.into_into_dart().into_dart(),
-            self.cover_artist.into_into_dart().into_dart(),
-            self.editor.into_into_dart().into_dart(),
-            self.translator.into_into_dart().into_dart(),
-            self.publisher.into_into_dart().into_dart(),
-            self.imprint.into_into_dart().into_dart(),
-            self.genre.into_into_dart().into_dart(),
-            self.tags.into_into_dart().into_dart(),
-            self.web.into_into_dart().into_dart(),
+            self.published_date.into_into_dart().into_dart(),
             self.language_iso.into_into_dart().into_dart(),
-            self.format.into_into_dart().into_dart(),
-            self.black_and_white.into_into_dart().into_dart(),
-            self.manga.into_into_dart().into_dart(),
+            self.author.into_into_dart().into_dart(),
+            self.tags.into_into_dart().into_dart(),
             self.characters.into_into_dart().into_dart(),
-            self.teams.into_into_dart().into_dart(),
-            self.locations.into_into_dart().into_dart(),
-            self.main_character_or_team.into_into_dart().into_dart(),
-            self.scan_information.into_into_dart().into_dart(),
-            self.story_arc.into_into_dart().into_dart(),
-            self.story_arc_number.into_into_dart().into_dart(),
-            self.series_group.into_into_dart().into_dart(),
             self.age_rating.into_into_dart().into_dart(),
-            self.community_rating.into_into_dart().into_dart(),
-            self.review.into_into_dart().into_dart(),
-            self.gtin.into_into_dart().into_dart(),
+            self.description.into_into_dart().into_dart(),
             self.cover_page_index.into_into_dart().into_dart(),
             self.page_count.into_into_dart().into_dart(),
         ]
@@ -2375,8 +2283,9 @@ impl flutter_rust_bridge::IntoDart for crate::api::metadata::MetadataFieldKindFr
             Self::Dropdown => 3.into_dart(),
             Self::ReadOnly => 4.into_dart(),
             Self::AgeRating => 5.into_dart(),
-            Self::CoverPageIndex => 6.into_dart(),
-            Self::PageCountInfo => 7.into_dart(),
+            Self::PublishedDate => 6.into_dart(),
+            Self::CoverPageIndex => 7.into_dart(),
+            Self::PageCountInfo => 8.into_dart(),
             _ => unreachable!(),
         }
     }
@@ -2811,46 +2720,15 @@ impl SseEncode for crate::api::metadata::Metadata {
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.title, serializer);
         <Option<String>>::sse_encode(self.series, serializer);
-        <Option<String>>::sse_encode(self.issue_number, serializer);
+        <Option<String>>::sse_encode(self.number, serializer);
         <Option<String>>::sse_encode(self.series_count, serializer);
-        <Option<String>>::sse_encode(self.volume, serializer);
-        <Option<String>>::sse_encode(self.alternate_series, serializer);
-        <Option<String>>::sse_encode(self.alternate_number, serializer);
-        <Option<String>>::sse_encode(self.alternate_count, serializer);
-        <Option<String>>::sse_encode(self.summary, serializer);
-        <Option<String>>::sse_encode(self.notes, serializer);
-        <Option<i32>>::sse_encode(self.year, serializer);
-        <Option<i32>>::sse_encode(self.month, serializer);
-        <Option<i32>>::sse_encode(self.day, serializer);
-        <Option<String>>::sse_encode(self.writer, serializer);
-        <Option<String>>::sse_encode(self.penciller, serializer);
-        <Option<String>>::sse_encode(self.inker, serializer);
-        <Option<String>>::sse_encode(self.colorist, serializer);
-        <Option<String>>::sse_encode(self.letterer, serializer);
-        <Option<String>>::sse_encode(self.cover_artist, serializer);
-        <Option<String>>::sse_encode(self.editor, serializer);
-        <Option<String>>::sse_encode(self.translator, serializer);
-        <Option<String>>::sse_encode(self.publisher, serializer);
-        <Option<String>>::sse_encode(self.imprint, serializer);
-        <Option<String>>::sse_encode(self.genre, serializer);
-        <Option<String>>::sse_encode(self.tags, serializer);
-        <Option<String>>::sse_encode(self.web, serializer);
+        <Option<String>>::sse_encode(self.published_date, serializer);
         <Option<String>>::sse_encode(self.language_iso, serializer);
-        <Option<String>>::sse_encode(self.format, serializer);
-        <Option<String>>::sse_encode(self.black_and_white, serializer);
-        <Option<String>>::sse_encode(self.manga, serializer);
+        <Option<String>>::sse_encode(self.author, serializer);
+        <Option<String>>::sse_encode(self.tags, serializer);
         <Option<String>>::sse_encode(self.characters, serializer);
-        <Option<String>>::sse_encode(self.teams, serializer);
-        <Option<String>>::sse_encode(self.locations, serializer);
-        <Option<String>>::sse_encode(self.main_character_or_team, serializer);
-        <Option<String>>::sse_encode(self.scan_information, serializer);
-        <Option<String>>::sse_encode(self.story_arc, serializer);
-        <Option<String>>::sse_encode(self.story_arc_number, serializer);
-        <Option<String>>::sse_encode(self.series_group, serializer);
         <Option<String>>::sse_encode(self.age_rating, serializer);
-        <Option<String>>::sse_encode(self.community_rating, serializer);
-        <Option<String>>::sse_encode(self.review, serializer);
-        <Option<String>>::sse_encode(self.gtin, serializer);
+        <Option<String>>::sse_encode(self.description, serializer);
         <i32>::sse_encode(self.cover_page_index, serializer);
         <i32>::sse_encode(self.page_count, serializer);
     }
@@ -2878,8 +2756,9 @@ impl SseEncode for crate::api::metadata::MetadataFieldKindFrb {
                 crate::api::metadata::MetadataFieldKindFrb::Dropdown => 3,
                 crate::api::metadata::MetadataFieldKindFrb::ReadOnly => 4,
                 crate::api::metadata::MetadataFieldKindFrb::AgeRating => 5,
-                crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex => 6,
-                crate::api::metadata::MetadataFieldKindFrb::PageCountInfo => 7,
+                crate::api::metadata::MetadataFieldKindFrb::PublishedDate => 6,
+                crate::api::metadata::MetadataFieldKindFrb::CoverPageIndex => 7,
+                crate::api::metadata::MetadataFieldKindFrb::PageCountInfo => 8,
                 _ => {
                     unimplemented!("");
                 }

@@ -329,12 +329,10 @@ fn get_and_update_project_metadata() {
     let updated = MetadataRecord {
         title: "My Comic".to_string(),
         series: Some("Adventures".to_string()),
-        issue_number: Some("1".to_string()),
-        writer: Some("Alice".to_string()),
-        penciller: Some("Bob".to_string()),
-        publisher: Some("Example Pub".to_string()),
+        number: Some("1".to_string()),
+        author: Some("Alice".to_string()),
         language_iso: Some("zh-CN".to_string()),
-        year: Some(2025),
+        published_date: Some("2025".to_string()),
         ..Default::default()
     };
 
@@ -348,7 +346,7 @@ fn get_and_update_project_metadata() {
         .get_project_metadata_inner(&project.id)
         .expect("reload metadata");
     assert_eq!(reloaded.title, "My Comic");
-    assert_eq!(reloaded.writer.as_deref(), Some("Alice"));
+    assert_eq!(reloaded.author.as_deref(), Some("Alice"));
 }
 
 #[test]
