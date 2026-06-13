@@ -8,6 +8,19 @@ pub fn migrate(connection: &Connection) -> Result<(), String> {
     migrate_project_workflow_columns(connection)?;
     copy_legacy_metadata(connection)?;
     migrate_canonical_metadata(connection)?;
+    migrate_project_display_title(connection)?;
+    Ok(())
+}
+
+fn migrate_project_display_title(connection: &Connection) -> Result<(), String> {
+    add_column_if_missing(connection, "project_title", "TEXT")?;
+    connection
+        .execute(
+            "UPDATE projects SET project_title = title
+             WHERE project_title IS NULL OR project_title = ''",
+            [],
+        )
+        .map_err(|error| format!("backfill project_title: {error}"))?;
     Ok(())
 }
 

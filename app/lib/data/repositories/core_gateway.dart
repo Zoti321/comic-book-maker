@@ -130,8 +130,14 @@ abstract class CoreGateway implements MetadataEditingGateway {
     CreateProjectWithImportRequest request,
   );
 
-  /// 仅更新 Metadata 标题并持久化。
+  /// 仅更新 Metadata 标题并持久化（遗留；创建项目请用 [updateProjectTitle]）。
   void patchProjectMetadataTitle({
+    required String projectId,
+    required String title,
+  });
+
+  /// 更新库内项目标题（`projects.project_title`），不影响元数据漫画标题。
+  simple_api.ProjectSummary updateProjectTitle({
     required String projectId,
     required String title,
   });
@@ -280,15 +286,15 @@ class FrbCoreGateway implements CoreGateway {
     if (title == null || title == project.title) {
       return project;
     }
-    patchProjectMetadataTitle(projectId: project.id, title: title);
-    return simple_api.ProjectSummary(
-      id: project.id,
-      title: title,
-      updatedAtMs: project.updatedAtMs,
-      createdAtMs: project.createdAtMs,
-      lastOpenedAtMs: project.lastOpenedAtMs,
-      coverThumbnailPath: project.coverThumbnailPath,
-    );
+    return updateProjectTitle(projectId: project.id, title: title);
+  }
+
+  @override
+  simple_api.ProjectSummary updateProjectTitle({
+    required String projectId,
+    required String title,
+  }) {
+    return simple_api.updateProjectTitle(projectId: projectId, title: title);
   }
 
   @override

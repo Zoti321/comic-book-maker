@@ -127,7 +127,7 @@ fn import_cb7_from_extracted(
 
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.to_string(),
         InferredImportKind::ComicArchive,
         ExportFormat::ComicArchive,
         |library, project_id| {
@@ -263,7 +263,7 @@ mod tests {
         let after = std::fs::metadata(&cb7).expect("meta").len();
         assert_eq!(before, after);
 
-        assert_eq!(outcome.title, "CB7 Title");
+        assert_eq!(outcome.title, "sample");
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");

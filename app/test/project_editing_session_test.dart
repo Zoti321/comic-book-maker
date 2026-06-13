@@ -33,7 +33,6 @@ void main() {
 
       final patch = session.metadataWorkspacePatch(metadata);
 
-      expect(patch.projectTitle, '新标题');
       expect(patch.coverPageIndex, 2);
     });
   });

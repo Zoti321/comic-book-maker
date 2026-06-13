@@ -285,7 +285,7 @@ class _BehaviorTab extends StatelessWidget {
         AppTextField(
           controller: titleController,
           label: '项目名称',
-          hint: '留空则使用「未命名」或归档内标题',
+          hint: '留空则自动命名（图片：项目A/B/…；档案：文件名）',
           onChanged: onTitleChanged,
         ),
         const SizedBox(height: 16),

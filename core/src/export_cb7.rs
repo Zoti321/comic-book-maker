@@ -272,7 +272,7 @@ mod tests {
         )
         .expect("reimport cb7");
 
-        assert_eq!(reimport.title, "Export Me");
+        assert_eq!(reimport.title, "exported");
         let pages = reimport_library
             .list_pages_inner(&reimport.project_id)
             .expect("pages");

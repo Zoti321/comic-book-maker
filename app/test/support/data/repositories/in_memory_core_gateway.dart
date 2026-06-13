@@ -139,15 +139,48 @@ class InMemoryCoreGateway implements CoreGateway {
 
   ProjectSummary _createProject({String? title}) {
     final now = DateTime.now().millisecondsSinceEpoch;
+    final resolved = title?.trim();
+    final displayTitle = (resolved == null || resolved.isEmpty)
+        ? _nextLetterProjectTitle()
+        : resolved;
     final project = ProjectSummary(
       id: 'project-${projects.length + 1}',
-      title: title ?? '未命名',
+      title: displayTitle,
       updatedAtMs: now,
       createdAtMs: now,
       coverThumbnailPath: null,
     );
     projects.add(project);
+    metadataByProjectId.putIfAbsent(
+      project.id,
+      () => Metadata(
+        title: '未命名',
+        coverPageIndex: 0,
+        pageCount: 0,
+      ),
+    );
     return project;
+  }
+
+  String _nextLetterProjectTitle() {
+    const prefix = '项目';
+    final occupied = projects
+        .map((project) => project.title)
+        .where(
+          (name) =>
+              name.startsWith(prefix) &&
+              name.length == prefix.length + 1 &&
+              name.codeUnitAt(prefix.length) >= 0x41 &&
+              name.codeUnitAt(prefix.length) <= 0x5A,
+        )
+        .map((name) => name.codeUnitAt(prefix.length))
+        .toSet();
+    for (var code = 0x41; code <= 0x5A; code++) {
+      if (!occupied.contains(code)) {
+        return '$prefix${String.fromCharCode(code)}';
+      }
+    }
+    return '未命名';
   }
 
   @override
@@ -166,19 +199,37 @@ class InMemoryCoreGateway implements CoreGateway {
         ),
     };
 
-    final title = request.title;
-    if (title == null || title == project.title) {
+    final title = request.title?.trim();
+    if (title == null || title.isEmpty || title == project.title) {
       return project;
     }
-    patchProjectMetadataTitle(projectId: project.id, title: title);
-    return ProjectSummary(
-      id: project.id,
-      title: title,
-      updatedAtMs: project.updatedAtMs,
-      createdAtMs: project.createdAtMs,
-      lastOpenedAtMs: project.lastOpenedAtMs,
-      coverThumbnailPath: project.coverThumbnailPath,
+    return updateProjectTitle(projectId: project.id, title: title);
+  }
+
+  @override
+  ProjectSummary updateProjectTitle({
+    required String projectId,
+    required String title,
+  }) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('project title must not be empty');
+    }
+    final index = projects.indexWhere((project) => project.id == projectId);
+    if (index < 0) {
+      throw StateError('project not found: $projectId');
+    }
+    final current = projects[index];
+    final updated = ProjectSummary(
+      id: current.id,
+      title: trimmed,
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+      createdAtMs: current.createdAtMs,
+      lastOpenedAtMs: current.lastOpenedAtMs,
+      coverThumbnailPath: current.coverThumbnailPath,
     );
+    projects[index] = updated;
+    return updated;
   }
 
   ProjectSummary _createFromImages({
@@ -243,18 +294,42 @@ class InMemoryCoreGateway implements CoreGateway {
     required ArchiveFormatKind format,
     required String sourcePath,
   }) =>
-      _importArchive();
+      _importArchive(sourcePath: sourcePath);
 
-  ImportCbzResult _importArchive() => ImportCbzResult(
-        project: ProjectSummary(
-          id: 'imported-1',
-          title: 'Imported',
-          updatedAtMs: DateTime.now().millisecondsSinceEpoch,
-          createdAtMs: DateTime.now().millisecondsSinceEpoch,
-          coverThumbnailPath: null,
-        ),
-        warnings: const [],
-      );
+  ImportCbzResult _importArchive({required String sourcePath}) {
+    final displayTitle = _titleFromArchivePath(sourcePath);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final project = ProjectSummary(
+      id: 'imported-1',
+      title: displayTitle,
+      updatedAtMs: now,
+      createdAtMs: now,
+      coverThumbnailPath: null,
+    );
+    projects.add(project);
+    metadataByProjectId.putIfAbsent(
+      project.id,
+      () => Metadata(
+        title: displayTitle,
+        coverPageIndex: 0,
+        pageCount: 0,
+      ),
+    );
+    return ImportCbzResult(
+      project: project,
+      warnings: const [],
+    );
+  }
+
+  static String _titleFromArchivePath(String sourcePath) {
+    final normalized = sourcePath.replaceAll(r'\', '/');
+    final name = normalized.split('/').last;
+    final dot = name.lastIndexOf('.');
+    if (dot <= 0) {
+      return name;
+    }
+    return name.substring(0, dot);
+  }
 
   @override
   List<PageSummary> addPageImages({

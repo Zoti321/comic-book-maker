@@ -49,7 +49,7 @@ pub fn import_epub(library: &mut Library, source_path: &str) -> Result<ImportEpu
 
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.clone(),
         InferredImportKind::Epub,
         ExportFormat::Epub,
         |library, project_id| {
@@ -149,7 +149,7 @@ mod tests {
         );
 
         let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "ComicInfo Title");
+        assert_eq!(outcome.title, "sample");
 
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
         assert_eq!(pages.len(), 2);
@@ -180,7 +180,7 @@ mod tests {
         );
 
         let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "OPF Title");
+        assert_eq!(outcome.title, "opf");
 
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
@@ -207,7 +207,7 @@ mod tests {
         );
 
         let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "ComicInfo Title");
+        assert_eq!(outcome.title, "priority");
 
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)

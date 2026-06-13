@@ -189,7 +189,7 @@ mod tests {
         assert!(opf.contains(r#"<meta name="tags" content="标签A,标签B"/>"#));
 
         let reimport = import_epub(&mut library, &export_path.to_string_lossy()).expect("reimport");
-        assert_eq!(reimport.title, "Export EPUB");
+        assert_eq!(reimport.title, "exported");
         let reimport_metadata = library
             .get_project_metadata_inner(&reimport.project_id)
             .expect("reimport metadata");

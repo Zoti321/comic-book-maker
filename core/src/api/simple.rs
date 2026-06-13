@@ -50,6 +50,13 @@ pub fn create_project(title: Option<String>) -> Result<ProjectSummary> {
 }
 
 #[flutter_rust_bridge::frb(sync)]
+pub fn update_project_title(project_id: String, title: String) -> Result<ProjectSummary> {
+    Library::update_project_title(&project_id, title)
+        .map(Into::into)
+        .map_err(|error| anyhow::anyhow!(error))
+}
+
+#[flutter_rust_bridge::frb(sync)]
 pub fn list_projects() -> Result<Vec<ProjectSummary>> {
     Library::list_projects()
         .map(|projects| projects.into_iter().map(Into::into).collect())

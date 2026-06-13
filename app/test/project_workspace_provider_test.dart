@@ -51,7 +51,7 @@ void main() {
   });
 
   group('ProjectWorkspace.applyMetadataSaved', () {
-    test('syncs project title and cover page index', () {
+    test('syncs cover page index only', () {
       final notifier = workspace(fixtureProject().id);
       notifier.initialize(fixtureProject());
 
@@ -64,7 +64,7 @@ void main() {
       );
 
       final state = container.read(projectWorkspaceProvider(fixtureProject().id));
-      expect(state.project.title, '元数据标题');
+      expect(state.project.title, '测试项目');
       expect(state.coverPageIndex, 0);
     });
   });

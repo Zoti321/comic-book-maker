@@ -225,17 +225,16 @@ class ProjectWorkspace extends _$ProjectWorkspace {
 
   void applyMetadataSaved(Metadata metadata) {
     final patch = _session.metadataWorkspacePatch(metadata);
-    state = state.copyWith(
-      project: ProjectSummary(
-        id: state.projectId,
-        title: patch.projectTitle,
-        updatedAtMs: state.project.updatedAtMs,
-        createdAtMs: state.project.createdAtMs,
-        lastOpenedAtMs: state.project.lastOpenedAtMs,
-        coverThumbnailPath: state.project.coverThumbnailPath,
-      ),
-      coverPageIndex: patch.coverPageIndex,
+    state = state.copyWith(coverPageIndex: patch.coverPageIndex);
+  }
+
+  ProjectSummary renameProjectTitle(String title) {
+    final updated = _session.renameProjectTitle(
+      projectId: state.projectId,
+      title: title,
     );
+    state = state.copyWith(project: updated);
+    return updated;
   }
 
   ProjectWorkspaceState _stateFromLoad(ProjectSummary project) {

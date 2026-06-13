@@ -58,7 +58,7 @@ void main() {
 
     final created = await library.createFromDraft(draft);
 
-    expect(created.title, '未命名');
+    expect(created.title, '项目A');
     expect(gateway.projects, hasLength(1));
     expect(gateway.pages, hasLength(1));
     expect(changeCount, 1);
@@ -77,7 +77,7 @@ void main() {
     final created = await library.createFromDraft(draft);
 
     expect(created.title, '库漫画');
-    expect(gateway.metadataByProjectId[created.id]?.title, '库漫画');
+    expect(gateway.metadataByProjectId[created.id]?.title, 'comic');
     expect(changeCount, 1);
   });
 

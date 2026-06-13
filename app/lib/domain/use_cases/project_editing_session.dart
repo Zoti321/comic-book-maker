@@ -30,9 +30,15 @@ class ProjectEditingSession {
 
   MetadataWorkspacePatch metadataWorkspacePatch(Metadata metadata) {
     return MetadataWorkspacePatch(
-      projectTitle: metadata.title,
       coverPageIndex: metadata.coverPageIndex,
     );
+  }
+
+  ProjectSummary renameProjectTitle({
+    required String projectId,
+    required String title,
+  }) {
+    return _gateway.updateProjectTitle(projectId: projectId, title: title);
   }
 
   ProjectSettings saveProjectSettings({

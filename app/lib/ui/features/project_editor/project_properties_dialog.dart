@@ -1,5 +1,7 @@
+import 'dart:async';
+
+import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
-import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
@@ -96,7 +98,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
     }
 
     final Widget panel = switch (tabIndex.value) {
-      0 => _OverviewTab(workspace: workspace),
+      0 => _OverviewTab(projectId: projectId),
       1 => _ImportTab(
           settings: settings,
           saving: saving,
@@ -168,13 +170,61 @@ String _formatDateTime(DateTime dt) {
       '${two(local.hour)}:${two(local.minute)}';
 }
 
-class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({required this.workspace});
+class _OverviewTab extends HookConsumerWidget {
+  const _OverviewTab({required this.projectId});
 
-  final ProjectWorkspaceState workspace;
+  final String projectId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workspace = ref.watch(projectWorkspaceProvider(projectId));
+    final notifier = ref.read(projectWorkspaceProvider(projectId).notifier);
+    final titleController = useTextEditingController(text: workspace.project.title);
+    final titleFocusNode = useFocusNode();
+    final savingTitle = useState(false);
+    final titleError = useState<String?>(null);
+
+    useEffect(() {
+      if (titleController.text != workspace.project.title) {
+        titleController.text = workspace.project.title;
+      }
+      return null;
+    }, [workspace.project.title]);
+
+    Future<void> saveTitle() async {
+      final trimmed = titleController.text.trim();
+      if (trimmed.isEmpty) {
+        titleError.value = '项目名称不能为空';
+        return;
+      }
+      if (trimmed == workspace.project.title) {
+        titleError.value = null;
+        return;
+      }
+
+      savingTitle.value = true;
+      titleError.value = null;
+      try {
+        notifier.renameProjectTitle(trimmed);
+        ref.read(libraryProjectsProvider.notifier).reload();
+      } catch (e) {
+        titleError.value = e.toString();
+      } finally {
+        savingTitle.value = false;
+      }
+    }
+
+    useEffect(() {
+      void onFocusChange() {
+        if (!titleFocusNode.hasFocus) {
+          unawaited(saveTitle());
+        }
+      }
+
+      titleFocusNode.addListener(onFocusChange);
+      return () => titleFocusNode.removeListener(onFocusChange);
+    }, [titleFocusNode, workspace.project.title]);
+
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(
       workspace.project.updatedAtMs.toInt(),
     );
@@ -182,7 +232,14 @@ class _OverviewTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _PropertyRow(label: '项目名称', value: workspace.project.title),
+        AppTextField(
+          controller: titleController,
+          focusNode: titleFocusNode,
+          label: '项目名称',
+          enabled: !savingTitle.value,
+          errorText: titleError.value,
+        ),
+        const SizedBox(height: 12),
         _PropertyRow(
           label: '页面',
           value: workspace.pages.isEmpty

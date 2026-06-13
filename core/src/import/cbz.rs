@@ -33,7 +33,7 @@ pub fn import_cbz(library: &mut Library, source_path: &str) -> Result<ImportCbzO
     );
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.clone(),
         InferredImportKind::ComicArchive,
         ExportFormat::ComicArchive,
         |library, project_id| {
@@ -206,7 +206,7 @@ mod tests {
         );
 
         let outcome = import_cbz(&mut library, &cbz.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "Imported Title");
+        assert_eq!(outcome.title, "sample");
         assert!(outcome.warnings.is_empty());
 
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
@@ -219,6 +219,7 @@ mod tests {
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");
+        assert_eq!(metadata.title, "Imported Title");
         assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
         assert_eq!(metadata.number.as_deref(), Some("7"));
         assert_eq!(metadata.series_count.as_deref(), Some("12"));

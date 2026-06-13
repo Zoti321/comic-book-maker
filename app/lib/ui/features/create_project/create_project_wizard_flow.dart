@@ -40,9 +40,8 @@ Future<void> _createProjectInBackground({
 }) async {
   try {
     final created = await library.createFromDraft(draft);
-    final title = created.title.trim().isEmpty ? '未命名' : created.title;
     toast.success(
-      '「$title」已创建',
+      '「${created.title}」已创建',
       action: AppToastAction(
         label: '打开项目',
         onPressed: () {
@@ -77,7 +76,26 @@ Future<void> _createProjectInBackground({
 
 String _createProjectDisplayTitle(CreateProjectDraft draft) {
   final trimmed = draft.projectTitle.trim();
-  return trimmed.isEmpty ? '未命名' : trimmed;
+  if (trimmed.isNotEmpty) {
+    return trimmed;
+  }
+  final source = draft.importSource;
+  return switch (source) {
+    CreateProjectArchiveImport(:final sourcePath) =>
+      _titleFromArchivePath(sourcePath),
+    CreateProjectImageImport() => '新项目',
+    null => '新项目',
+  };
+}
+
+String _titleFromArchivePath(String sourcePath) {
+  final normalized = sourcePath.replaceAll(r'\', '/');
+  final name = normalized.split('/').last;
+  final dot = name.lastIndexOf('.');
+  if (dot <= 0) {
+    return name;
+  }
+  return name.substring(0, dot);
 }
 
 String _createProjectFailureSummary(Object error, {int maxLength = 80}) {

@@ -58,7 +58,7 @@ void main() {
         ),
       );
 
-      expect(created.title, '未命名');
+      expect(created.title, '项目A');
       expect(gateway.projects, hasLength(1));
     });
 
@@ -82,7 +82,7 @@ void main() {
       );
 
       expect(created.title, '我的漫画');
-      expect(gateway.metadataByProjectId[created.id]?.title, '我的漫画');
+      expect(gateway.metadataByProjectId[created.id]?.title, 'comic');
     });
   });
 

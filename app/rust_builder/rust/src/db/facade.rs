@@ -92,6 +92,13 @@ impl Library {
         Self::with_library(|library| library.update_project_metadata_inner(project_id, metadata))
     }
 
+    pub(crate) fn update_project_title(
+        project_id: &str,
+        title: String,
+    ) -> Result<ProjectRecord, String> {
+        Self::with_library(|library| library.update_project_title_inner(project_id, title))
+    }
+
     pub(crate) fn import_cbz(
         source_path: &str,
     ) -> Result<crate::import_cbz::ImportCbzOutcome, String> {

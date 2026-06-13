@@ -148,6 +148,23 @@ class MyFeature extends _$MyFeature {
 
 历史名称 `InlineErrorBanner` / `EmptyState` 为 `AppInlineErrorBanner` / `AppEmptyState` 的 typedef，新代码优先用 `App*` 前缀并通过 `design_system.dart` import。
 
+### 项目编辑页顶栏
+
+- 组件：`ProjectEditorAppBar`（`project_editor_app_bar.dart`）。
+- **项目标题 vs 漫画标题**：顶栏与漫画库列表仅显示 `ProjectSummary.title`（库内项目名 / `project_title`）；**禁止**用 `metadata.title`（导出漫画标题）。元数据保存不得同步项目标题。
+- **布局**：横向 `Row` — 标题 `Expanded` + `8px` + 页数（`labelSmall` secondary）；0 页时不显示页数。
+- **截断 tooltip**：标题用 `EllipsisTooltipText`；仅溢出时 hover 显示全文，`waitDuration: 1500ms`（编辑页 Header 例外于全局 400ms 约定）。
+- **重命名**：在项目属性 → 概览 Tab 编辑「项目名称」；调用 `updateProjectTitle`，不影响元数据 `title`。
+
+### 项目标题默认命名（Core）
+
+| 场景 | `project_title` |
+| ---- | --------------- |
+| 向导填写 | 用户输入 |
+| 向导留空 + 图片导入 | `项目A` / `项目B` / …（查库递增字母） |
+| 向导留空 + 档案导入 | 档案文件名（去扩展名） |
+| 元数据 Tab 改漫画标题 | 不影响项目标题 |
+
 ### 元数据 Tab
 
 - 组件：`MetadataPanel`；字段与分段由 Core `getMetadataEditorSchema` 驱动，禁止在 Flutter 硬编码字段表。

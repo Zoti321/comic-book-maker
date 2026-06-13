@@ -32,7 +32,7 @@ fn create_and_list_projects() {
     let mut library = Library::open(app_data.clone()).expect("open library");
 
     let created = library.create_project_inner(None).expect("create project");
-    assert_eq!(created.title, schema::DEFAULT_PROJECT_TITLE);
+    assert_eq!(created.title, "项目A");
 
     let storage = project_storage_dir(&app_data, &created.id);
     assert!(project_assets_dir(&storage).is_dir());

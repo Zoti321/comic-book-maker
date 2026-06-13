@@ -6,6 +6,7 @@ mod metadata;
 mod migrate;
 mod pages;
 mod project_reset;
+mod project_title;
 mod projects;
 mod records;
 mod schema;

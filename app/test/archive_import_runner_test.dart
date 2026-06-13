@@ -115,7 +115,9 @@ void main() {
     );
 
     expect(result.project.id, 'imported-1');
-    expect(gateway.projects, isEmpty);
+    expect(result.project.title, 'comic');
+    expect(gateway.projects, hasLength(1));
+    expect(gateway.projects.single.id, 'imported-1');
   });
 
   test('importNewProject delegates CB7 to gateway', () {

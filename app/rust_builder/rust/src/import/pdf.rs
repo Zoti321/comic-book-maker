@@ -30,7 +30,7 @@ pub fn import_pdf(library: &mut Library, source_path: &str) -> Result<ImportPdfO
 
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.to_string(),
         InferredImportKind::Pdf,
         ExportFormat::Pdf,
         |library, project_id| {
@@ -93,7 +93,7 @@ mod tests {
         );
 
         let outcome = import_pdf(&mut library, &pdf.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "Imported PDF");
+        assert_eq!(outcome.title, "sample");
 
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
