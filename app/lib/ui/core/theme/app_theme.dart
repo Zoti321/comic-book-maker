@@ -170,6 +170,9 @@ abstract final class AppTheme {
         color: AppColors.onSurfaceVariant,
         linearTrackColor: AppColors.surfaceContainerHigh,
       ),
+      tooltipTheme: const TooltipThemeData(
+        waitDuration: AppDurations.tooltipWait,
+      ),
     );
 
     return themed.copyWith(

@@ -153,7 +153,7 @@ class MyFeature extends _$MyFeature {
 - 组件：`ProjectEditorAppBar`（`project_editor_app_bar.dart`）。
 - **项目标题 vs 漫画标题**：顶栏与漫画库列表仅显示 `ProjectSummary.title`（库内项目名 / `project_title`）；**禁止**用 `metadata.title`（导出漫画标题）。元数据保存不得同步项目标题。
 - **布局**：横向 `Row` — 标题 `Expanded` + `8px` + 页数（`labelSmall` secondary）；0 页时不显示页数。
-- **截断 tooltip**：标题用 `EllipsisTooltipText`；仅溢出时 hover 显示全文，`waitDuration: 1500ms`（编辑页 Header 例外于全局 400ms 约定）。
+- **截断 tooltip**：标题用 `EllipsisTooltipText`；仅溢出时 hover 显示全文，`waitDuration: 1500ms`（显式 override，长于主题默认）。
 - **重命名**：在项目属性 → 概览 Tab 编辑「项目名称」；调用 `updateProjectTitle`，不影响元数据 `title`。
 
 ### 项目标题默认命名（Core）
@@ -202,6 +202,8 @@ class MyFeature extends _$MyFeature {
 ## Tooltip 约定
 
 默认**不要**在 hover 时显示 tooltip；仅下列场景使用：
+
+**出现延迟**：`AppTheme.light()` 通过 `tooltipTheme.waitDuration` 设为 [`AppDurations.tooltipWait`](../../app/lib/ui/core/theme/app_tokens.dart)（**1 秒**）。未显式传 `waitDuration` 的 `Tooltip` / `AppIconButton` 继承该值；已有局部 override（如漫画库卡片标题 400ms、`EllipsisTooltipText` 1500ms）**保持不变**。
 
 | 场景 | 做法 |
 | ---- | ---- |

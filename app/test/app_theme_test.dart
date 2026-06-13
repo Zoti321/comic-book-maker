@@ -24,4 +24,11 @@ void main() {
     expect(AppRadius.sm, 4.0);
     expect(AppRadius.md, 8.0);
   });
+
+  test('AppTheme.light sets global tooltip wait duration', () {
+    final theme = AppTheme.light();
+
+    expect(theme.tooltipTheme?.waitDuration, AppDurations.tooltipWait);
+    expect(AppDurations.tooltipWait, const Duration(seconds: 1));
+  });
 }
