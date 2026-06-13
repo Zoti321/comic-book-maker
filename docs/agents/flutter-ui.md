@@ -169,6 +169,7 @@ class MyFeature extends _$MyFeature {
 
 - 组件：`MetadataPanel`；字段与分段由 Core `getMetadataEditorSchema` 驱动，禁止在 Flutter 硬编码字段表。
 - **分区（3 Tab）**：`常规`（`general`）→ 标题、发布日期、语言、年龄分级、描述；`系列`（`series`）→ 系列、期号、系列总期数；`创作`（`creative`）→ 作者、标签、登场人物。PDF 与 CBZ/EPUB 共用同一 schema（`editable: true`）。
+- **发布日期**：Material `showDatePicker`；只读中文展示（`2024年` / `2024年5月` / `2024年5月31日` / `未设置`）；选日历写入完整 `YYYY-MM-DD`；Import 的 partial 仅展示、不改库直至用户选择或清空；suffix ✕ 清空存 `NULL`。内部仍映射 `published_date_year/month/day` form 字段。
 - Chip 栏切换分区；**不**在 Chip 下方重复显示分区标题。
 - 未保存：`onDirtyChanged` 同步至编辑页；切换 Tab / 返回漫画库前 `confirmDiscardMetadataEdits`（`metadata_unsaved_guard.dart`）。
 - 导入元数据：`ImportMetadataPreview` 为只读归档预览；可编辑区为「导出元数据」表单。

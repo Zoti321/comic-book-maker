@@ -289,9 +289,6 @@ class MetadataPanel extends HookConsumerWidget {
         yearController: fieldController(publishedDateYearFieldId),
         monthController: fieldController(publishedDateMonthFieldId),
         dayController: fieldController(publishedDateDayFieldId),
-        yearFocusNode: focusNodeFor(publishedDateYearFieldId),
-        monthFocusNode: focusNodeFor(publishedDateMonthFieldId),
-        dayFocusNode: focusNodeFor(publishedDateDayFieldId),
         onChanged: onTextFieldChanged,
         onEditingComplete: () => unawaited(saveNow()),
       );

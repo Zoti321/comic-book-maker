@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-/// Canonical `published_date` 年 / 月 / 日三栏输入。
+/// Canonical `published_date`：Material 日历选择完整日期；Import 的 partial 仅作中文展示。
 class MetadataPublishedDateField extends StatelessWidget {
   const MetadataPublishedDateField({
     super.key,
@@ -9,9 +8,6 @@ class MetadataPublishedDateField extends StatelessWidget {
     required this.yearController,
     required this.monthController,
     required this.dayController,
-    required this.yearFocusNode,
-    required this.monthFocusNode,
-    required this.dayFocusNode,
     required this.onChanged,
     this.onEditingComplete,
   });
@@ -20,113 +16,186 @@ class MetadataPublishedDateField extends StatelessWidget {
   final TextEditingController yearController;
   final TextEditingController monthController;
   final TextEditingController dayController;
-  final FocusNode yearFocusNode;
-  final FocusNode monthFocusNode;
-  final FocusNode dayFocusNode;
   final VoidCallback onChanged;
   final VoidCallback? onEditingComplete;
 
-  static String? _validateYear(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return null;
-    final parsed = int.tryParse(text);
-    if (parsed == null) return '请输入整数';
-    if (parsed < 1000 || parsed > 9999) return '范围 1000–9999';
-    return null;
+  static final firstPickerDate = DateTime(1000, 1, 1);
+  static final lastPickerDate = DateTime(9999, 12, 31);
+
+  static String? formatDisplayText({
+    required String year,
+    required String month,
+    required String day,
+  }) {
+    final yearText = year.trim();
+    if (yearText.isEmpty) return null;
+
+    final monthText = month.trim();
+    final dayText = day.trim();
+    if (monthText.isEmpty) return '$yearText年';
+    if (dayText.isEmpty) return '$yearText年$monthText月';
+    return '$yearText年$monthText月$dayText日';
   }
 
-  static String? _validateMonth(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return null;
-    final parsed = int.tryParse(text);
-    if (parsed == null) return '请输入整数';
-    if (parsed < 1 || parsed > 12) return '范围 1–12';
-    return null;
+  static DateTime initialPickerDate({
+    required String year,
+    required String month,
+    required String day,
+    DateTime? fallback,
+  }) {
+    final yearValue = int.tryParse(year.trim());
+    if (yearValue == null) {
+      return clampPickerDate(fallback ?? DateTime.now());
+    }
+
+    final monthValue = int.tryParse(month.trim());
+    final dayValue = int.tryParse(day.trim());
+    if (monthValue != null && dayValue != null) {
+      return clampPickerDate(DateTime(yearValue, monthValue, dayValue));
+    }
+    if (monthValue != null) {
+      return clampPickerDate(DateTime(yearValue, monthValue, 1));
+    }
+    return clampPickerDate(DateTime(yearValue, 1, 1));
   }
 
-  static String? _validateDay(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return null;
-    final parsed = int.tryParse(text);
-    if (parsed == null) return '请输入整数';
-    if (parsed < 1 || parsed > 31) return '范围 1–31';
-    return null;
+  static DateTime clampPickerDate(DateTime value) {
+    if (value.isBefore(firstPickerDate)) return firstPickerDate;
+    if (value.isAfter(lastPickerDate)) return lastPickerDate;
+    return value;
   }
 
-  String? _validateMonthRequiresYear(String? value) {
-    final monthText = value?.trim() ?? '';
-    if (monthText.isEmpty) return null;
-    if (yearController.text.trim().isEmpty) {
+  static String? validateParts({
+    required String year,
+    required String month,
+    required String day,
+  }) {
+    final yearText = year.trim();
+    final monthText = month.trim();
+    final dayText = day.trim();
+
+    if (yearText.isEmpty && monthText.isEmpty && dayText.isEmpty) {
+      return null;
+    }
+
+    if (yearText.isEmpty) {
       return '填写月/日前请先填写年';
     }
-    return _validateMonth(value);
-  }
+    final parsedYear = int.tryParse(yearText);
+    if (parsedYear == null) return '请输入有效年份';
+    if (parsedYear < 1000 || parsedYear > 9999) return '范围 1000–9999';
 
-  String? _validateDayRequiresMonth(String? value) {
-    final dayText = value?.trim() ?? '';
-    if (dayText.isEmpty) return null;
-    if (monthController.text.trim().isEmpty) {
+    if (monthText.isEmpty && dayText.isEmpty) return null;
+
+    if (monthText.isEmpty) {
       return '填写日前请先填写月';
     }
-    return _validateDay(value);
+    final parsedMonth = int.tryParse(monthText);
+    if (parsedMonth == null) return '请输入有效月份';
+    if (parsedMonth < 1 || parsedMonth > 12) return '范围 1–12';
+
+    if (dayText.isEmpty) return null;
+
+    final parsedDay = int.tryParse(dayText);
+    if (parsedDay == null) return '请输入有效日期';
+    if (parsedDay < 1 || parsedDay > 31) return '范围 1–31';
+
+    return null;
   }
 
-  Widget _partField({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    required String partLabel,
-    required String? Function(String? value) validator,
-  }) {
-    return Expanded(
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        decoration: InputDecoration(labelText: partLabel),
-        keyboardType: TextInputType.number,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-        validator: validator,
-        onChanged: (_) => onChanged(),
-        onEditingComplete: onEditingComplete,
+  void _applyPickerDate(DateTime picked) {
+    yearController.text = picked.year.toString();
+    monthController.text = picked.month.toString();
+    dayController.text = picked.day.toString();
+    onChanged();
+    onEditingComplete?.call();
+  }
+
+  void _clearDate() {
+    yearController.clear();
+    monthController.clear();
+    dayController.clear();
+    onChanged();
+    onEditingComplete?.call();
+  }
+
+  Future<void> _openDatePicker(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      locale: const Locale('zh', 'CN'),
+      initialDate: initialPickerDate(
+        year: yearController.text,
+        month: monthController.text,
+        day: dayController.text,
       ),
+      firstDate: firstPickerDate,
+      lastDate: lastPickerDate,
     );
+    if (picked == null || !context.mounted) return;
+    _applyPickerDate(picked);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _partField(
-              controller: yearController,
-              focusNode: yearFocusNode,
-              partLabel: '年',
-              validator: _validateYear,
-            ),
-            const SizedBox(width: 12),
-            _partField(
-              controller: monthController,
-              focusNode: monthFocusNode,
-              partLabel: '月',
-              validator: _validateMonthRequiresYear,
-            ),
-            const SizedBox(width: 12),
-            _partField(
-              controller: dayController,
-              focusNode: dayFocusNode,
-              partLabel: '日',
-              validator: _validateDayRequiresMonth,
-            ),
-          ],
-        ),
-      ],
+    final scheme = Theme.of(context).colorScheme;
+
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        yearController,
+        monthController,
+        dayController,
+      ]),
+      builder: (context, _) {
+        final displayText = formatDisplayText(
+          year: yearController.text,
+          month: monthController.text,
+          day: dayController.text,
+        );
+        final hasValue = displayText != null;
+
+        return FormField<void>(
+          validator: (_) => validateParts(
+            year: yearController.text,
+            month: monthController.text,
+            day: dayController.text,
+          ),
+          builder: (field) {
+            return InkWell(
+              onTap: () => _openDatePicker(context),
+              child: InputDecorator(
+                decoration: InputDecoration(
+                  labelText: label,
+                  errorText: field.errorText,
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (hasValue)
+                        IconButton(
+                          tooltip: '清空',
+                          onPressed: _clearDate,
+                          icon: const Icon(Icons.clear),
+                        ),
+                      IconButton(
+                        tooltip: '选择日期',
+                        onPressed: () => _openDatePicker(context),
+                        icon: const Icon(Icons.calendar_today),
+                      ),
+                    ],
+                  ),
+                ),
+                child: Text(
+                  displayText ?? '未设置',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: hasValue
+                        ? scheme.onSurface
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

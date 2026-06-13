@@ -18,9 +18,22 @@ Future<void> selectMetadataSection(WidgetTester tester, String label) async {
   await tester.pumpAndSettle();
 }
 
-Finder publishingYearField() => find.byType(TextFormField).at(1);
-Finder publishingMonthField() => find.byType(TextFormField).at(2);
-Finder publishingDayField() => find.byType(TextFormField).at(3);
+Finder publishedDateField() => find.byType(InputDecorator);
+
+Future<void> confirmDatePicker(WidgetTester tester) async {
+  final confirm = find.descendant(
+    of: find.byType(DatePickerDialog),
+    matching: find.text('确定'),
+  );
+  expect(confirm, findsOneWidget);
+  await tester.tap(confirm);
+  await tester.pumpAndSettle();
+}
+
+Future<void> openPublishedDatePicker(WidgetTester tester) async {
+  await tester.tap(find.byTooltip('选择日期'));
+  await tester.pumpAndSettle();
+}
 
 void main() {
   late InMemoryCoreGateway gateway;
@@ -83,7 +96,9 @@ void main() {
     expect(find.text('当前格式不支持编辑'), findsNothing);
   });
 
-  testWidgets('published date year-only round trip', (tester) async {
+  testWidgets('published date year-only displays partial until picker saves full date', (
+    tester,
+  ) async {
     gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
       publishedDate: '2024',
     );
@@ -95,27 +110,18 @@ void main() {
     );
     await selectMetadataSection(tester, '常规');
 
-    expect(
-      tester.widget<TextFormField>(publishingYearField()).controller?.text,
-      '2024',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
-      '',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingDayField()).controller?.text,
-      '',
-    );
+    expect(find.text('2024年'), findsOneWidget);
 
-    await tester.enterText(publishingYearField(), '2025');
+    await openPublishedDatePicker(tester);
+    await confirmDatePicker(tester);
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2025');
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-01-01');
+    expect(find.text('2024年1月1日'), findsOneWidget);
   });
 
-  testWidgets('published date year-month round trip', (tester) async {
+  testWidgets('published date year-month displays partial', (tester) async {
     gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
       publishedDate: '2024-05',
     );
@@ -127,27 +133,10 @@ void main() {
     );
     await selectMetadataSection(tester, '常规');
 
-    expect(
-      tester.widget<TextFormField>(publishingYearField()).controller?.text,
-      '2024',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
-      '5',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingDayField()).controller?.text,
-      '',
-    );
-
-    await tester.enterText(publishingMonthField(), '6');
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
-
-    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-06');
+    expect(find.text('2024年5月'), findsOneWidget);
   });
 
-  testWidgets('published date full date round trip', (tester) async {
+  testWidgets('published date full date round trip via picker', (tester) async {
     gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
       publishedDate: '2024-05-31',
     );
@@ -159,24 +148,34 @@ void main() {
     );
     await selectMetadataSection(tester, '常规');
 
-    expect(
-      tester.widget<TextFormField>(publishingYearField()).controller?.text,
-      '2024',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingMonthField()).controller?.text,
-      '5',
-    );
-    expect(
-      tester.widget<TextFormField>(publishingDayField()).controller?.text,
-      '31',
-    );
+    expect(find.text('2024年5月31日'), findsOneWidget);
 
-    await tester.enterText(publishingDayField(), '15');
+    await openPublishedDatePicker(tester);
+    await confirmDatePicker(tester);
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
-    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-05-15');
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-05-31');
+  });
+
+  testWidgets('published date clear removes value', (tester) async {
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+      publishedDate: '2024-05-31',
+    );
+
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
+    await selectMetadataSection(tester, '常规');
+
+    await tester.tap(find.byTooltip('清空'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataByProjectId['p1']?.publishedDate, isNull);
+    expect(find.text('未设置'), findsWidgets);
   });
 
   testWidgets('debounced edit persists metadata without manual save', (
