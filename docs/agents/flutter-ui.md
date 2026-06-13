@@ -158,7 +158,9 @@ class MyFeature extends _$MyFeature {
 
 ### 图片 Tab
 
-- 组件：`PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
+- 组件：`ProjectEditorImagesTab`（`project_editor_images_tab.dart`）+ `PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
+- **缩略图解码**：禁止裸 `Image.file` 全分辨率解码；用 `pageThumbnailTileSize` + `pageThumbnailCacheSize` 按单格逻辑尺寸 × `devicePixelRatio` 设置 `cacheWidth` / `cacheHeight`；`FilterQuality.low`、`gaplessPlayback: true`；加载前以 `surfaceContainer` 底色占位。大项目（约 300+ 页）可后续在 Core 引入 page 级缩略图缓存。
+- **重建隔离**：`ProjectEditorImagesTab` 经 `ref.watch(…select((s) => (s.pages, s.coverPageIndex)))` 订阅页列表；每格 `RepaintBoundary`；workspace 其他字段（导出格式保存、error 等）变化不得重建整网格。
 - 页面操作统一走缩略图右上角 overflow 菜单（`PageThumbnailAction`）：查看原图、替换、设封面、前移/后移、删除。
 - 查看原图（`page_image_viewer.dart`）：全屏黑底；点图片外留白关闭（无顶部关闭按钮）；左右圆形半透明翻页按钮（44px、常见 lightbox 样式，首/末页隐藏不可用侧）；`Escape` 关闭，`←` / `→` 翻页；`InteractiveViewer` 仅覆盖图片显示区域。
 - 封面页：`sortIndex == coverPageIndex` 时主色描边 +「封面」角标。

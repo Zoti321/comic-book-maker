@@ -3,11 +3,10 @@ import 'package:comic_book_maker/ui/features/project_editor/providers/project_wo
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
-import 'package:comic_book_maker/ui/features/project_editor/pages/pages_panel.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_images_tab.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_append_flow.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_app_bar.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_export_flow.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_operations_flow.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_tab_switcher.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_properties_dialog.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -57,45 +56,7 @@ class ProjectEditorPage extends HookConsumerWidget {
         );
 
     Widget imagesTabContent() {
-      return PageThumbnailGrid(
-        pages: workspace.pages,
-        coverPageIndex: workspace.coverPageIndex,
-        onAdd: () => runGalleryAddPageImages(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-        ),
-        onReplace: (page) => runReplacePageImage(
-          context: context,
-          workspace: workspace,
-          workspaceNotifier: workspaceNotifier,
-          page: page,
-        ),
-        onDelete: (page) => runDeletePage(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-          page: page,
-        ),
-        onSetCover: (page) => runSetCoverPage(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-          page: page,
-        ),
-        onViewOriginal: (page) => runViewPageOriginal(
-          context: context,
-          pages: workspace.pages,
-          page: page,
-        ),
-        onMoveEarlier: (page) => runMovePageEarlier(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-          page: page,
-        ),
-        onMoveLater: (page) => runMovePageLater(
-          context: context,
-          workspaceNotifier: workspaceNotifier,
-          page: page,
-        ),
-      );
+      return ProjectEditorImagesTab(projectId: project.id);
     }
 
     Widget metadataTabContent() {
