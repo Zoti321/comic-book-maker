@@ -171,6 +171,7 @@ class MyFeature extends _$MyFeature {
 - **分区（3 Tab）**：`常规`（`general`）→ 标题、发布日期、语言、年龄分级、描述；`系列`（`series`）→ 系列、期号、系列总期数；`创作`（`creative`）→ 作者、标签、登场人物。PDF 与 CBZ/EPUB 共用同一 schema（`editable: true`）。
 - **发布日期**：Material `showDatePicker`；只读中文展示（`2024年` / `2024年5月` / `2024年5月31日` / `未设置`）；选日历写入完整 `YYYY-MM-DD`；Import 的 partial 仅展示、不改库直至用户选择或清空；suffix ✕ 清空存 `NULL`。内部仍映射 `published_date_year/month/day` form 字段。
 - **年龄分级**：`MetadataAgeRatingField`（`dropdown_button2` 的 `DropdownButtonFormField2`）；选项仅 Core `ageRatingPresets` 四项，不可自由输入；未选占位「未设置」，有值时 suffix ✕ 清空为 `NULL`。Core `age_rating` 模块负责导入/加载别名归一化；`mergeMetadataFromForm` 保存时校验非空值必须在预设内。
+- **创作 Tab 逗号标签**：作者 / 标签 / 登场人物共用 `MetadataCommaTagsField`（`textfield_tags`）；Chip 与输入同区换行，Material 填充描边；逗号或回车添加（不用空格分隔）；大小写不敏感去重；持久化为逗号分隔且逗号后无空格。Core `mergeMetadataFromForm` 对三字段均 `normalize_comma_separated_tags`。
 - Chip 栏切换分区；**不**在 Chip 下方重复显示分区标题。
 - 未保存：`onDirtyChanged` 同步至编辑页；切换 Tab / 返回漫画库前 `confirmDiscardMetadataEdits`（`metadata_unsaved_guard.dart`）。
 - 导入元数据：`ImportMetadataPreview` 为只读归档预览；可编辑区为「导出元数据」表单。

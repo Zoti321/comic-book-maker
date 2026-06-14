@@ -292,7 +292,9 @@ pub fn merge_form_values(
                 .map(String::as_str)
                 .unwrap_or(""),
         ),
-        author: optional_trimmed(values.get("author").map(String::as_str).unwrap_or("")),
+        author: normalize_comma_separated_tags(
+            values.get("author").map(String::as_str).unwrap_or(""),
+        ),
         tags: normalize_comma_separated_tags(values.get("tags").map(String::as_str).unwrap_or("")),
         characters: normalize_comma_separated_tags(
             values.get("characters").map(String::as_str).unwrap_or(""),
@@ -384,6 +386,17 @@ mod tests {
         let merged =
             merge_form_values(&base, ExportFormat::ComicArchive, &values, 3).expect("merge");
         assert_eq!(merged.age_rating.as_deref(), Some("Everyone"));
+    }
+
+    #[test]
+    fn merge_normalizes_author_comma_separated_tags() {
+        let base = sample_base();
+        let mut values = HashMap::new();
+        values.insert("title".to_string(), "Comic Title".to_string());
+        values.insert("author".to_string(), "Alice, Bob".to_string());
+        let merged =
+            merge_form_values(&base, ExportFormat::ComicArchive, &values, 3).expect("merge");
+        assert_eq!(merged.author.as_deref(), Some("Alice,Bob"));
     }
 
     #[test]

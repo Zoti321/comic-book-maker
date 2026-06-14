@@ -6,7 +6,7 @@ import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_age_rating_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_published_date_field.dart';
-import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/section_chip_bar.dart';
@@ -182,14 +182,20 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Widget tagsField(MetadataFieldSpecFrb field) {
-      return MetadataTagsInput(
+    Widget commaTagsField(MetadataFieldSpecFrb field) {
+      return MetadataCommaTagsField(
         controller: fieldController(field.id),
         focusNode: focusNodeFor(field.id),
         label: field.label,
         onChanged: onTextFieldChanged,
         onEditingComplete: () => unawaited(saveNow()),
       );
+    }
+
+    bool isCommaTagsField(MetadataFieldSpecFrb field) {
+      return field.id == 'author' ||
+          field.id == 'tags' ||
+          field.id == 'characters';
     }
 
     Widget textField(
@@ -256,7 +262,8 @@ class MetadataPanel extends HookConsumerWidget {
 
     Widget fieldWidget(MetadataFieldSpecFrb field) {
       return switch (field.kind) {
-        MetadataFieldKindFrb.text when field.id == 'tags' => tagsField(field),
+        MetadataFieldKindFrb.text when isCommaTagsField(field) =>
+          commaTagsField(field),
         MetadataFieldKindFrb.text => textField(field),
         MetadataFieldKindFrb.multilineText => textField(field, maxLines: 5),
         MetadataFieldKindFrb.integer => intField(field),

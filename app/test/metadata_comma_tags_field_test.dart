@@ -1,5 +1,5 @@
-import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -27,7 +27,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         home: Scaffold(
-          body: MetadataTagsInput(
+          body: MetadataCommaTagsField(
             controller: committed,
             focusNode: focusNode,
             label: '标签（逗号分隔）',
@@ -36,6 +36,7 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('alpha'), findsOneWidget);
 
@@ -46,7 +47,8 @@ void main() {
     expect(committed.text, 'alpha');
     expect(find.text('alpha'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextField), 'beta,');
+    await tester.enterText(find.byType(TextField), 'beta');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
     expect(committed.text, 'alpha,beta');
@@ -66,7 +68,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         home: Scaffold(
-          body: MetadataTagsInput(
+          body: MetadataCommaTagsField(
             controller: committed,
             focusNode: focusNode,
             label: '标签（逗号分隔）',
@@ -75,12 +77,13 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byType(TextField));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'gamma');
 
-    committed.text = 'seed, overwritten';
+    committed.text = 'seed,overwritten';
     await tester.pump();
 
     expect(find.text('gamma'), findsOneWidget);

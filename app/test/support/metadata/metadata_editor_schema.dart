@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
 
 /// 测试用 canonical schema fixture（与 Core `metadata_schema` 结构对齐）。
 MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat) {
@@ -183,6 +184,9 @@ Metadata mockMergeMetadataFromForm({
   String? number = base.number;
   String? publishedDate = base.publishedDate;
   String? ageRating = base.ageRating;
+  String? author = base.author;
+  String? tags = base.tags;
+  String? characters = base.characters;
 
   if (valuesByFieldId.containsKey('title')) {
     final trimmed = valuesByFieldId['title']!.trim();
@@ -201,6 +205,20 @@ Metadata mockMergeMetadataFromForm({
     final trimmed = valuesByFieldId['age_rating']!.trim();
     ageRating = trimmed.isEmpty ? null : trimmed;
   }
+  for (final fieldId in ['author', 'tags', 'characters']) {
+    if (!valuesByFieldId.containsKey(fieldId)) continue;
+    final parsed = parseCommaSeparatedTags(valuesByFieldId[fieldId]!);
+    final normalized =
+        parsed.isEmpty ? null : formatCommaSeparatedTags(parsed);
+    switch (fieldId) {
+      case 'author':
+        author = normalized;
+      case 'tags':
+        tags = normalized;
+      case 'characters':
+        characters = normalized;
+    }
+  }
 
   return Metadata(
     title: title,
@@ -209,9 +227,9 @@ Metadata mockMergeMetadataFromForm({
     seriesCount: base.seriesCount,
     publishedDate: publishedDate,
     languageIso: base.languageIso,
-    author: base.author,
-    tags: base.tags,
-    characters: base.characters,
+    author: author,
+    tags: tags,
+    characters: characters,
     ageRating: ageRating,
     description: base.description,
     coverPageIndex: base.coverPageIndex,
