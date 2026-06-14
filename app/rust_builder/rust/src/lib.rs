@@ -1,5 +1,6 @@
 mod frb_generated;
 
+pub mod age_rating;
 pub mod api;
 pub mod comicinfo;
 pub mod cover_thumbnail;

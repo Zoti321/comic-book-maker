@@ -32,7 +32,7 @@ void main() {
     test('8 columns at 900px width with dpr 1', () {
       final tile = pageThumbnailTileSize(900);
       expect(tile.width, 102);
-      expect(tile.height, 153);
+      expect(tile.height, 136);
 
       final cache = pageThumbnailCacheSize(
         tileWidth: tile.width,
@@ -40,13 +40,13 @@ void main() {
         devicePixelRatio: 1,
       );
       expect(cache.width, 102);
-      expect(cache.height, 153);
+      expect(cache.height, 136);
     });
 
     test('3 columns at 360px width with dpr 2', () {
       final tile = pageThumbnailTileSize(360);
       expect(tile.width, 112);
-      expect(tile.height, 168);
+      expect(tile.height, closeTo(149.33, 0.01));
 
       final cache = pageThumbnailCacheSize(
         tileWidth: tile.width,
@@ -54,7 +54,7 @@ void main() {
         devicePixelRatio: 2,
       );
       expect(cache.width, 224);
-      expect(cache.height, 336);
+      expect(cache.height, 299);
     });
   });
 

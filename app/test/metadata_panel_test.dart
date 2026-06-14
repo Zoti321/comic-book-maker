@@ -2,6 +2,7 @@ import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
@@ -175,6 +176,38 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(gateway.metadataByProjectId['p1']?.publishedDate, isNull);
+    expect(find.text('未设置'), findsWidgets);
+  });
+
+  testWidgets('age rating dropdown selects preset and clears', (tester) async {
+    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+      ageRating: 'Everyone',
+    );
+
+    await pumpMetadataPanel(
+      tester,
+      gateway: gateway,
+      exportFormat: ExportFormatFrb.comicArchive,
+    );
+    await selectMetadataSection(tester, '常规');
+
+    expect(find.text('Everyone'), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField2<String>), findsOneWidget);
+
+    await tester.tap(find.text('Everyone'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('R18+'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataUpdateCallCount, 1);
+    expect(gateway.metadataByProjectId['p1']?.ageRating, 'R18+');
+
+    await tester.tap(find.byTooltip('清空'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(gateway.metadataByProjectId['p1']?.ageRating, isNull);
     expect(find.text('未设置'), findsWidgets);
   });
 
@@ -359,7 +392,7 @@ class _MetadataPanelPageCountHarnessState
 }
 
 extension on Metadata {
-  Metadata copyWith({String? publishedDate}) {
+  Metadata copyWith({String? publishedDate, String? ageRating}) {
     return Metadata(
       title: title,
       series: series,
@@ -370,7 +403,7 @@ extension on Metadata {
       author: author,
       tags: tags,
       characters: characters,
-      ageRating: ageRating,
+      ageRating: ageRating ?? this.ageRating,
       description: description,
       coverPageIndex: coverPageIndex,
       pageCount: pageCount,

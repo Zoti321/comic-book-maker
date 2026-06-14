@@ -114,7 +114,7 @@ pub fn update_metadata(
 }
 
 fn metadata_from_row(row: &Row<'_>, page_count: i32) -> Result<MetadataRecord, rusqlite::Error> {
-    Ok(MetadataRecord {
+    let mut record = MetadataRecord {
         title: row.get(0)?,
         series: row.get(1)?,
         number: row.get(2)?,
@@ -128,7 +128,9 @@ fn metadata_from_row(row: &Row<'_>, page_count: i32) -> Result<MetadataRecord, r
         description: row.get(10)?,
         cover_page_index: row.get(11)?,
         page_count,
-    })
+    };
+    record.age_rating = crate::age_rating::normalize(record.age_rating.as_deref());
+    Ok(record)
 }
 
 fn optional_string(value: Option<String>) -> Option<String> {
@@ -152,7 +154,7 @@ pub fn normalize_metadata(mut metadata: MetadataRecord) -> MetadataRecord {
     metadata.author = optional_string(metadata.author);
     metadata.tags = optional_string(metadata.tags);
     metadata.characters = optional_string(metadata.characters);
-    metadata.age_rating = optional_string(metadata.age_rating);
+    metadata.age_rating = crate::age_rating::normalize(metadata.age_rating.as_deref());
     metadata.description = optional_string(metadata.description);
     metadata
 }

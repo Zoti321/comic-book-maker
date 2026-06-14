@@ -6,7 +6,7 @@ import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-const _thumbAspectRatio = 2 / 3;
+const _thumbAspectRatio = 3 / 4;
 const _gridSpacing = AppSpacing.sm + 4; // 12
 
 /// 缩略图统一 overflow 菜单项（所有页面操作经此入口）。
@@ -201,7 +201,7 @@ class _AddPageTile extends StatelessWidget {
     return Material(
       color: scheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.lgBorder,
+        borderRadius: BorderRadius.zero,
         side: BorderSide(color: scheme.outline),
       ),
       clipBehavior: Clip.antiAlias,
@@ -265,7 +265,7 @@ class _PageThumbnailTile extends StatelessWidget {
         color: scheme.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.lgBorder,
+          borderRadius: BorderRadius.zero,
           side: BorderSide(
             color: isCover ? scheme.onSurface : scheme.outline,
             width: isCover ? 2 : 1,

@@ -15,12 +15,7 @@ use crate::published_date::{
     published_date_year_display,
 };
 
-pub const AGE_RATING_PRESETS: &[&str] = &[
-    "Adults Only 18+",
-    "Everyone",
-    "R18+",
-    "Unknown",
-];
+pub const AGE_RATING_PRESETS: &[&str] = crate::age_rating::PRESETS;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MetadataFieldKind {
@@ -192,7 +187,8 @@ pub fn field_display_value(metadata: &MetadataRecord, field_id: &str) -> String 
         "author" => metadata.author.clone().unwrap_or_default(),
         "tags" => metadata.tags.clone().unwrap_or_default(),
         "characters" => metadata.characters.clone().unwrap_or_default(),
-        "age_rating" => metadata.age_rating.clone().unwrap_or_default(),
+        "age_rating" => crate::age_rating::normalize(metadata.age_rating.as_deref())
+            .unwrap_or_default(),
         "description" => metadata.description.clone().unwrap_or_default(),
         "cover_page_index" => metadata.cover_page_index.to_string(),
         "page_count" => metadata.page_count.to_string(),
@@ -301,7 +297,9 @@ pub fn merge_form_values(
         characters: normalize_comma_separated_tags(
             values.get("characters").map(String::as_str).unwrap_or(""),
         ),
-        age_rating: optional_trimmed(values.get("age_rating").map(String::as_str).unwrap_or("")),
+        age_rating: crate::age_rating::validate_for_save(
+            values.get("age_rating").map(String::as_str),
+        )?,
         description: optional_trimmed(
             values
                 .get("description")
@@ -366,6 +364,26 @@ mod tests {
         values.insert("published_date_year".to_string(), "2024".to_string());
         values.insert("published_date_month".to_string(), "13".to_string());
         assert!(merge_form_values(&base, ExportFormat::ComicArchive, &values, 3).is_err());
+    }
+
+    #[test]
+    fn merge_rejects_invalid_age_rating() {
+        let base = sample_base();
+        let mut values = HashMap::new();
+        values.insert("title".to_string(), "Comic Title".to_string());
+        values.insert("age_rating".to_string(), "Teen".to_string());
+        assert!(merge_form_values(&base, ExportFormat::ComicArchive, &values, 3).is_err());
+    }
+
+    #[test]
+    fn merge_accepts_canonical_age_rating() {
+        let base = sample_base();
+        let mut values = HashMap::new();
+        values.insert("title".to_string(), "Comic Title".to_string());
+        values.insert("age_rating".to_string(), "Everyone".to_string());
+        let merged =
+            merge_form_values(&base, ExportFormat::ComicArchive, &values, 3).expect("merge");
+        assert_eq!(merged.age_rating.as_deref(), Some("Everyone"));
     }
 
     #[test]

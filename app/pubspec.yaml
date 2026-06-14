@@ -48,6 +48,7 @@ dependencies:
   path: ^1.9.1
   riverpod_annotation: 4.0.2
   window_manager: ^0.5.1
+  dropdown_button2: 3.1.0
 
 dev_dependencies:
   flutter_test:

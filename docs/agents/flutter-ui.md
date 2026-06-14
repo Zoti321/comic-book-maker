@@ -170,6 +170,7 @@ class MyFeature extends _$MyFeature {
 - 组件：`MetadataPanel`；字段与分段由 Core `getMetadataEditorSchema` 驱动，禁止在 Flutter 硬编码字段表。
 - **分区（3 Tab）**：`常规`（`general`）→ 标题、发布日期、语言、年龄分级、描述；`系列`（`series`）→ 系列、期号、系列总期数；`创作`（`creative`）→ 作者、标签、登场人物。PDF 与 CBZ/EPUB 共用同一 schema（`editable: true`）。
 - **发布日期**：Material `showDatePicker`；只读中文展示（`2024年` / `2024年5月` / `2024年5月31日` / `未设置`）；选日历写入完整 `YYYY-MM-DD`；Import 的 partial 仅展示、不改库直至用户选择或清空；suffix ✕ 清空存 `NULL`。内部仍映射 `published_date_year/month/day` form 字段。
+- **年龄分级**：`MetadataAgeRatingField`（`dropdown_button2` 的 `DropdownButtonFormField2`）；选项仅 Core `ageRatingPresets` 四项，不可自由输入；未选占位「未设置」，有值时 suffix ✕ 清空为 `NULL`。Core `age_rating` 模块负责导入/加载别名归一化；`mergeMetadataFromForm` 保存时校验非空值必须在预设内。
 - Chip 栏切换分区；**不**在 Chip 下方重复显示分区标题。
 - 未保存：`onDirtyChanged` 同步至编辑页；切换 Tab / 返回漫画库前 `confirmDiscardMetadataEdits`（`metadata_unsaved_guard.dart`）。
 - 导入元数据：`ImportMetadataPreview` 为只读归档预览；可编辑区为「导出元数据」表单。
@@ -179,7 +180,7 @@ class MyFeature extends _$MyFeature {
 
 ### 图片 Tab
 
-- 组件：`ProjectEditorImagesTab`（`project_editor_images_tab.dart`）+ `PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
+- 组件：`ProjectEditorImagesTab`（`project_editor_images_tab.dart`）+ `PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `3:4`，格子直角（页码/封面角标仍用小圆角），列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
 - **缩略图解码**：禁止裸 `Image.file` 全分辨率解码；用 `pageThumbnailTileSize` + `pageThumbnailCacheSize` 按单格逻辑尺寸 × `devicePixelRatio` 设置 `cacheWidth` / `cacheHeight`；`FilterQuality.low`、`gaplessPlayback: true`；加载前以 `surfaceContainer` 底色占位。大项目（约 300+ 页）可后续在 Core 引入 page 级缩略图缓存。
 - **重建隔离**：`ProjectEditorImagesTab` 经 `ref.watch(…select((s) => (s.pages, s.coverPageIndex)))` 订阅页列表；每格 `RepaintBoundary`；workspace 其他字段（导出格式保存、error 等）变化不得重建整网格。
 - 页面操作统一走缩略图右上角 overflow 菜单（`PageThumbnailAction`）：查看原图、替换、设封面、前移/后移、删除。

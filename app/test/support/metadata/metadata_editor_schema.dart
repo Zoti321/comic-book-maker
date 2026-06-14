@@ -182,6 +182,7 @@ Metadata mockMergeMetadataFromForm({
   var title = base.title;
   String? number = base.number;
   String? publishedDate = base.publishedDate;
+  String? ageRating = base.ageRating;
 
   if (valuesByFieldId.containsKey('title')) {
     final trimmed = valuesByFieldId['title']!.trim();
@@ -196,6 +197,10 @@ Metadata mockMergeMetadataFromForm({
   if (valuesByFieldId.containsKey('published_date_year')) {
     publishedDate = _mergePublishedDateFromFormValues(valuesByFieldId);
   }
+  if (valuesByFieldId.containsKey('age_rating')) {
+    final trimmed = valuesByFieldId['age_rating']!.trim();
+    ageRating = trimmed.isEmpty ? null : trimmed;
+  }
 
   return Metadata(
     title: title,
@@ -207,7 +212,7 @@ Metadata mockMergeMetadataFromForm({
     author: base.author,
     tags: base.tags,
     characters: base.characters,
-    ageRating: base.ageRating,
+    ageRating: ageRating,
     description: base.description,
     coverPageIndex: base.coverPageIndex,
     pageCount: pageCount,

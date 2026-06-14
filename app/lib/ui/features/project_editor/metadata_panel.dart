@@ -4,6 +4,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_age_rating_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_published_date_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
@@ -234,52 +235,11 @@ class MetadataPanel extends HookConsumerWidget {
     }
 
     Widget ageRatingField(MetadataFieldSpecFrb field) {
-      final controller = fieldController(field.id);
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) {
-              return TextFormField(
-                controller: controller,
-                focusNode: focusNodeFor(field.id),
-                decoration: InputDecoration(
-                  labelText: field.label,
-                  hintText: '可选择预设或手动输入',
-                  suffixIcon: value.text.isEmpty
-                      ? null
-                      : AppIconButton(
-                          tooltip: '清空',
-                          onPressed: () {
-                            controller.clear();
-                            onTextFieldChanged();
-                          },
-                          icon: const Icon(LucideIcons.x),
-                        ),
-                ),
-                onChanged: (_) => onTextFieldChanged(),
-                onEditingComplete: () => unawaited(saveNow()),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final preset in session.schema.ageRatingPresets)
-                ActionChip(
-                  label: Text(preset),
-                  onPressed: () {
-                    controller.text = preset;
-                    onTextFieldChanged();
-                  },
-                ),
-            ],
-          ),
-        ],
+      return MetadataAgeRatingField(
+        label: field.label,
+        controller: fieldController(field.id),
+        presets: session.schema.ageRatingPresets,
+        onChanged: onTextFieldChanged,
       );
     }
 
