@@ -13,6 +13,7 @@ pub struct MetadataFieldSpecDto {
     pub int_min: Option<i32>,
     pub int_max: Option<i32>,
     pub read_only_value: Option<String>,
+    pub form_field_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -63,5 +64,9 @@ fn field_to_dto(field: &MetadataFieldSpec) -> MetadataFieldSpecDto {
         int_min: field.int_min,
         int_max: field.int_max,
         read_only_value: field.read_only_value.map(str::to_string),
+        form_field_ids: crate::metadata_schema::form_field_ids(field)
+            .iter()
+            .map(|id| (*id).to_string())
+            .collect(),
     }
 }

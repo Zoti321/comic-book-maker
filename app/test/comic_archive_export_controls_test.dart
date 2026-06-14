@@ -3,7 +3,11 @@ import 'package:comic_book_maker/ui/features/settings/comic_archive_export_contr
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/frb/rust_fake.dart';
+
 void main() {
+  rustTestSetUpAll();
+
   testWidgets('shows container menu and extension checkbox', (tester) async {
     var container = ComicArchiveContainerFrb.zip;
     var useComicExt = true;

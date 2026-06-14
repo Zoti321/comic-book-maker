@@ -89,6 +89,7 @@ pub enum MetadataFieldKindFrb {
     Integer,
     AgeRating,
     PublishedDate,
+    CommaSeparatedTags,
 }
 
 #[flutter_rust_bridge::frb(non_final)]
@@ -102,6 +103,7 @@ pub struct MetadataFieldSpecFrb {
     pub int_min: Option<i32>,
     pub int_max: Option<i32>,
     pub read_only_value: Option<String>,
+    pub form_field_ids: Vec<String>,
 }
 
 #[flutter_rust_bridge::frb(non_final)]
@@ -201,6 +203,7 @@ impl From<metadata_schema::MetadataFieldKind> for MetadataFieldKindFrb {
             metadata_schema::MetadataFieldKind::Integer => Self::Integer,
             metadata_schema::MetadataFieldKind::AgeRating => Self::AgeRating,
             metadata_schema::MetadataFieldKind::PublishedDate => Self::PublishedDate,
+            metadata_schema::MetadataFieldKind::CommaSeparatedTags => Self::CommaSeparatedTags,
         }
     }
 }
@@ -216,6 +219,7 @@ impl From<MetadataFieldSpecDto> for MetadataFieldSpecFrb {
             int_min: value.int_min,
             int_max: value.int_max,
             read_only_value: value.read_only_value,
+            form_field_ids: value.form_field_ids,
         }
     }
 }

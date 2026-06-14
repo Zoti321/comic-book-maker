@@ -12,7 +12,7 @@ Future<void> runProjectAppendImport({
   required BuildContext context,
   required ProjectWorkspaceState workspace,
   required ProjectWorkspace workspaceNotifier,
-  required CoreGateway gateway,
+  required ArchiveGateway gateway,
 }) async {
   final kind = workspace.settings?.inferredImportKind;
   if (kind == null || !workspace.canAppendImport) return;
@@ -85,23 +85,22 @@ Future<void> _appendArchive(
   BuildContext context,
   ProjectWorkspaceState workspace,
   ProjectWorkspace workspaceNotifier,
-  CoreGateway gateway,
+  ArchiveGateway gateway,
 ) async {
   final sheetFormat = await showAppendArchiveSheet(context);
   if (sheetFormat == null || !context.mounted) return;
 
   final runner = ArchiveImportRunner(gateway: gateway);
-  final format = ArchiveImportRunner.fromAppendFormat(sheetFormat);
 
   try {
-    final sourcePath = await runner.pickSourcePath(format);
+    final sourcePath = await runner.pickSourcePath(sheetFormat);
     if (sourcePath == null || !context.mounted) return;
 
     final appendResult = await runAppBlockingOperation(
       context: context,
-      message: runner.appendBlockingMessage(format),
+      message: runner.appendBlockingMessage(sheetFormat),
       operation: () => workspaceNotifier.appendArchive(
-        format: ArchiveImportRunner.archiveFormatKind(format),
+        format: sheetFormat,
         sourcePath: sourcePath,
       ),
     );
@@ -128,10 +127,10 @@ Future<void> _appendEpubArchive(
   BuildContext context,
   ProjectWorkspaceState workspace,
   ProjectWorkspace workspaceNotifier,
-  CoreGateway gateway,
+  ArchiveGateway gateway,
 ) async {
   final runner = ArchiveImportRunner(gateway: gateway);
-  const format = ImportArchiveFormat.epub;
+  const format = ArchiveFormatFrb.epub;
 
   try {
     final sourcePath = await runner.pickSourcePath(format);
@@ -141,7 +140,7 @@ Future<void> _appendEpubArchive(
       context: context,
       message: runner.appendBlockingMessage(format),
       operation: () => workspaceNotifier.appendArchive(
-        format: ArchiveImportRunner.archiveFormatKind(format),
+        format: format,
         sourcePath: sourcePath,
       ),
     );

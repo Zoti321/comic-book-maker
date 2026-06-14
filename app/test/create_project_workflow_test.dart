@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_draft.dart';
-import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 import 'package:comic_book_maker/domain/use_cases/create_project_workflow.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -67,7 +66,7 @@ void main() {
         CreateProjectCommand(
           title: '我的漫画',
           importSource: const CreateProjectArchiveImport(
-            format: ImportArchiveFormat.cbz,
+            format: ArchiveFormatFrb.cbz,
             sourcePath: r'C:\comic.cbz',
           ),
           settingsUpdate: const ProjectSettingsUpdate(

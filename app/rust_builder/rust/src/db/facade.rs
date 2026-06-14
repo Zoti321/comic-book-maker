@@ -2,6 +2,7 @@
 
 use super::library::Library;
 use super::metadata::MetadataRecord;
+use super::page_structure::PageStructureSnapshot;
 use super::records::{PageRecord, ProjectRecord, ProjectSettingsPatch, ProjectSettingsRecord};
 use crate::project_format::{ExportFormat, InferredImportKind};
 
@@ -21,33 +22,70 @@ impl Library {
     pub(crate) fn add_page_images(
         project_id: &str,
         source_paths: Vec<String>,
-    ) -> Result<Vec<PageRecord>, String> {
-        Self::with_library(|library| library.add_page_images_inner(project_id, source_paths))
+    ) -> Result<PageStructureSnapshot, String> {
+        Self::with_library(|library| {
+            library.add_page_images_inner(project_id, source_paths)?;
+            library.page_structure_inner(project_id)
+        })
     }
 
     pub(crate) fn list_pages(project_id: &str) -> Result<Vec<PageRecord>, String> {
         Self::with_library(|library| library.list_pages_inner(project_id))
     }
 
-    pub(crate) fn delete_page(project_id: &str, page_id: &str) -> Result<(), String> {
-        Self::with_library(|library| library.delete_page_inner(project_id, page_id))
+    pub(crate) fn load_page_structure(project_id: &str) -> Result<PageStructureSnapshot, String> {
+        Self::with_library(|library| library.page_structure_inner(project_id))
+    }
+
+    pub(crate) fn load_project_editor_snapshot(
+        project_id: &str,
+    ) -> Result<(Vec<PageRecord>, ProjectSettingsRecord, i32), String> {
+        Self::with_library(|library| {
+            let pages = library.list_pages_inner(project_id)?;
+            let settings = library.get_project_settings_inner(project_id)?;
+            let cover_page_index = library.load_cover_page_index(project_id)?;
+            Ok((pages, settings, cover_page_index))
+        })
+    }
+
+    pub(crate) fn delete_page(
+        project_id: &str,
+        page_id: &str,
+    ) -> Result<PageStructureSnapshot, String> {
+        Self::with_library(|library| {
+            library.delete_page_inner(project_id, page_id)?;
+            library.page_structure_inner(project_id)
+        })
     }
 
     pub(crate) fn replace_page_image(
         project_id: &str,
         page_id: &str,
         source_path: String,
-    ) -> Result<PageRecord, String> {
+    ) -> Result<PageStructureSnapshot, String> {
         Self::with_library(|library| {
-            library.replace_page_image_inner(project_id, page_id, source_path)
+            library.replace_page_image_inner(project_id, page_id, source_path)?;
+            library.page_structure_inner(project_id)
         })
     }
 
     pub(crate) fn reorder_pages(
         project_id: &str,
         ordered_page_ids: Vec<String>,
-    ) -> Result<Vec<PageRecord>, String> {
-        Self::with_library(|library| library.reorder_pages_inner(project_id, ordered_page_ids))
+    ) -> Result<PageStructureSnapshot, String> {
+        Self::with_library(|library| {
+            library.reorder_pages_inner(project_id, ordered_page_ids)?;
+            library.page_structure_inner(project_id)
+        })
+    }
+
+    pub(crate) fn set_cover_page(
+        project_id: &str,
+        cover_page_index: i32,
+    ) -> Result<i32, String> {
+        Self::with_library(|library| {
+            library.set_cover_page_inner(project_id, cover_page_index)
+        })
     }
 
     pub(crate) fn get_project_metadata(project_id: &str) -> Result<MetadataRecord, String> {
@@ -99,28 +137,13 @@ impl Library {
         Self::with_library(|library| library.update_project_title_inner(project_id, title))
     }
 
-    pub(crate) fn import_cbz(
+    pub(crate) fn import_archive(
+        format: crate::import::ArchiveImportFormat,
         source_path: &str,
-    ) -> Result<crate::import_cbz::ImportCbzOutcome, String> {
-        Self::with_library(|library| crate::import_cbz::import_cbz(library, source_path))
-    }
-
-    pub(crate) fn import_cbr(
-        source_path: &str,
-    ) -> Result<crate::import_shared::ImportArchiveOutcome, String> {
-        Self::with_library(|library| crate::import_cbr::import_cbr(library, source_path))
-    }
-
-    pub(crate) fn import_cb7(
-        source_path: &str,
-    ) -> Result<crate::import_shared::ImportArchiveOutcome, String> {
-        Self::with_library(|library| crate::import_cb7::import_cb7(library, source_path))
-    }
-
-    pub(crate) fn import_epub(
-        source_path: &str,
-    ) -> Result<crate::import_shared::ImportArchiveOutcome, String> {
-        Self::with_library(|library| crate::import_epub::import_epub(library, source_path))
+    ) -> Result<crate::import::ImportArchiveOutcome, String> {
+        Self::with_library(|library| {
+            crate::import::import_archive(library, format, source_path)
+        })
     }
 
     pub(crate) fn export_cbz(
@@ -218,39 +241,13 @@ impl Library {
         })
     }
 
-    pub(crate) fn append_cbz(
+    pub(crate) fn append_archive(
         project_id: &str,
+        format: crate::import::ArchiveImportFormat,
         source_path: &str,
-    ) -> Result<crate::import_shared::AppendImportOutcome, String> {
+    ) -> Result<crate::import::AppendImportOutcome, String> {
         Self::with_library(|library| {
-            crate::import_cbz::append_cbz(library, project_id, source_path)
-        })
-    }
-
-    pub(crate) fn append_cbr(
-        project_id: &str,
-        source_path: &str,
-    ) -> Result<crate::import_shared::AppendImportOutcome, String> {
-        Self::with_library(|library| {
-            crate::import_cbr::append_cbr(library, project_id, source_path)
-        })
-    }
-
-    pub(crate) fn append_cb7(
-        project_id: &str,
-        source_path: &str,
-    ) -> Result<crate::import_shared::AppendImportOutcome, String> {
-        Self::with_library(|library| {
-            crate::import_cb7::append_cb7(library, project_id, source_path)
-        })
-    }
-
-    pub(crate) fn append_epub(
-        project_id: &str,
-        source_path: &str,
-    ) -> Result<crate::import_shared::AppendImportOutcome, String> {
-        Self::with_library(|library| {
-            crate::import_epub::append_epub(library, project_id, source_path)
+            crate::import::append_archive(library, project_id, format, source_path)
         })
     }
 

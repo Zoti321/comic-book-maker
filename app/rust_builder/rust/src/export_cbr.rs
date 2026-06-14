@@ -168,8 +168,7 @@ mod tests {
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::import::scan_archive_tree;
-    use crate::import_cbz::import_cbz;
-    use crate::import_cbr::import_cbr;
+    use crate::import::{import_cbz, import_cbr};
     use crate::paths::{project_assets_dir, project_storage_dir};
     use image::{ImageBuffer, Rgba};
     use std::fs::File;

@@ -29,9 +29,8 @@ void main() {
             builder: (context) {
               return FilledButton(
                 onPressed: () async {
-                  final preflight = checkExportPreflight(destination.path);
                   final confirmed = await runExportConfirmations(
-                    preflight: preflight,
+                    needsOverwriteConfirmation: true,
                     deleteAfterExport: false,
                     confirmOverwrite: () async {
                       if (!context.mounted) return false;

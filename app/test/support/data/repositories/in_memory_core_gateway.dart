@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/models/project_page_structure.dart';
 import 'package:comic_book_maker/data/repositories/metadata_patch.dart';
 
 import '../../metadata/metadata_clone.dart';
@@ -114,6 +115,9 @@ class InMemoryCoreGateway implements CoreGateway {
 
   @override
   List<ProjectSummary> listProjects() => List.of(projects);
+
+  /// 测试 fake：对齐 FRB `createProject`。
+  ProjectSummary createProject({String? title}) => _createProject(title: title);
 
   @override
   void touchProject({required String projectId}) {
@@ -244,7 +248,7 @@ class InMemoryCoreGateway implements CoreGateway {
   }
 
   ProjectSummary _createFromArchive({
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
     required ProjectSettingsUpdate settingsUpdate,
   }) {
@@ -291,7 +295,7 @@ class InMemoryCoreGateway implements CoreGateway {
 
   @override
   ImportCbzResult importArchive({
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
   }) =>
       _importArchive(sourcePath: sourcePath);
@@ -331,8 +335,23 @@ class InMemoryCoreGateway implements CoreGateway {
     return name.substring(0, dot);
   }
 
+  ProjectPageStructure _pageStructureFor(String projectId) {
+    var coverPageIndex = 0;
+    try {
+      coverPageIndex = metadataFor(projectId).coverPageIndex;
+    } catch (_) {}
+    return ProjectPageStructure(
+      pages: listPages(projectId: projectId),
+      coverPageIndex: coverPageIndex,
+    );
+  }
+
   @override
-  List<PageSummary> addPageImages({
+  ProjectPageStructure loadPageStructure({required String projectId}) =>
+      _pageStructureFor(projectId);
+
+  @override
+  ProjectPageStructure addPageImages({
     required String projectId,
     required List<String> sourcePaths,
   }) {
@@ -347,7 +366,7 @@ class InMemoryCoreGateway implements CoreGateway {
         ),
       );
     }
-    return List.of(pages);
+    return _pageStructureFor(projectId);
   }
 
   @override
@@ -473,7 +492,7 @@ class InMemoryCoreGateway implements CoreGateway {
   @override
   AppendImportResult appendArchive({
     required String projectId,
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
   }) {
     final index = pages.length;
@@ -485,21 +504,22 @@ class InMemoryCoreGateway implements CoreGateway {
         absolutePath: sourcePath,
       ),
     );
-    return const AppendImportResult(warnings: [], addedPageCount: 1);
+    return AppendImportResult(
+      warnings: const [],
+      addedPageCount: 1,
+      pages: List.of(pages),
+      coverPageIndex: metadataFor(projectId).coverPageIndex,
+    );
   }
 
   @override
   int setProjectCoverPage({
     required String projectId,
     required int coverPageIndex,
-    required int pageCount,
   }) {
     final metadata = metadataFor(projectId);
     final patched = mockMetadataWithCoverPageIndex(
-      metadata: mockMetadataWithPageCount(
-        metadata: metadata,
-        pageCount: pageCount,
-      ),
+      metadata: metadata,
       coverPageIndex: coverPageIndex,
     );
     metadataByProjectId[projectId] = patched;
@@ -507,7 +527,10 @@ class InMemoryCoreGateway implements CoreGateway {
   }
 
   @override
-  void deletePage({required String projectId, required String pageId}) {
+  ProjectPageStructure deletePage({
+    required String projectId,
+    required String pageId,
+  }) {
     pages.removeWhere((page) => page.id == pageId);
     for (var index = 0; index < pages.length; index++) {
       final page = pages[index];
@@ -518,23 +541,30 @@ class InMemoryCoreGateway implements CoreGateway {
         absolutePath: page.absolutePath,
       );
     }
+    return _pageStructureFor(projectId);
   }
 
   @override
-  PageSummary replacePageImage({
+  ProjectPageStructure replacePageImage({
     required String projectId,
     required String pageId,
     required String sourcePath,
-  }) =>
-      PageSummary(
+  }) {
+    final index = pages.indexWhere((page) => page.id == pageId);
+    if (index >= 0) {
+      final page = pages[index];
+      pages[index] = PageSummary(
         id: pageId,
-        sortIndex: 0,
+        sortIndex: page.sortIndex,
         assetPath: 'assets/$pageId.png',
-        absolutePath: '/tmp/$pageId.png',
+        absolutePath: sourcePath,
       );
+    }
+    return _pageStructureFor(projectId);
+  }
 
   @override
-  List<PageSummary> reorderPages({
+  ProjectPageStructure reorderPages({
     required String projectId,
     required List<String> orderedPageIds,
   }) {
@@ -551,7 +581,7 @@ class InMemoryCoreGateway implements CoreGateway {
               absolutePath: byId[orderedPageIds[index]]!.absolutePath,
             ),
       ]);
-    return List.of(pages);
+    return _pageStructureFor(projectId);
   }
 
   @override

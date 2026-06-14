@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_command.dart';
 import 'package:comic_book_maker/domain/models/create_project_draft.dart';
-import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -37,7 +36,7 @@ void main() {
       final draft = CreateProjectDraft()
         ..applyImportSource(
           const CreateProjectArchiveImport(
-            format: ImportArchiveFormat.epub,
+            format: ArchiveFormatFrb.epub,
             sourcePath: r'C:\book.epub',
           ),
         );
@@ -51,7 +50,7 @@ void main() {
         projectTitle: '  我的漫画  ',
       )..applyImportSource(
           const CreateProjectArchiveImport(
-            format: ImportArchiveFormat.cbz,
+            format: ArchiveFormatFrb.cbz,
             sourcePath: r'C:\comic.cbz',
           ),
         );

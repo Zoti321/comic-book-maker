@@ -3,12 +3,12 @@ import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:flutter/material.dart';
 
-String libraryImportDisplayName(ImportArchiveFormat format) =>
+String libraryImportDisplayName(ArchiveFormatFrb format) =>
     ArchiveImportRunner.displayName(format);
 
 /// 上次导入失败时可重试的来源（留在漫画库，不导航离开）。
 typedef LibraryImportRetry = ({
-  ImportArchiveFormat format,
+  ArchiveFormatFrb format,
   String sourcePath,
   String message,
 });
@@ -17,7 +17,7 @@ typedef LibraryImportRetry = ({
 Future<LibraryImportRetry?> runLibraryArchiveImport({
   required BuildContext context,
   required LibraryOperations library,
-  required ImportArchiveFormat format,
+  required ArchiveFormatFrb format,
   required String sourcePath,
 }) async {
   final runner = ArchiveImportRunner();

@@ -2,6 +2,12 @@ import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
 
+const _publishedDateFormFieldIds = [
+  'published_date_year',
+  'published_date_month',
+  'published_date_day',
+];
+
 /// 测试用 canonical schema fixture（与 Core `metadata_schema` 结构对齐）。
 MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat) {
   const agePresets = ['Adults Only 18+', 'Everyone', 'R18+', 'Unknown'];
@@ -20,6 +26,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.text,
             required_: true,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'published_date',
@@ -27,6 +34,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.publishedDate,
             required_: false,
             options: [],
+            formFieldIds: _publishedDateFormFieldIds,
           ),
           MetadataFieldSpecFrb(
             id: 'language_iso',
@@ -34,6 +42,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'age_rating',
@@ -41,6 +50,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.ageRating,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'description',
@@ -48,6 +58,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.multilineText,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
         ],
       ),
@@ -61,6 +72,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'number',
@@ -68,6 +80,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'series_count',
@@ -75,6 +88,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
         ],
       ),
@@ -85,23 +99,26 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           MetadataFieldSpecFrb(
             id: 'author',
             label: '作者',
-            kind: MetadataFieldKindFrb.text,
+            kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'tags',
             label: '标签（逗号分隔）',
-            kind: MetadataFieldKindFrb.text,
+            kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
           MetadataFieldSpecFrb(
             id: 'characters',
             label: '登场人物',
-            kind: MetadataFieldKindFrb.text,
+            kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
+            formFieldIds: [],
           ),
         ],
       ),
@@ -123,9 +140,9 @@ String _publishedDatePart(String? publishedDate, int partIndex) {
 String? _mergePublishedDateFromFormValues(
   Map<String, String> valuesByFieldId,
 ) {
-  final year = valuesByFieldId['published_date_year']?.trim() ?? '';
-  final month = valuesByFieldId['published_date_month']?.trim() ?? '';
-  final day = valuesByFieldId['published_date_day']?.trim() ?? '';
+  final year = valuesByFieldId[_publishedDateFormFieldIds[0]]?.trim() ?? '';
+  final month = valuesByFieldId[_publishedDateFormFieldIds[1]]?.trim() ?? '';
+  final day = valuesByFieldId[_publishedDateFormFieldIds[2]]?.trim() ?? '';
 
   if (year.isEmpty && month.isEmpty && day.isEmpty) {
     return null;
@@ -198,7 +215,7 @@ Metadata mockMergeMetadataFromForm({
     final trimmed = valuesByFieldId['number']!.trim();
     number = trimmed.isEmpty ? null : trimmed;
   }
-  if (valuesByFieldId.containsKey('published_date_year')) {
+  if (valuesByFieldId.containsKey(_publishedDateFormFieldIds[0])) {
     publishedDate = _mergePublishedDateFromFormValues(valuesByFieldId);
   }
   if (valuesByFieldId.containsKey('age_rating')) {

@@ -31,8 +31,7 @@ mod tests {
     use super::*;
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::epub_format::scan_epub_page_paths;
-    use crate::import_cbz::import_cbz;
-    use crate::import_epub::import_epub;
+    use crate::import::{import_cbz, import_epub};
     use crate::paths::project_assets_dir;
     use image::{ImageBuffer, Rgba};
     use std::fs::File;

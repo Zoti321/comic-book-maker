@@ -1441,7 +1441,7 @@ mod tests {
     fn epub_import_export_reimport_preserves_opf_metadata() {
         use crate::db::Library;
         use crate::export_epub::export_epub;
-        use crate::import_epub::import_epub;
+        use crate::import::import_epub;
 
         let app_data = temp_dir("roundtrip-app");
         let mut library = Library::open(app_data.clone()).expect("open library");

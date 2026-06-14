@@ -213,7 +213,7 @@ mod tests {
     use crate::db::MetadataRecord;
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
-    use crate::import_cbz::{import_cbz, scan_cbz_entries};
+    use crate::import::{import_cbz, scan_cbz_entries};
     use crate::paths::project_assets_dir;
     use image::{ImageBuffer, Rgba};
     use std::io::Cursor;

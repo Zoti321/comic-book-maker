@@ -12,5 +12,5 @@ https://www.rarlab.com/license.htm
 
 ## 代码位置
 
-- `core/src/import_cbr.rs` — CBR 导入入口
+- `core/src/import/cbr.rs` — CBR 导入适配器
 - `core/Cargo.toml` — `unrar-ng` 依赖

@@ -11,7 +11,7 @@ impl Library {
         &mut self,
         project_id: &str,
         metadata: &MetadataRecord,
-        pages: &[crate::import_shared::StagedImportPage],
+        pages: &[crate::import::StagedImportPage],
     ) -> Result<(), String> {
         let page_count = pages.len() as i32;
         metadata.validate(page_count)?;
@@ -43,7 +43,7 @@ impl Library {
     pub(crate) fn commit_append_pages(
         &mut self,
         project_id: &str,
-        pages: &[crate::import_shared::StagedImportPage],
+        pages: &[crate::import::StagedImportPage],
     ) -> Result<(), String> {
         if pages.is_empty() {
             return Ok(());

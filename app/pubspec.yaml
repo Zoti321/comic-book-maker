@@ -50,6 +50,7 @@ dependencies:
   window_manager: ^0.5.1
   dropdown_button2: 3.1.0
   textfield_tags: 3.0.1
+  freezed_annotation: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +59,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   build_runner: ^2.15.0
   riverpod_generator: ^4.0.2
+  freezed: ^3.0.0
 
 dependency_overrides:
   # riverpod_generator / build_runner 与 flutter_test 的 analyzer 约束冲突；codegen 见 tool/riverpod_codegen/（源见 README 三处目录）

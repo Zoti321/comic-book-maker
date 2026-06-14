@@ -1,13 +1,20 @@
-import 'package:comic_book_maker/domain/models/export_failure.dart';
+import 'package:comic_book_maker/src/rust/api/simple.dart';
+import 'package:comic_book_maker/src/rust/export_error.dart';
 import 'package:comic_book_maker/domain/use_cases/export_failure_presentation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-void main() {
-  group('presentationForExportFailure', () {
-    test('maps NoPages to Chinese copy', () {
-      const error = ExportFailure(kind: ExportFailureKind.noPages);
+import 'support/frb/rust_integration.dart';
 
-      final presentation = presentationForExportFailure(error);
+void main() {
+  exportRustTestSetUpAll();
+  group('presentationForExportError', () {
+    test('maps NoPages to Chinese copy', () {
+      const error = ExportError(
+        kind: ExportErrorKind.noPages,
+        detail: '',
+      );
+
+      final presentation = presentationForExportError(error);
 
       expect(presentation.title, '无法导出');
       expect(presentation.message, contains('至少一页'));
@@ -15,12 +22,12 @@ void main() {
     });
 
     test('maps PageAssetMissing with detail hint', () {
-      const error = ExportFailure(
-        kind: ExportFailureKind.pageAssetMissing,
+      const error = ExportError(
+        kind: ExportErrorKind.pageAssetMissing,
         detail: 'open page asset /tmp/001.png: not found',
       );
 
-      final presentation = presentationForExportFailure(error);
+      final presentation = presentationForExportError(error);
 
       expect(presentation.title, '无法导出');
       expect(presentation.message, contains('找不到'));
@@ -28,21 +35,21 @@ void main() {
     });
 
     test('maps DestinationNotWritable', () {
-      const error = ExportFailure(
-        kind: ExportFailureKind.destinationNotWritable,
+      const error = ExportError(
+        kind: ExportErrorKind.destinationNotWritable,
         detail: 'create export directory D:\\out: access denied',
       );
 
-      final presentation = presentationForExportFailure(error);
+      final presentation = presentationForExportError(error);
 
       expect(presentation.title, '无法导出');
       expect(presentation.message, contains('写入'));
       expect(presentation.nextStepHint, contains('access denied'));
     });
 
-    test('presentationForCaughtExportFailure recognizes ExportFailure', () {
-      const error = ExportFailure(
-        kind: ExportFailureKind.projectNotFound,
+    test('presentationForCaughtExportFailure recognizes ExportError', () {
+      const error = ExportError(
+        kind: ExportErrorKind.projectNotFound,
         detail: 'project not found: p1',
       );
 
@@ -57,12 +64,12 @@ void main() {
     });
 
     test('maps ArchiveWriteFailed with unsupported pdf page format detail', () {
-      const error = ExportFailure(
-        kind: ExportFailureKind.archiveWriteFailed,
+      const error = ExportError(
+        kind: ExportErrorKind.archiveWriteFailed,
         detail: 'PDF 导出不支持 .webp 页图（pages/002.webp）。请将页面替换为 JPEG 或 PNG 后重试。',
       );
 
-      final presentation = presentationForExportFailure(error);
+      final presentation = presentationForExportError(error);
 
       expect(presentation.title, '导出失败');
       expect(presentation.message, contains('生成档案'));

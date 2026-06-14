@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:comic_book_maker/src/rust/api/export.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+
+import 'support/frb/rust_integration.dart';
 
 const _baseSettings = ProjectSettings(
   exportFormat: ExportFormatFrb.comicArchive,
@@ -13,45 +17,88 @@ const _baseSettings = ProjectSettings(
   useComicArchiveExtension: true,
 );
 
+ExportPlanResultFrb _plan({
+  required ProjectSettings settings,
+  required String? globalExportDirectory,
+  String projectTitle = 'My Comic',
+  bool hasPages = true,
+}) {
+  return planExport(
+    request: ExportPlanRequestFrb(
+      projectTitle: projectTitle,
+      settings: settings,
+      globalExportDirectory: globalExportDirectory,
+      hasPages: hasPages,
+    ),
+  );
+}
+
 void main() {
-  group('resolveExportTarget', () {
+  exportRustTestSetUpAll();
+
+  late Directory tempRoot;
+
+  setUp(() {
+    tempRoot = Directory.systemTemp.createTempSync('cbm-export-resolver-');
+  });
+
+  tearDown(() {
+    if (tempRoot.existsSync()) {
+      tempRoot.deleteSync(recursive: true);
+    }
+  });
+
+  group('planExport target resolution', () {
     test('uses global directory when useDefaultExportDirectory is true', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: _baseSettings,
-        globalExportDirectory: r'D:\exports',
-        safeTitle: 'My Comic',
+        globalExportDirectory: exportDir.path,
       );
 
-      expect(target, isNotNull);
+      expect(result, isA<ExportPlanResultFrb_Ready>());
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
       expect(
-        target!.destinationPath,
-        r'D:\exports\My Comic.cbz',
+        ready.target.destinationPath,
+        p.join(exportDir.path, 'My Comic.cbz'),
       );
-      expect(target.exportComicArchive, isTrue);
-      expect(target.formatLabel, 'CBZ');
+      expect(ready.target.exportComicArchive, isTrue);
+      expect(ready.target.formatLabel, 'CBZ');
     });
 
     test('uses project directory when not using global default', () {
-      final target = resolveExportTarget(
-        settings: const ProjectSettings(
+      final projectDir = Directory(p.join(tempRoot.path, 'project-out'));
+      projectDir.createSync();
+
+      final result = _plan(
+        settings: ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.images,
           deleteProjectAfterExport: false,
           useDefaultExportDirectory: false,
-          exportDirectory: r'E:\project-out',
+          exportDirectory: projectDir.path,
           comicArchiveContainer: ComicArchiveContainerFrb.zip,
           useComicArchiveExtension: false,
         ),
-        globalExportDirectory: r'D:\exports',
-        safeTitle: 'Issue 1',
+        globalExportDirectory: p.join(tempRoot.path, 'ignored'),
+        projectTitle: 'Issue 1',
       );
 
-      expect(target!.destinationPath, r'E:\project-out\Issue 1.zip');
-      expect(target.formatLabel, 'ZIP');
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(
+        ready.target.destinationPath,
+        p.join(projectDir.path, 'Issue 1.zip'),
+      );
+      expect(ready.target.formatLabel, 'ZIP');
     });
 
     test('pdf export resolves pdf path and label', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.pdf,
           inferredImportKind: InferredImportKindFrb.images,
@@ -61,18 +108,22 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.zip,
           useComicArchiveExtension: true,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'Comic',
+        globalExportDirectory: exportDir.path,
+        projectTitle: 'Comic',
       );
 
-      expect(target!.destinationPath, p.join('/tmp', 'Comic.pdf'));
-      expect(target.exportComicArchive, isFalse);
-      expect(target.exportPdf, isTrue);
-      expect(target.formatLabel, 'PDF');
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.target.destinationPath, p.join(exportDir.path, 'Comic.pdf'));
+      expect(ready.target.exportComicArchive, isFalse);
+      expect(ready.target.exportPdf, isTrue);
+      expect(ready.target.formatLabel, 'PDF');
     });
 
     test('epub export ignores comic archive extension settings', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.epub,
           inferredImportKind: InferredImportKindFrb.epub,
@@ -82,28 +133,34 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.rar,
           useComicArchiveExtension: true,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'Book',
+        globalExportDirectory: exportDir.path,
+        projectTitle: 'Book',
       );
 
-      expect(target!.destinationPath, p.join('/tmp', 'Book.epub'));
-      expect(target.exportComicArchive, isFalse);
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.target.destinationPath, p.join(exportDir.path, 'Book.epub'));
+      expect(ready.target.exportComicArchive, isFalse);
     });
   });
 
-  group('resolveExportBlock', () {
+  group('planExport blocks', () {
     test('blocks when global directory missing but required', () {
-      final block = resolveExportBlock(
+      final result = _plan(
         settings: _baseSettings,
         globalExportDirectory: null,
-        safeTitle: 'x',
+        projectTitle: 'x',
       );
 
-      expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
+      expect(result, isA<ExportPlanResultFrb_Blocked>());
+      final blocked = result as ExportPlanResultFrb_Blocked;
+      expect(
+        blocked.reason,
+        ExportPlanBlockReasonFrb.exportDirectoryMissing,
+      );
     });
 
     test('blocks pdf export when global directory missing', () {
-      final block = resolveExportBlock(
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.pdf,
           inferredImportKind: InferredImportKindFrb.images,
@@ -114,15 +171,19 @@ void main() {
           useComicArchiveExtension: true,
         ),
         globalExportDirectory: null,
-        safeTitle: 'Comic',
+        projectTitle: 'Comic',
       );
 
-      expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
-      expect(block?.message, contains('默认导出目录'));
+      final blocked = result as ExportPlanResultFrb_Blocked;
+      expect(
+        blocked.reason,
+        ExportPlanBlockReasonFrb.exportDirectoryMissing,
+      );
+      expect(blocked.presentation.message, contains('默认导出目录'));
     });
 
     test('blocks pdf export when project directory missing', () {
-      final block = resolveExportBlock(
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.pdf,
           inferredImportKind: InferredImportKindFrb.images,
@@ -132,18 +193,22 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.zip,
           useComicArchiveExtension: true,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'Comic',
+        globalExportDirectory: tempRoot.path,
+        projectTitle: 'Comic',
       );
 
-      expect(block?.reason, ExportWorkflowBlockReason.exportDirectoryMissing);
-      expect(block?.message, contains('专用导出目录'));
+      final blocked = result as ExportPlanResultFrb_Blocked;
+      expect(
+        blocked.reason,
+        ExportPlanBlockReasonFrb.exportDirectoryMissing,
+      );
+      expect(blocked.presentation.message, contains('专用导出目录'));
     });
 
     test('comicArchiveFileExtension follows extension strategy', () {
       expect(
         comicArchiveFileExtension(
-          const ProjectSettings(
+          settings: const ProjectSettings(
             exportFormat: ExportFormatFrb.comicArchive,
             inferredImportKind: InferredImportKindFrb.images,
             deleteProjectAfterExport: false,
@@ -157,7 +222,7 @@ void main() {
       );
       expect(
         comicArchiveFileExtension(
-          const ProjectSettings(
+          settings: const ProjectSettings(
             exportFormat: ExportFormatFrb.comicArchive,
             inferredImportKind: InferredImportKindFrb.images,
             deleteProjectAfterExport: false,
@@ -171,7 +236,7 @@ void main() {
       );
       expect(
         comicArchiveFileExtension(
-          const ProjectSettings(
+          settings: const ProjectSettings(
             exportFormat: ExportFormatFrb.comicArchive,
             inferredImportKind: InferredImportKindFrb.images,
             deleteProjectAfterExport: false,
@@ -185,7 +250,7 @@ void main() {
       );
       expect(
         comicArchiveFileExtension(
-          const ProjectSettings(
+          settings: const ProjectSettings(
             exportFormat: ExportFormatFrb.comicArchive,
             inferredImportKind: InferredImportKindFrb.images,
             deleteProjectAfterExport: false,
@@ -200,7 +265,10 @@ void main() {
     });
 
     test('resolves RAR comic archive to cbr path', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -210,18 +278,24 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.rar,
           useComicArchiveExtension: true,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'RAR Comic',
+        globalExportDirectory: exportDir.path,
+        projectTitle: 'RAR Comic',
       );
 
-      expect(target, isNotNull);
-      expect(target!.destinationPath, p.join('/tmp', 'RAR Comic.cbr'));
-      expect(target.formatLabel, 'CBR');
-      expect(target.comicArchiveContainer, ComicArchiveContainerFrb.rar);
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(
+        ready.target.destinationPath,
+        p.join(exportDir.path, 'RAR Comic.cbr'),
+      );
+      expect(ready.target.formatLabel, 'CBR');
+      expect(ready.target.comicArchiveContainer, ComicArchiveContainerFrb.rar);
     });
 
     test('resolves RAR without comic extension to rar path', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -231,16 +305,20 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.rar,
           useComicArchiveExtension: false,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'Archive',
+        globalExportDirectory: exportDir.path,
+        projectTitle: 'Archive',
       );
 
-      expect(target!.destinationPath, p.join('/tmp', 'Archive.rar'));
-      expect(target.formatLabel, 'RAR');
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.target.destinationPath, p.join(exportDir.path, 'Archive.rar'));
+      expect(ready.target.formatLabel, 'RAR');
     });
 
     test('resolves 7Z comic archive to cb7 path', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -250,18 +328,27 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
           useComicArchiveExtension: true,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: '7Z Comic',
+        globalExportDirectory: exportDir.path,
+        projectTitle: '7Z Comic',
       );
 
-      expect(target, isNotNull);
-      expect(target!.destinationPath, p.join('/tmp', '7Z Comic.cb7'));
-      expect(target.formatLabel, 'CB7');
-      expect(target.comicArchiveContainer, ComicArchiveContainerFrb.sevenZip);
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(
+        ready.target.destinationPath,
+        p.join(exportDir.path, '7Z Comic.cb7'),
+      );
+      expect(ready.target.formatLabel, 'CB7');
+      expect(
+        ready.target.comicArchiveContainer,
+        ComicArchiveContainerFrb.sevenZip,
+      );
     });
 
     test('resolves 7Z without comic extension to 7z path', () {
-      final target = resolveExportTarget(
+      final exportDir = Directory(p.join(tempRoot.path, 'exports'));
+      exportDir.createSync();
+
+      final result = _plan(
         settings: const ProjectSettings(
           exportFormat: ExportFormatFrb.comicArchive,
           inferredImportKind: InferredImportKindFrb.comicArchive,
@@ -271,12 +358,13 @@ void main() {
           comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
           useComicArchiveExtension: false,
         ),
-        globalExportDirectory: '/tmp',
-        safeTitle: 'Archive',
+        globalExportDirectory: exportDir.path,
+        projectTitle: 'Archive',
       );
 
-      expect(target!.destinationPath, p.join('/tmp', 'Archive.7z'));
-      expect(target.formatLabel, '7Z');
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.target.destinationPath, p.join(exportDir.path, 'Archive.7z'));
+      expect(ready.target.formatLabel, '7Z');
     });
   });
 }

@@ -17,6 +17,16 @@ use crate::published_date::{
 
 pub const AGE_RATING_PRESETS: &[&str] = crate::age_rating::PRESETS;
 
+pub const PUBLISHED_DATE_YEAR_FIELD_ID: &str = "published_date_year";
+pub const PUBLISHED_DATE_MONTH_FIELD_ID: &str = "published_date_month";
+pub const PUBLISHED_DATE_DAY_FIELD_ID: &str = "published_date_day";
+
+const PUBLISHED_DATE_FORM_FIELD_IDS: &[&str] = &[
+    PUBLISHED_DATE_YEAR_FIELD_ID,
+    PUBLISHED_DATE_MONTH_FIELD_ID,
+    PUBLISHED_DATE_DAY_FIELD_ID,
+];
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MetadataFieldKind {
     Text,
@@ -24,6 +34,7 @@ pub enum MetadataFieldKind {
     Integer,
     AgeRating,
     PublishedDate,
+    CommaSeparatedTags,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,6 +106,29 @@ macro_rules! multiline_field {
     };
 }
 
+macro_rules! comma_tags_field {
+    ($id:expr, $label:expr) => {
+        MetadataFieldSpec {
+            id: $id,
+            label: $label,
+            kind: MetadataFieldKind::CommaSeparatedTags,
+            required: false,
+            options: &[],
+            int_min: None,
+            int_max: None,
+            read_only_value: None,
+        }
+    };
+}
+
+/// 复合字段在表单中的子字段 id；单值字段返回空切片，UI 使用 [`MetadataFieldSpec::id`]。
+pub fn form_field_ids(field: &MetadataFieldSpec) -> &'static [&'static str] {
+    match field.kind {
+        MetadataFieldKind::PublishedDate => PUBLISHED_DATE_FORM_FIELD_IDS,
+        _ => &[],
+    }
+}
+
 const GENERAL_FIELDS: &[MetadataFieldSpec] = &[
     text_field!("title", "标题", required),
     MetadataFieldSpec {
@@ -128,9 +162,9 @@ const SERIES_FIELDS: &[MetadataFieldSpec] = &[
 ];
 
 const CREATIVE_FIELDS: &[MetadataFieldSpec] = &[
-    text_field!("author", "作者"),
-    text_field!("tags", "标签（逗号分隔）"),
-    text_field!("characters", "登场人物"),
+    comma_tags_field!("author", "作者"),
+    comma_tags_field!("tags", "标签（逗号分隔）"),
+    comma_tags_field!("characters", "登场人物"),
 ];
 
 const CANONICAL_SECTIONS: &[MetadataSectionSpec] = &[
@@ -260,15 +294,15 @@ pub fn merge_form_values(
 
     let published_date = merge_published_date_form_fields(
         values
-            .get("published_date_year")
+            .get(PUBLISHED_DATE_YEAR_FIELD_ID)
             .map(String::as_str)
             .unwrap_or(""),
         values
-            .get("published_date_month")
+            .get(PUBLISHED_DATE_MONTH_FIELD_ID)
             .map(String::as_str)
             .unwrap_or(""),
         values
-            .get("published_date_day")
+            .get(PUBLISHED_DATE_DAY_FIELD_ID)
             .map(String::as_str)
             .unwrap_or(""),
     )?;
@@ -340,6 +374,25 @@ mod tests {
         assert_eq!(comic.sections[0].id, "general");
         assert_eq!(comic.sections[1].id, "series");
         assert_eq!(comic.sections[2].id, "creative");
+    }
+
+    #[test]
+    fn creative_fields_use_comma_separated_tags_kind() {
+        let creative = &CANONICAL_SCHEMA.sections[2];
+        assert_eq!(creative.id, "creative");
+        for field in creative.fields {
+            assert_eq!(field.kind, MetadataFieldKind::CommaSeparatedTags);
+        }
+    }
+
+    #[test]
+    fn published_date_form_field_ids_match_display_keys() {
+        let published = &CANONICAL_SCHEMA.sections[0].fields[1];
+        assert_eq!(published.kind, MetadataFieldKind::PublishedDate);
+        assert_eq!(
+            form_field_ids(published),
+            PUBLISHED_DATE_FORM_FIELD_IDS
+        );
     }
 
     #[test]

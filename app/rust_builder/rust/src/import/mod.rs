@@ -3,6 +3,7 @@
 //! Format-specific adapters live in [`cbz`], [`cbr`], [`cb7`], and [`epub`]; shared staging,
 //! metadata mapping, and transaction orchestration are internal to this module.
 
+pub mod archive_format;
 pub mod archive_path;
 pub mod cb7;
 pub mod cbz;
@@ -14,6 +15,11 @@ mod orchestration;
 mod staging;
 mod types;
 
+pub use archive_format::{
+    archive_format_allowed_extensions, archive_format_display_name,
+    infer_archive_format_from_path, infer_comic_archive_format_from_path,
+    COMIC_ARCHIVE_PICKER_EXTENSIONS,
+};
 pub use archive_path::{
     fallback_title_from_path, is_comicinfo_entry, is_ignored_entry, is_page_image_entry,
     normalize_archive_path,

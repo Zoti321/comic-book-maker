@@ -130,8 +130,7 @@ mod tests {
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::import::scan_archive_tree;
-    use crate::import_cb7::import_cb7;
-    use crate::import_cbz::import_cbz;
+    use crate::import::{import_cb7, import_cbz};
     use crate::paths::{project_assets_dir, project_storage_dir};
     use image::{ImageBuffer, Rgba};
     use sevenz_rust2::Archive;

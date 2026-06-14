@@ -71,7 +71,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       setDraft(next);
     }
 
-    Future<void> pickArchive(ImportArchiveFormat format) async {
+    Future<void> pickArchive(ArchiveFormatFrb format) async {
       final path = await ArchiveImportRunner().pickSourcePath(format);
       if (path == null) return;
 
@@ -99,7 +99,7 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
           draft: current,
           onPickImages: pickImages,
           onPickComicArchive: pickComicArchive,
-          onPickEpub: () => pickArchive(ImportArchiveFormat.epub),
+          onPickEpub: () => pickArchive(ArchiveFormatFrb.epub),
         ),
       1 => ProjectExportSettingsPanel(
           settings: settingsForPanel,

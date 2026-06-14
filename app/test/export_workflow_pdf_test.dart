@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
+import 'support/frb/rust_integration.dart';
 
 const _pdfSettings = ProjectSettings(
   exportFormat: ExportFormatFrb.pdf,
@@ -18,6 +19,8 @@ const _pdfSettings = ProjectSettings(
 );
 
 void main() {
+  exportRustTestSetUpAll();
+
   late Directory tempRoot;
   late ExportWorkflow workflow;
 

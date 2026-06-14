@@ -58,7 +58,7 @@ class MetadataPanel extends HookConsumerWidget {
   final MetadataPanelController? controller;
   final ValueChanged<Metadata>? onSaved;
   final ScrollController? scrollController;
-  final CoreGateway? gateway;
+  final MetadataSessionGateway? gateway;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -192,10 +192,20 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    bool isCommaTagsField(MetadataFieldSpecFrb field) {
-      return field.id == 'author' ||
-          field.id == 'tags' ||
-          field.id == 'characters';
+    Widget publishedDateField(MetadataFieldSpecFrb field) {
+      final formIds = MetadataEditingSession.formFieldIdsFor(field).toList();
+      assert(
+        formIds.length == 3,
+        'publishedDate field must expose year/month/day form ids',
+      );
+      return MetadataPublishedDateField(
+        label: field.label,
+        yearController: fieldController(formIds[0]),
+        monthController: fieldController(formIds[1]),
+        dayController: fieldController(formIds[2]),
+        onChanged: onTextFieldChanged,
+        onEditingComplete: () => unawaited(saveNow()),
+      );
     }
 
     Widget textField(
@@ -249,21 +259,9 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Widget publishedDateField(MetadataFieldSpecFrb field) {
-      return MetadataPublishedDateField(
-        label: field.label,
-        yearController: fieldController(publishedDateYearFieldId),
-        monthController: fieldController(publishedDateMonthFieldId),
-        dayController: fieldController(publishedDateDayFieldId),
-        onChanged: onTextFieldChanged,
-        onEditingComplete: () => unawaited(saveNow()),
-      );
-    }
-
     Widget fieldWidget(MetadataFieldSpecFrb field) {
       return switch (field.kind) {
-        MetadataFieldKindFrb.text when isCommaTagsField(field) =>
-          commaTagsField(field),
+        MetadataFieldKindFrb.commaSeparatedTags => commaTagsField(field),
         MetadataFieldKindFrb.text => textField(field),
         MetadataFieldKindFrb.multilineText => textField(field, maxLines: 5),
         MetadataFieldKindFrb.integer => intField(field),

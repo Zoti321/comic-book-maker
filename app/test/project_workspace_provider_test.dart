@@ -125,7 +125,7 @@ void main() {
       notifier.initialize(fixtureProject());
 
       final appendFuture = notifier.appendArchive(
-        format: ArchiveFormatKind.cbz,
+        format: ArchiveFormatFrb.cbz,
         sourcePath: r'C:\append.cbz',
       );
 

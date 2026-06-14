@@ -180,6 +180,21 @@ fn install_is_idempotent_for_same_app_data_dir() {
 }
 
 #[test]
+fn reset_for_test_allows_installing_a_different_app_data_dir() {
+    let first = temp_dir("reset-first");
+    let second = temp_dir("reset-second");
+    Library::install(first).expect("first install");
+    Library::reset_for_test().expect("reset");
+    Library::install(second.clone()).expect("second install after reset");
+
+    let mut library = Library::open(second).expect("open library");
+    let project = library
+        .create_project_inner(Some("After reset".to_string()))
+        .expect("create");
+    assert_eq!(project.title, "After reset");
+}
+
+#[test]
 fn list_projects_returns_sort_fields_in_created_at_order() {
     let app_data = temp_dir("recent");
     let mut library = Library::open(app_data).expect("open library");
@@ -510,7 +525,7 @@ fn abandon_import_project_removes_partial_disk_and_db_row() {
         .expect("create import project");
     let storage = project_storage_dir(&app_data, &project.id);
 
-    crate::import_shared::stage_pages_from_files(
+    crate::import::stage_pages_from_files(
         &app_data,
         &project.id,
         &[png],

@@ -1,4 +1,4 @@
-import 'package:comic_book_maker/domain/models/import_archive_format.dart';
+import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 
 /// [Create Project](CONTEXT.md) 向导已选定的 Import 来源。
 sealed class CreateProjectImportSource {
@@ -17,6 +17,6 @@ final class CreateProjectArchiveImport extends CreateProjectImportSource {
     required this.sourcePath,
   });
 
-  final ImportArchiveFormat format;
+  final ArchiveFormatFrb format;
   final String sourcePath;
 }

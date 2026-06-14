@@ -166,7 +166,7 @@ mod tests {
         write_test_cbz(&source_cbz, &[("001.png", png.clone())]);
 
         let outcome =
-            crate::import_cbz::import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import cbz");
+            crate::import::import_cbz(&mut library, &source_cbz.to_string_lossy()).expect("import cbz");
         let export_path = dir.join("exported.pdf");
         export_pdf(
             &library,

@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
+import 'support/frb/rust_integration.dart';
 import 'support/provider/core_gateway_scope.dart';
 
 Future<void> _openProjectEditor(
@@ -44,8 +45,9 @@ Finder seriesNumberField() => find.byType(TextFormField).at(1);
 void main() {
   late InMemoryCoreGateway gateway;
 
-  setUpAll(() {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+    await initRustForExportTests();
   });
 
   setUp(() {

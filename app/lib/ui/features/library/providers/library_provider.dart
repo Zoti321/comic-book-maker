@@ -7,7 +7,7 @@ part 'library_provider.g.dart';
 @Riverpod(keepAlive: true)
 LibraryOperations libraryOperations(Ref ref) {
   return LibraryOperations(
-    gateway: ref.watch(coreGatewayProvider),
+    library: ref.watch(coreGatewayProvider),
     onLibraryChanged: () {
       ref.invalidate(libraryProjectsProvider);
     },

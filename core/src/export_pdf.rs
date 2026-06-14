@@ -416,7 +416,7 @@ mod tests {
     use lopdf::decode_text_string;
     use crate::db::Library;
     use crate::export_error::{ExportError, ExportErrorKind};
-    use crate::import_cbz::import_cbz;
+    use crate::import::import_cbz;
     use crate::paths::project_assets_dir;
     use image::{ImageBuffer, Rgba};
     use std::fs::File;
