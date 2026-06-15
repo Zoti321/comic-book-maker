@@ -3,10 +3,9 @@ import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_app_nav.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_nav_tab.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar.dart';
-import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/shell/app_navigation_bar.dart';
+import 'package:comic_book_maker/ui/core/shell/app_navigation_rail.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +27,7 @@ void main() {
     appRouter.go(AppRoutes.projects);
   });
 
-  void _setViewport(WidgetTester tester, Size surfaceSize) {
+  void setViewport(WidgetTester tester, Size surfaceSize) {
     tester.view.physicalSize = surfaceSize;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -40,7 +39,7 @@ void main() {
     required Size surfaceSize,
     bool settle = true,
   }) async {
-    _setViewport(tester, surfaceSize);
+    setViewport(tester, surfaceSize);
 
     await tester.pumpWidget(
       coreGatewayScope(
@@ -60,9 +59,9 @@ void main() {
   testWidgets('compact width shows bottom navigation', (tester) async {
     await pumpApp(tester, surfaceSize: const Size(400, 800), settle: false);
 
-    expect(find.byType(Sidebar), findsNothing);
-    expect(find.byType(MobileAppNav), findsOneWidget);
-    expect(find.byType(MobileNavTab), findsNWidgets(2));
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(AppNavigationBar), findsOneWidget);
+    expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('漫画库'), findsOneWidget);
   });
 
@@ -71,21 +70,22 @@ void main() {
   ) async {
     await pumpApp(tester, surfaceSize: const Size(360, 640), settle: false);
 
-    expect(find.byType(Sidebar), findsNothing);
-    expect(find.byType(MobileAppNav), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(AppNavigationBar), findsOneWidget);
     expect(find.text('漫画库'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('medium width shows sidebar navigation', (tester) async {
+  testWidgets('medium width shows navigation rail', (tester) async {
     await pumpApp(tester, surfaceSize: const Size(900, 800));
 
-    expect(find.byType(Sidebar), findsOneWidget);
-    expect(find.byType(MobileAppNav), findsNothing);
+    expect(find.byType(AppNavigationRail), findsOneWidget);
+    expect(find.byType(NavigationRail), findsOneWidget);
+    expect(find.byType(AppNavigationBar), findsNothing);
     expect(find.text('漫画库'), findsOneWidget);
   });
 
-  testWidgets('sidebar navigation switches to settings branch', (tester) async {
+  testWidgets('navigation rail switches to settings branch', (tester) async {
     await pumpApp(tester, surfaceSize: const Size(1280, 800));
 
     await tester.tap(find.text('设置').first);
@@ -109,14 +109,16 @@ void main() {
     expect(find.text('关于'), findsOneWidget);
   });
 
-  testWidgets('720px width has no layout overflow with sidebar', (tester) async {
+  testWidgets('720px width has no layout overflow with navigation rail', (
+    tester,
+  ) async {
     await pumpApp(tester, surfaceSize: const Size(720, 600));
 
-    expect(find.byType(Sidebar), findsOneWidget);
+    expect(find.byType(AppNavigationRail), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    final sidebar = tester.getSize(find.byType(Sidebar));
-    expect(sidebar.width, AppLayout.sidebarWidth);
+    final rail = tester.getSize(find.byType(AppNavigationRail));
+    expect(rail.width, AppLayout.sidebarWidth);
     expect(find.text('漫画库'), findsOneWidget);
   });
 }

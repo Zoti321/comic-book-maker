@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/app_main_sidebar.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/mobile_app_nav.dart';
-import 'package:comic_book_maker/ui/core/shell/sidebar/sidebar.dart';
+import 'package:comic_book_maker/ui/core/shell/app_navigation_bar.dart';
+import 'package:comic_book_maker/ui/core/shell/app_navigation_rail.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -20,36 +19,36 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final useSidebar = useAppSidebar(context);
+    final useRail = useAppSidebar(context);
     final selectedIndex = navigationShell.currentIndex;
 
-    // 壳层页面（漫画库 / 设置）无自带 Scaffold；需此处提供以便 SnackBar 等反馈。
-    final shellBody = Scaffold(
-      backgroundColor: scheme.surface,
-      body: navigationShell,
-    );
-
-    if (useSidebar) {
-      return SidebarLayout(
-        sidebar: AppMainSidebar(
-          selectedIndex: selectedIndex,
-          onSelect: _goBranch,
+    if (useRail) {
+      return ColoredBox(
+        color: scheme.surface,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppNavigationRail(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: _goBranch,
+            ),
+            Expanded(
+              child: Scaffold(
+                backgroundColor: scheme.surface,
+                body: navigationShell,
+              ),
+            ),
+          ],
         ),
-        child: shellBody,
       );
     }
 
-    return ColoredBox(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: shellBody),
-          MobileAppNav(
-            selectedIndex: selectedIndex,
-            onSelect: _goBranch,
-          ),
-        ],
+    return Scaffold(
+      backgroundColor: scheme.surface,
+      body: navigationShell,
+      bottomNavigationBar: AppNavigationBar(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: _goBranch,
       ),
     );
   }
