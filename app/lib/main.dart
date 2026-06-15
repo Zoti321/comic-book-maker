@@ -5,6 +5,7 @@ import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/src/rust/frb_generated.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,15 +22,21 @@ Future<void> main() async {
   runApp(const ProviderScope(child: ComicBookMakerApp()));
 }
 
-class ComicBookMakerApp extends StatelessWidget {
+class ComicBookMakerApp extends ConsumerWidget {
   const ComicBookMakerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider).maybeWhen(
+          data: (mode) => mode,
+          orElse: () => ThemeMode.system,
+        );
+
     return MaterialApp.router(
       title: 'Comic Book Maker',
       theme: AppTheme.light(),
-      themeMode: ThemeMode.light,
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       routerConfig: appRouter,
       locale: const Locale('zh', 'CN'),
       supportedLocales: const [

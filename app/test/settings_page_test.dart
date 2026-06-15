@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/main.dart';
+import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
 import 'package:comic_book_maker/ui/core/design_system/app_icon_button.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
@@ -47,6 +48,10 @@ void main() {
     await pumpSettings(tester, viewport: const Size(1280, 800));
 
     expect(find.text('设置'), findsWidgets);
+    expect(find.text('外观'), findsOneWidget);
+    expect(find.text('跟随系统'), findsOneWidget);
+    expect(find.text('浅色'), findsOneWidget);
+    expect(find.text('深色'), findsOneWidget);
     expect(find.text('应用偏好与导出默认值'), findsNothing);
     expect(find.text('默认导出目录'), findsOneWidget);
     expect(find.text('未设置'), findsOneWidget);
@@ -60,5 +65,25 @@ void main() {
     expect(find.text('未设置'), findsOneWidget);
     expect(find.byType(AppIconButton), findsWidgets);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('theme mode selection persists across restart', (tester) async {
+    await pumpSettings(tester, viewport: const Size(1280, 800));
+
+    await tester.tap(find.text('深色'));
+    await tester.pumpAndSettle();
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(themeModeStorageKey), 'dark');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    await pumpSettings(tester, viewport: const Size(1280, 800));
+
+    final segmented = tester.widget<SegmentedButton<ThemeMode>>(
+      find.byType(SegmentedButton<ThemeMode>),
+    );
+    expect(segmented.selected, {ThemeMode.dark});
   });
 }

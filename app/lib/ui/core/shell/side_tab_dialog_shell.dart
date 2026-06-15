@@ -1,4 +1,3 @@
-import 'package:comic_book_maker/ui/core/theme/app_colors.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -144,8 +143,9 @@ class _SideTabNavItemState extends State<_SideTabNavItem> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final foreground =
-        widget.selected ? AppColors.primary : theme.colorScheme.onSurfaceVariant;
+        widget.selected ? scheme.primary : scheme.onSurfaceVariant;
     final textStyle = theme.textTheme.labelLarge?.copyWith(
       color: foreground,
       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
@@ -163,17 +163,17 @@ class _SideTabNavItemState extends State<_SideTabNavItem> {
           duration: const Duration(milliseconds: 100),
           curve: Curves.easeOut,
           height: 40,
-          color: _hovered ? AppColors.surfaceContainer : null,
+          color: _hovered ? scheme.surfaceContainer : null,
           child: Stack(
             fit: StackFit.expand,
             children: [
               if (widget.selected)
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: SizedBox(
                     width: 3,
                     height: double.infinity,
-                    child: ColoredBox(color: AppColors.primary),
+                    child: ColoredBox(color: scheme.primary),
                   ),
                 ),
               Padding(
@@ -221,8 +221,9 @@ class _SideTabHeaderTabItemState extends State<_SideTabHeaderTabItem> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final foreground =
-        widget.selected ? AppColors.primary : theme.colorScheme.onSurfaceVariant;
+        widget.selected ? scheme.primary : scheme.onSurfaceVariant;
     final textStyle = theme.textTheme.labelLarge?.copyWith(
       color: foreground,
       fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
@@ -241,10 +242,10 @@ class _SideTabHeaderTabItemState extends State<_SideTabHeaderTabItem> {
           curve: Curves.easeOut,
           padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
           decoration: BoxDecoration(
-            color: _hovered ? AppColors.surfaceContainer : null,
+            color: _hovered ? scheme.surfaceContainer : null,
             border: Border(
               bottom: BorderSide(
-                color: widget.selected ? AppColors.primary : Colors.transparent,
+                color: widget.selected ? scheme.primary : Colors.transparent,
                 width: 2,
               ),
             ),

@@ -1,23 +1,24 @@
-import 'package:comic_book_maker/ui/core/theme/app_colors.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('AppTheme.light uses neutral palette without brand accent', () {
-    final theme = AppTheme.light();
-    final scheme = theme.colorScheme;
+  test('AppTheme uses blue seed for light and dark ColorScheme', () {
+    final light = AppTheme.light();
+    final dark = AppTheme.dark();
 
-    expect(scheme.primary, AppColors.primary);
-    expect(scheme.primary, const Color(0xFF27272A));
-    expect(scheme.surfaceTint, Colors.transparent);
-    expect(scheme.error, AppColors.error);
-    expect(scheme.inversePrimary, AppColors.inversePrimary);
+    expect(AppTheme.seedColor, const Color(0xFF1565C0));
+    expect(light.colorScheme.brightness, Brightness.light);
+    expect(dark.colorScheme.brightness, Brightness.dark);
 
-    // No blue brand tones in semantic colors.
-    expect(scheme.primary.value & 0xFFFFFF, isNot(0x2563EB));
-    expect(scheme.primaryContainer.value & 0xFFFFFF, isNot(0xDBEAFE));
-    expect(scheme.inversePrimary.value & 0xFFFFFF, isNot(0x93C5FD));
+    // Material You blue primary — not legacy zinc gray.
+    expect(light.colorScheme.primary.value & 0xFFFFFF, isNot(0x27272A));
+    expect(dark.colorScheme.primary.value & 0xFFFFFF, isNot(0x27272A));
+    expect(light.colorScheme.primary.blue, greaterThan(light.colorScheme.primary.red));
+    expect(dark.colorScheme.primary.blue, greaterThan(dark.colorScheme.primary.red));
+
+    expect(light.colorScheme.surfaceTint, Colors.transparent);
+    expect(dark.colorScheme.surfaceTint, Colors.transparent);
   });
 
   test('design tokens use tightened sm radius', () {
