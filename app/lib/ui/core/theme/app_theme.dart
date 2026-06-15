@@ -1,4 +1,3 @@
-import 'package:comic_book_maker/ui/core/theme/app_colors.dart';
 import 'package:comic_book_maker/ui/core/theme/app_fonts.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 
@@ -7,51 +6,30 @@ import 'package:flutter/material.dart';
 export 'app_colors.dart';
 export 'app_tokens.dart';
 
-/// Material 3 浅色主题与 design token。
+/// Material You 主题（蓝色 seed）与 design token。
 abstract final class AppTheme {
+  /// M3 蓝色 seed，用于 [ColorScheme.fromSeed] 生成浅色与深色配色。
+  static const seedColor = Color(0xFF1565C0);
+
   static const _radius = AppRadius.lg;
 
   /// M3 浅色 [ThemeData]（应用根主题）。
-  static ThemeData light() {
-    const scheme = ColorScheme(
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      onPrimary: AppColors.onPrimary,
-      primaryContainer: AppColors.primaryContainer,
-      onPrimaryContainer: AppColors.onPrimaryContainer,
-      secondary: AppColors.secondary,
-      onSecondary: AppColors.onSecondary,
-      secondaryContainer: AppColors.secondaryContainer,
-      onSecondaryContainer: AppColors.onSecondaryContainer,
-      tertiary: AppColors.tertiary,
-      onTertiary: AppColors.onTertiary,
-      error: AppColors.error,
-      onError: AppColors.onError,
-      errorContainer: AppColors.errorContainer,
-      onErrorContainer: AppColors.onErrorContainer,
-      surface: AppColors.surface,
-      onSurface: AppColors.onSurface,
-      onSurfaceVariant: AppColors.onSurfaceVariant,
-      outline: AppColors.outline,
-      outlineVariant: AppColors.outlineVariant,
-      shadow: AppColors.shadow,
-      scrim: AppColors.scrim,
-      inverseSurface: AppColors.inverseSurface,
-      onInverseSurface: AppColors.onInverseSurface,
-      inversePrimary: AppColors.inversePrimary,
-      surfaceTint: Colors.transparent,
-      surfaceContainerLowest: AppColors.surface,
-      surfaceContainerLow: AppColors.surfaceLow,
-      surfaceContainer: AppColors.surfaceContainer,
-      surfaceContainerHigh: AppColors.surfaceContainerHigh,
-      surfaceContainerHighest: AppColors.surfaceContainerHighest,
-    );
+  static ThemeData light() => _theme(Brightness.light);
+
+  /// M3 深色 [ThemeData]。
+  static ThemeData dark() => _theme(Brightness.dark);
+
+  static ThemeData _theme(Brightness brightness) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: seedColor,
+      brightness: brightness,
+    ).copyWith(surfaceTint: Colors.transparent);
 
     final base = ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: AppColors.background,
+      scaffoldBackgroundColor: scheme.surface,
       visualDensity: VisualDensity.compact,
     );
 
@@ -60,8 +38,8 @@ abstract final class AppTheme {
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 0,
-        backgroundColor: AppColors.surface,
-        foregroundColor: AppColors.onSurface,
+        backgroundColor: scheme.surface,
+        foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: AppFonts.textStyle(
           scheme: scheme,
@@ -71,23 +49,23 @@ abstract final class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: AppColors.surface,
+        color: scheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_radius),
-          side: const BorderSide(color: AppColors.outline),
+          side: BorderSide(color: scheme.outline),
         ),
         margin: EdgeInsets.zero,
       ),
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
           visualDensity: VisualDensity.compact,
-          foregroundColor: AppColors.onSurface,
+          foregroundColor: scheme.onSurface,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceLow,
+        fillColor: scheme.surfaceContainerLow,
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         border: OutlineInputBorder(
@@ -96,27 +74,27 @@ abstract final class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.outline),
+          borderSide: BorderSide(color: scheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.onSurface, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: const BorderSide(color: AppColors.error),
+          borderSide: BorderSide(color: scheme.error),
         ),
         labelStyle: TextStyle(
           fontSize: AppTypography.bodySize,
-          color: AppColors.onSurfaceVariant,
+          color: scheme.onSurfaceVariant,
           fontFamily: AppFonts.primary,
           fontFamilyFallback: AppFonts.fallback,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
-        backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.surfaceContainerHighest,
+        backgroundColor: scheme.surface,
+        indicatorColor: scheme.secondaryContainer,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           final selected = states.contains(WidgetState.selected);
@@ -124,19 +102,19 @@ abstract final class AppTheme {
             scheme: scheme,
             fontSize: AppTypography.labelSize,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            color: selected ? AppColors.onSurface : AppColors.onSurfaceVariant,
+            color: selected ? scheme.onSurface : scheme.onSurfaceVariant,
           );
         }),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.primary;
+            return scheme.primary;
           }
           return Colors.transparent;
         }),
-        checkColor: WidgetStateProperty.all(AppColors.onPrimary),
-        side: const BorderSide(color: AppColors.outline, width: 1.5),
+        checkColor: WidgetStateProperty.all(scheme.onPrimary),
+        side: BorderSide(color: scheme.outline, width: 1.5),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
@@ -146,29 +124,29 @@ abstract final class AppTheme {
           ),
         ),
       ),
-      dividerTheme: const DividerThemeData(
-        color: AppColors.outline,
+      dividerTheme: DividerThemeData(
+        color: scheme.outline,
         space: 1,
         thickness: 1,
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.inverseSurface,
-        contentTextStyle: TextStyle(color: AppColors.onInverseSurface),
+        backgroundColor: scheme.inverseSurface,
+        contentTextStyle: TextStyle(color: scheme.onInverseSurface),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: scheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.onSurfaceVariant,
-        linearTrackColor: AppColors.surfaceContainerHigh,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: scheme.primary,
+        linearTrackColor: scheme.surfaceContainerHigh,
       ),
       tooltipTheme: const TooltipThemeData(
         waitDuration: AppDurations.tooltipWait,

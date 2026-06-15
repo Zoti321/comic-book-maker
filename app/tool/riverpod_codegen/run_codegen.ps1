@@ -51,6 +51,9 @@ Push-Location $Root
 try {
   dart pub get
   dart run build_runner build --delete-conflicting-outputs
+  # 第二轮：library / project_editor provider 依赖 global_providers 的 *.g.dart，
+  # 首轮写入后资产图才可见（见 riverpod AssetNotFoundException）。
+  dart run build_runner build
   Write-Host "Generated *.g.dart written under app provider source dirs (via junctions)"
 } finally {
   Pop-Location

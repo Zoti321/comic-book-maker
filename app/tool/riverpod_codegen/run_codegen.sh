@@ -31,4 +31,6 @@ done
 cd "$ROOT"
 dart pub get
 dart run build_runner build --delete-conflicting-outputs
+# Second pass: library / project_editor providers depend on global_providers *.g.dart.
+dart run build_runner build
 echo "Generated *.g.dart written under app provider source dirs (via symlinks)"

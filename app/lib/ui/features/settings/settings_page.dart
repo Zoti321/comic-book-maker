@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/providers/export_path_provider.dart';
+import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -15,6 +16,7 @@ class SettingsPage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final exportPathAsync = ref.watch(exportPathProvider);
+    final themeModeAsync = ref.watch(themeModeProvider);
     final savingExportPath = useState(false);
     final padding = contentPaddingOf(context);
 
@@ -79,6 +81,28 @@ class SettingsPage extends HookConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _SettingsSectionCard(
+                      title: '外观',
+                      child: themeModeAsync.when(
+                        loading: () => const AppPageLoading(
+                          message: '正在读取设置…',
+                          compact: true,
+                        ),
+                        error: (error, _) => AppInlineErrorBanner(
+                          message: '无法读取设置：$error',
+                          padding: EdgeInsets.zero,
+                        ),
+                        data: (mode) => _ThemeModeSelector(
+                          selected: mode,
+                          onSelected: (selected) {
+                            ref
+                                .read(themeModeProvider.notifier)
+                                .setMode(selected);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _SettingsSectionCard(
                       title: '默认导出目录',
                       child: exportPathAsync.when(
                         loading: () => const AppPageLoading(
@@ -118,6 +142,41 @@ class SettingsPage extends HookConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ThemeModeSelector extends StatelessWidget {
+  const _ThemeModeSelector({
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final ThemeMode selected;
+  final ValueChanged<ThemeMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SegmentedButton<ThemeMode>(
+      segments: const [
+        ButtonSegment(
+          value: ThemeMode.system,
+          label: Text('跟随系统'),
+          icon: Icon(Icons.brightness_auto_outlined, size: 18),
+        ),
+        ButtonSegment(
+          value: ThemeMode.light,
+          label: Text('浅色'),
+          icon: Icon(Icons.light_mode_outlined, size: 18),
+        ),
+        ButtonSegment(
+          value: ThemeMode.dark,
+          label: Text('深色'),
+          icon: Icon(Icons.dark_mode_outlined, size: 18),
+        ),
+      ],
+      selected: {selected},
+      onSelectionChanged: (selection) => onSelected(selection.first),
     );
   }
 }
