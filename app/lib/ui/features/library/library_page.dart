@@ -1,22 +1,23 @@
-import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
-import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
-import 'package:comic_book_maker/ui/features/library/providers/library_sort_provider.dart';
-import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_flow.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/router/app_routes.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
+import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_flow.dart';
 import 'package:comic_book_maker/ui/features/library/library_count_chip.dart';
+import 'package:comic_book_maker/ui/features/library/library_empty_state.dart';
 import 'package:comic_book_maker/ui/features/library/library_grid_layout.dart';
+import 'package:comic_book_maker/ui/features/library/library_inline_error_banner.dart';
 import 'package:comic_book_maker/ui/features/library/library_sort_menu_button.dart';
 import 'package:comic_book_maker/ui/features/library/project_card.dart';
+import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
+import 'package:comic_book_maker/ui/features/library/providers/library_sort_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class LibraryPage extends HookConsumerWidget {
   const LibraryPage({super.key});
@@ -55,14 +56,28 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     Future<void> confirmDeleteProject(ProjectSummary project) async {
-      final confirmed = await showAppConfirmDialog(
+      final confirmed = await showDialog<bool>(
         context: context,
-        title: '删除项目',
-        description: Text(
-          '确定删除「${project.title}」？\n本地页面与元数据将被永久删除，此操作不可恢复。',
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('删除项目'),
+          content: Text(
+            '确定删除「${project.title}」？\n本地页面与元数据将被永久删除，此操作不可恢复。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(dialogContext).colorScheme.error,
+                foregroundColor: Theme.of(dialogContext).colorScheme.onError,
+              ),
+              child: const Text('删除'),
+            ),
+          ],
         ),
-        confirmLabel: '删除',
-        destructive: true,
       );
 
       if (confirmed != true || !context.mounted) return;
@@ -78,11 +93,11 @@ class LibraryPage extends HookConsumerWidget {
     final padding = libraryContentPadding(context);
     final compact = isCompact(context);
 
-    final createButton = AppButton(
+    final createButton = FilledButton.icon(
       onPressed: startCreateProject,
-      size: AppButtonSize.sm,
-      icon: const Icon(LucideIcons.plus),
-      child: Text(compact ? '新建' : '新建项目'),
+      style: libraryCompactFilledButtonStyle(context),
+      icon: const Icon(LucideIcons.plus, size: 16),
+      label: Text(compact ? '新建' : '新建项目'),
     );
 
     return CustomScrollView(
@@ -106,7 +121,7 @@ class LibraryPage extends HookConsumerWidget {
               0,
             ),
             sliver: SliverToBoxAdapter(
-              child: AppInlineErrorBanner(
+              child: LibraryInlineErrorBanner(
                 message: error.value!,
                 onDismiss: () => error.value = null,
                 padding: EdgeInsets.zero,
@@ -118,18 +133,9 @@ class LibraryPage extends HookConsumerWidget {
           sliver: projects.isEmpty
               ? SliverFillRemaining(
                   hasScrollBody: false,
-                  child: AppEmptyState(
-                    icon: LucideIcons.library,
-                    title: '还没有项目',
-                    subtitle: '通过新建项目向导导入图片或漫画包开始制作',
-                    action: TickerMode.of(context)
-                        ? AppButton(
-                            onPressed: startCreateProject,
-                            size: AppButtonSize.sm,
-                            icon: const Icon(LucideIcons.plus),
-                            child: const Text('新建项目'),
-                          )
-                        : null,
+                  child: LibraryEmptyState(
+                    onCreateProject: startCreateProject,
+                    showAction: TickerMode.of(context),
                   ),
                 )
               : SliverGrid(
