@@ -21,6 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
@@ -81,12 +87,17 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Build native core library for tests
+        run: cargo build --manifest-path core/Cargo.toml
+
       - name: flutter analyze
         working-directory: app
         run: flutter analyze --no-fatal-infos
 
       - name: flutter test
         working-directory: app
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/core/target/debug
         run: flutter test
 
       - name: FRB UI isolation
