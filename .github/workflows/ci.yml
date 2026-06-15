@@ -27,6 +27,15 @@ jobs:
         with:
           workspaces: core
 
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
       - name: cargo test
         run: cargo test --manifest-path core/Cargo.toml
 
@@ -56,7 +65,7 @@ jobs:
       - uses: taiki-e/cache-cargo-install-action@v2
         with:
           tool: flutter_rust_bridge_codegen
-          version: ${{ env.FRB_CODEGEN_VERSION }}
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
 
       - name: FRB codegen
         working-directory: app

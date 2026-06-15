@@ -28,7 +28,7 @@ void main() {
   test('AppTheme.light sets global tooltip wait duration', () {
     final theme = AppTheme.light();
 
-    expect(theme.tooltipTheme?.waitDuration, AppDurations.tooltipWait);
+    expect(theme.tooltipTheme.waitDuration, AppDurations.tooltipWait);
     expect(AppDurations.tooltipWait, const Duration(seconds: 1));
   });
 }

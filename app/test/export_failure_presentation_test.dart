@@ -1,4 +1,3 @@
-import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/src/rust/export_error.dart';
 import 'package:comic_book_maker/domain/use_cases/export_failure_presentation.dart';
 import 'package:flutter_test/flutter_test.dart';
