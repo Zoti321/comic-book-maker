@@ -1,9 +1,9 @@
-import 'package:comic_book_maker/providers/core_gateway_provider.dart';
+import 'dart:async';
+
+import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
-import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
@@ -53,30 +53,6 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
     final settings = workspace.settings;
     final saving = workspace.savingExportFormat;
 
-    final importSnapshot = useState<ImportMetadataSnapshotFrb?>(null);
-    final importLoadError = useState<String?>(null);
-    final importLoading = useState(true);
-
-    Future<void> loadImportSnapshot() async {
-      importLoading.value = true;
-      importLoadError.value = null;
-      try {
-        importSnapshot.value = ref
-            .read(coreGatewayProvider)
-            .getImportMetadataSnapshot(projectId: projectId);
-      } catch (e) {
-        importSnapshot.value = null;
-        importLoadError.value = e.toString();
-      } finally {
-        importLoading.value = false;
-      }
-    }
-
-    useEffect(() {
-      loadImportSnapshot();
-      return null;
-    }, [projectId, settings?.inferredImportKind]);
-
     Future<void> persistSettings(ProjectSettingsUpdate update) async {
       await notifier.saveProjectSettings(update);
     }
@@ -102,9 +78,6 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
 
       try {
         await notifier.changeInferredImportKind(value);
-        if (context.mounted) {
-          await loadImportSnapshot();
-        }
       } catch (_) {}
     }
 
@@ -125,7 +98,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
     }
 
     final Widget panel = switch (tabIndex.value) {
-      0 => _OverviewTab(workspace: workspace),
+      0 => _OverviewTab(projectId: projectId),
       1 => _ImportTab(
           settings: settings,
           saving: saving,
@@ -171,12 +144,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
             ),
           ),
         ),
-      _ => _MetadataTab(
-          settings: settings,
-          snapshot: importSnapshot.value,
-          loading: importLoading.value,
-          loadError: importLoadError.value,
-        ),
+      _ => _MetadataTab(settings: settings),
     };
 
     return SideTabFeatureDialog(
@@ -202,13 +170,61 @@ String _formatDateTime(DateTime dt) {
       '${two(local.hour)}:${two(local.minute)}';
 }
 
-class _OverviewTab extends StatelessWidget {
-  const _OverviewTab({required this.workspace});
+class _OverviewTab extends HookConsumerWidget {
+  const _OverviewTab({required this.projectId});
 
-  final ProjectWorkspaceState workspace;
+  final String projectId;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workspace = ref.watch(projectWorkspaceProvider(projectId));
+    final notifier = ref.read(projectWorkspaceProvider(projectId).notifier);
+    final titleController = useTextEditingController(text: workspace.project.title);
+    final titleFocusNode = useFocusNode();
+    final savingTitle = useState(false);
+    final titleError = useState<String?>(null);
+
+    useEffect(() {
+      if (titleController.text != workspace.project.title) {
+        titleController.text = workspace.project.title;
+      }
+      return null;
+    }, [workspace.project.title]);
+
+    Future<void> saveTitle() async {
+      final trimmed = titleController.text.trim();
+      if (trimmed.isEmpty) {
+        titleError.value = '项目名称不能为空';
+        return;
+      }
+      if (trimmed == workspace.project.title) {
+        titleError.value = null;
+        return;
+      }
+
+      savingTitle.value = true;
+      titleError.value = null;
+      try {
+        notifier.renameProjectTitle(trimmed);
+        ref.read(libraryProjectsProvider.notifier).reload();
+      } catch (e) {
+        titleError.value = e.toString();
+      } finally {
+        savingTitle.value = false;
+      }
+    }
+
+    useEffect(() {
+      void onFocusChange() {
+        if (!titleFocusNode.hasFocus) {
+          unawaited(saveTitle());
+        }
+      }
+
+      titleFocusNode.addListener(onFocusChange);
+      return () => titleFocusNode.removeListener(onFocusChange);
+    }, [titleFocusNode, workspace.project.title]);
+
     final updatedAt = DateTime.fromMillisecondsSinceEpoch(
       workspace.project.updatedAtMs.toInt(),
     );
@@ -216,7 +232,14 @@ class _OverviewTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _PropertyRow(label: '项目名称', value: workspace.project.title),
+        AppTextField(
+          controller: titleController,
+          focusNode: titleFocusNode,
+          label: '项目名称',
+          enabled: !savingTitle.value,
+          errorText: titleError.value,
+        ),
+        const SizedBox(height: 12),
         _PropertyRow(
           label: '页面',
           value: workspace.pages.isEmpty
@@ -264,35 +287,39 @@ class _ImportTab extends StatelessWidget {
 }
 
 class _MetadataTab extends StatelessWidget {
-  const _MetadataTab({
-    required this.settings,
-    required this.snapshot,
-    required this.loading,
-    required this.loadError,
-  });
+  const _MetadataTab({required this.settings});
 
   final ProjectSettings settings;
-  final ImportMetadataSnapshotFrb? snapshot;
-  final bool loading;
-  final String? loadError;
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const AppPageLoading(
-        message: '正在读取导入元数据…',
-        compact: true,
-      );
-    }
+    final theme = Theme.of(context);
 
-    if (loadError != null) {
-      return Text('无法读取导入元数据：$loadError');
-    }
-
-    return ImportMetadataPreview(
-      snapshot: snapshot!,
-      inferredImportKind: settings.inferredImportKind,
-      exportFormatLabel: exportFormatLabel(settings.exportFormat),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '导入时已将归档元数据映射为应用内 canonical 字段并写入数据库。',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          '查看与编辑书目元数据请前往项目编辑页的「元数据」Tab。',
+          style: theme.textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        _PropertyRow(
+          label: '推断导入类型',
+          value: inferredImportKindLabel(settings.inferredImportKind),
+        ),
+        _PropertyRow(
+          label: 'Export 格式',
+          value: exportFormatLabel(settings.exportFormat),
+        ),
+      ],
     );
   }
 }

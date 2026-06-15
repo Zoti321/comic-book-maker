@@ -3,7 +3,6 @@
 use std::path::PathBuf;
 
 use crate::db::Library;
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 use super::archive_path::fallback_title_from_path;
@@ -32,11 +31,9 @@ pub fn import_cbz(library: &mut Library, source_path: &str) -> Result<ImportCbzO
         page_paths.len() as i32,
         &page_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
-
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.clone(),
         InferredImportKind::ComicArchive,
         ExportFormat::ComicArchive,
         |library, project_id| {
@@ -47,7 +44,7 @@ pub fn import_cbz(library: &mut Library, source_path: &str) -> Result<ImportCbzO
                 &page_paths,
                 0,
             )?;
-            Ok((metadata, staged, warnings, snapshot))
+            Ok((metadata, staged, warnings))
         },
     )
 }
@@ -74,8 +71,6 @@ pub fn append_cbz(
         page_paths.len() as i32,
         &page_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
-
     run_append_import(
         library,
         project_id,
@@ -88,7 +83,7 @@ pub fn append_cbz(
                 &page_paths,
                 start_sort_index,
             )?;
-            Ok((staged, warnings, snapshot))
+            Ok((staged, warnings))
         },
     )
 }
@@ -188,7 +183,18 @@ mod tests {
 <ComicInfo>
   <Title>Imported Title</Title>
   <Series>Sample Series</Series>
-  <Writer>Bob</Writer>
+  <Number>7</Number>
+  <Count>12</Count>
+  <Year>2024</Year>
+  <Month>5</Month>
+  <Day>31</Day>
+  <LanguageISO>zh-CN</LanguageISO>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <Tags>tag1,tag2</Tags>
+  <Characters>CharA</Characters>
+  <AgeRating>Everyone</AgeRating>
+  <Summary>A summary</Summary>
   <PageCount>2</PageCount>
 </ComicInfo>"#;
 
@@ -200,7 +206,7 @@ mod tests {
         );
 
         let outcome = import_cbz(&mut library, &cbz.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "Imported Title");
+        assert_eq!(outcome.title, "sample");
         assert!(outcome.warnings.is_empty());
 
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
@@ -213,38 +219,36 @@ mod tests {
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");
+        assert_eq!(metadata.title, "Imported Title");
         assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
-        assert_eq!(metadata.writer.as_deref(), Some("Bob"));
+        assert_eq!(metadata.number.as_deref(), Some("7"));
+        assert_eq!(metadata.series_count.as_deref(), Some("12"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024-05-31"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("zh-CN"));
+        assert_eq!(metadata.author.as_deref(), Some("Alice, Bob"));
+        assert_eq!(metadata.tags.as_deref(), Some("tag1,tag2"));
+        assert_eq!(metadata.characters.as_deref(), Some("CharA"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Everyone"));
+        assert_eq!(metadata.description.as_deref(), Some("A summary"));
+        assert_eq!(metadata.page_count, 2);
 
         let storage = crate::paths::project_storage_dir(&app_data, &outcome.project_id);
         assert!(project_cache_dir(&storage).join("cover.webp").is_file());
-
-        let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
-            &crate::paths::project_storage_dir(&app_data, &outcome.project_id),
-        );
-        assert_eq!(
-            snapshot.kind,
-            crate::import_metadata_snapshot::ImportMetadataKind::ComicInfo
-        );
-        assert!(snapshot.xml.as_deref().unwrap().contains("Imported Title"));
     }
 
     #[test]
-    fn imports_cbz_without_comicinfo_has_no_metadata_snapshot() {
+    fn imports_cbz_without_comicinfo_uses_filename_title() {
         let app_data = temp_dir("no-comicinfo");
         let mut library = Library::open(app_data.clone()).expect("open library");
         let cbz = temp_dir("cbz-none").join("plain.cbz");
         write_test_cbz(&cbz, &[("1.png", png_bytes())], None, &[]);
 
         let outcome = import_cbz(&mut library, &cbz.to_string_lossy()).expect("import");
-        let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
-            &crate::paths::project_storage_dir(&app_data, &outcome.project_id),
-        );
-        assert_eq!(
-            snapshot.kind,
-            crate::import_metadata_snapshot::ImportMetadataKind::None
-        );
-        assert!(snapshot.xml.is_none());
+        let metadata = library
+            .get_project_metadata_inner(&outcome.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.title, "plain");
+        assert_eq!(metadata.page_count, 1);
     }
 
     #[test]
@@ -325,15 +329,6 @@ mod tests {
         assert_eq!(pages[2].sort_index, 2);
         assert_eq!(pages[3].sort_index, 3);
         assert_eq!(pages[7].sort_index, 7);
-
-        let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
-            &crate::paths::project_storage_dir(&app_data, &project_id),
-        );
-        assert_eq!(
-            snapshot.kind,
-            crate::import_metadata_snapshot::ImportMetadataKind::ComicInfo
-        );
-        assert!(snapshot.xml.as_deref().unwrap().contains("Appended"));
     }
 
     #[test]

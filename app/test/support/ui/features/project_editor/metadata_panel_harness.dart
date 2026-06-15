@@ -2,6 +2,7 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../data/repositories/in_memory_core_gateway.dart';
@@ -21,6 +22,16 @@ Future<void> pumpMetadataPanel(
       gateway: effectiveGateway,
       child: MaterialApp(
         theme: AppTheme.light(),
+        locale: const Locale('zh', 'CN'),
+        supportedLocales: const [
+          Locale('zh', 'CN'),
+          Locale('en', 'US'),
+        ],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         home: Scaffold(
           body: SizedBox(
             height: 800,

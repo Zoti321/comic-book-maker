@@ -2,10 +2,9 @@
 
 use crate::comicinfo::{
     cover_page_index_from_pages, page_count_from_parsed, parse_comicinfo_xml, ParsedComicInfo,
-    validate_community_rating, validate_day, validate_month, validate_year, BLACK_AND_WHITE_VALUES,
-    MANGA_VALUES,
 };
 use crate::db::{normalize_metadata, MetadataRecord};
+use crate::published_date::merge_year_month_day;
 
 pub fn build_import_metadata(
     comicinfo_xml: &Option<String>,
@@ -65,64 +64,35 @@ fn comicinfo_to_metadata(
         .trim()
         .to_string();
 
-    let mut metadata = MetadataRecord {
+    let year = parse_optional_int(&parsed.year);
+    let month = parse_optional_int(&parsed.month);
+    let day = parse_optional_int(&parsed.day);
+    let published_date = merge_year_month_day(year, month, day);
+
+    MetadataRecord {
         title,
         series: optional_copy(&parsed.series),
-        issue_number: optional_copy(&parsed.issue_number),
+        number: optional_copy(&parsed.issue_number),
         series_count: optional_copy(&parsed.series_count),
-        volume: optional_copy(&parsed.volume),
-        alternate_series: optional_copy(&parsed.alternate_series),
-        alternate_number: optional_copy(&parsed.alternate_number),
-        alternate_count: optional_copy(&parsed.alternate_count),
-        summary: optional_copy(&parsed.summary),
-        notes: optional_copy(&parsed.notes),
-        year: parse_optional_int(&parsed.year),
-        month: parse_optional_int(&parsed.month),
-        day: parse_optional_int(&parsed.day),
-        writer: optional_copy(&parsed.writer),
-        penciller: optional_copy(&parsed.penciller),
-        inker: optional_copy(&parsed.inker),
-        colorist: optional_copy(&parsed.colorist),
-        letterer: optional_copy(&parsed.letterer),
-        cover_artist: optional_copy(&parsed.cover_artist),
-        editor: optional_copy(&parsed.editor),
-        translator: optional_copy(&parsed.translator),
-        publisher: optional_copy(&parsed.publisher),
-        imprint: optional_copy(&parsed.imprint),
-        genre: optional_copy(&parsed.genre),
-        tags: optional_copy(&parsed.tags),
-        web: optional_copy(&parsed.web),
+        published_date,
         language_iso: optional_copy(&parsed.language_iso),
-        format: optional_copy(&parsed.format),
-        black_and_white: sanitize_enum(&parsed.black_and_white, BLACK_AND_WHITE_VALUES),
-        manga: sanitize_enum(&parsed.manga, MANGA_VALUES),
+        author: join_non_empty(&[
+            parsed.writer.as_deref(),
+            parsed.penciller.as_deref(),
+            parsed.cover_artist.as_deref(),
+            parsed.inker.as_deref(),
+            parsed.colorist.as_deref(),
+            parsed.letterer.as_deref(),
+            parsed.editor.as_deref(),
+            parsed.translator.as_deref(),
+        ]),
+        tags: optional_copy(&parsed.tags),
         characters: optional_copy(&parsed.characters),
-        teams: optional_copy(&parsed.teams),
-        locations: optional_copy(&parsed.locations),
-        main_character_or_team: optional_copy(&parsed.main_character_or_team),
-        scan_information: optional_copy(&parsed.scan_information),
-        story_arc: optional_copy(&parsed.story_arc),
-        story_arc_number: optional_copy(&parsed.story_arc_number),
-        series_group: optional_copy(&parsed.series_group),
         age_rating: optional_copy(&parsed.age_rating),
-        community_rating: sanitize_community_rating(&parsed.community_rating),
-        review: optional_copy(&parsed.review),
-        gtin: optional_copy(&parsed.gtin),
+        description: optional_copy(&parsed.summary),
         cover_page_index: cover_page_index_from_pages(&parsed.pages, page_count, page_paths),
         page_count,
-    };
-
-    if metadata.year.is_some_and(|year| validate_year(year).is_err()) {
-        metadata.year = None;
     }
-    if metadata.month.is_some_and(|month| validate_month(month).is_err()) {
-        metadata.month = None;
-    }
-    if metadata.day.is_some_and(|day| validate_day(day).is_err()) {
-        metadata.day = None;
-    }
-
-    metadata
 }
 
 fn optional_copy(value: &Option<String>) -> Option<String> {
@@ -138,24 +108,122 @@ fn parse_optional_int(value: &Option<String>) -> Option<i32> {
         .and_then(|text| text.trim().parse::<i32>().ok())
 }
 
-fn sanitize_enum(value: &Option<String>, allowed: &[&str]) -> Option<String> {
-    value.as_ref().and_then(|text| {
-        let trimmed = text.trim();
-        if allowed.contains(&trimmed) {
-            Some(trimmed.to_string())
-        } else {
-            None
-        }
-    })
+fn join_non_empty(values: &[Option<&str>]) -> Option<String> {
+    let parts: Vec<String> = values
+        .iter()
+        .filter_map(|value| value.map(str::trim))
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(", "))
+    }
 }
 
-fn sanitize_community_rating(value: &Option<String>) -> Option<String> {
-    value.as_ref().and_then(|text| {
-        let trimmed = text.trim();
-        if validate_community_rating(trimmed).is_ok() {
-            Some(trimmed.to_string())
-        } else {
-            None
-        }
-    })
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const FULL_COMICINFO: &str = r#"<?xml version="1.0"?>
+<ComicInfo>
+  <Title>Imported Title</Title>
+  <Series>Sample Series</Series>
+  <Number>7</Number>
+  <Count>12</Count>
+  <Year>2024</Year>
+  <Month>5</Month>
+  <Day>31</Day>
+  <LanguageISO>zh-CN</LanguageISO>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <CoverArtist>Carol</CoverArtist>
+  <Tags>tag1,tag2</Tags>
+  <Characters>CharA</Characters>
+  <AgeRating>Everyone</AgeRating>
+  <Summary>A summary</Summary>
+  <PageCount>2</PageCount>
+  <Pages>
+    <Page Image="0" Type="FrontCover"/>
+    <Page Image="1"/>
+  </Pages>
+</ComicInfo>"#;
+
+    #[test]
+    fn maps_comicinfo_to_canonical_metadata() {
+        let page_paths = vec!["0.png".to_string(), "1.png".to_string()];
+        let (metadata, _, warnings) = build_import_metadata(
+            &Some(FULL_COMICINFO.to_string()),
+            "fallback.cbz",
+            2,
+            &page_paths,
+        );
+
+        assert!(warnings.is_empty());
+        assert_eq!(metadata.title, "Imported Title");
+        assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
+        assert_eq!(metadata.number.as_deref(), Some("7"));
+        assert_eq!(metadata.series_count.as_deref(), Some("12"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024-05-31"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("zh-CN"));
+        assert_eq!(metadata.tags.as_deref(), Some("tag1,tag2"));
+        assert_eq!(metadata.characters.as_deref(), Some("CharA"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Everyone"));
+        assert_eq!(metadata.description.as_deref(), Some("A summary"));
+        assert_eq!(metadata.page_count, 2);
+        assert_eq!(metadata.cover_page_index, 0);
+    }
+
+    #[test]
+    fn joins_multiple_credit_roles_into_author() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo>
+  <Title>T</Title>
+  <Writer>Alice</Writer>
+  <Penciller>Bob</Penciller>
+  <CoverArtist>Carol</CoverArtist>
+  <Editor>Dana</Editor>
+</ComicInfo>"#;
+        let (metadata, _, _) =
+            build_import_metadata(&Some(xml.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(
+            metadata.author.as_deref(),
+            Some("Alice, Bob, Carol, Dana")
+        );
+    }
+
+    #[test]
+    fn published_date_supports_graded_iso_on_import() {
+        let page_paths = vec!["001.png".to_string()];
+
+        let year_only = r#"<ComicInfo><Title>T</Title><Year>2024</Year></ComicInfo>"#;
+        let (year_metadata, _, _) =
+            build_import_metadata(&Some(year_only.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(year_metadata.published_date.as_deref(), Some("2024"));
+
+        let year_month = r#"<ComicInfo><Title>T</Title><Year>2024</Year><Month>5</Month></ComicInfo>"#;
+        let (month_metadata, _, _) =
+            build_import_metadata(&Some(year_month.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(month_metadata.published_date.as_deref(), Some("2024-05"));
+    }
+
+    #[test]
+    fn pagecount_mismatch_emits_warning() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo><Title>T</Title><PageCount>99</PageCount></ComicInfo>"#;
+        let (_, _, warnings) =
+            build_import_metadata(&Some(xml.to_string()), "fallback", 1, &page_paths);
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("PageCount"));
+    }
+
+    #[test]
+    fn uses_filename_fallback_when_title_missing() {
+        let page_paths = vec!["001.png".to_string()];
+        let xml = r#"<ComicInfo><Series>S</Series></ComicInfo>"#;
+        let (metadata, _, _) =
+            build_import_metadata(&Some(xml.to_string()), "My Comic", 1, &page_paths);
+        assert_eq!(metadata.title, "My Comic");
+    }
 }

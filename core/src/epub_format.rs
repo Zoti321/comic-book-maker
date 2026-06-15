@@ -18,24 +18,33 @@ use crate::export_atomic::atomic_write_destination;
 use crate::export_error::{ExportError, ExportErrorKind};
 use crate::metadata_schema::normalize_comma_separated_tags;
 use crate::page_image::normalize_extension;
+use crate::published_date::{merge_year_month_day, parse_published_date};
 
 pub const EPUB_MIMETYPE: &str = "application/epub+zip";
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ParsedOpfMetadata {
     pub title: Option<String>,
-    pub creator: Option<String>,
+    pub creators: Vec<String>,
     pub publisher: Option<String>,
+    pub series: Option<String>,
+    pub number: Option<String>,
+    pub series_count: Option<String>,
+    pub published_date: Option<String>,
     pub description: Option<String>,
     pub language: Option<String>,
+    pub subjects: Vec<String>,
     pub characters: Option<String>,
     pub tags: Option<String>,
+    pub age_rating: Option<String>,
+    pub cover_manifest_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ManifestItem {
     href: String,
     media_type: String,
+    properties: Option<String>,
 }
 
 /// Extract the raw `<metadata>...</metadata>` element from an OPF package document.
@@ -56,6 +65,7 @@ pub fn scan_epub_page_paths(
         ParsedOpfMetadata,
         Option<String>,
         Option<String>,
+        i32,
     ),
     String,
 > {
@@ -85,8 +95,16 @@ pub fn scan_epub_page_paths(
     }
 
     let opf_metadata_xml = extract_opf_metadata_section(&opf_xml);
+    let cover_page_index =
+        resolve_opf_cover_page_index(&metadata, &manifest, &opf_dir, &page_paths);
 
-    Ok((page_paths, metadata, comicinfo_xml, opf_metadata_xml))
+    Ok((
+        page_paths,
+        metadata,
+        comicinfo_xml,
+        opf_metadata_xml,
+        cover_page_index,
+    ))
 }
 
 fn locate_opf_path(archive: &mut ZipArchive<File>) -> Result<String, String> {
@@ -118,20 +136,22 @@ fn locate_opf_path(archive: &mut ZipArchive<File>) -> Result<String, String> {
     opf_path.ok_or_else(|| "EPUB container.xml missing rootfile full-path".to_string())
 }
 
-fn manifest_attrs(event: &quick_xml::events::BytesStart<'_>) -> Option<(String, String, String)> {
+fn manifest_attrs(event: &quick_xml::events::BytesStart<'_>) -> Option<(String, String, String, Option<String>)> {
     let mut id = None;
     let mut href = None;
     let mut media_type = None;
+    let mut properties = None;
     for attr in event.attributes().flatten() {
         match attr.key.as_ref() {
             b"id" => id = Some(String::from_utf8_lossy(&attr.value).into_owned()),
             b"href" => href = Some(String::from_utf8_lossy(&attr.value).into_owned()),
             b"media-type" => media_type = Some(String::from_utf8_lossy(&attr.value).into_owned()),
+            b"properties" => properties = Some(String::from_utf8_lossy(&attr.value).into_owned()),
             _ => {}
         }
     }
     match (id, href, media_type) {
-        (Some(id), Some(href), Some(media_type)) => Some((id, href, media_type)),
+        (Some(id), Some(href), Some(media_type)) => Some((id, href, media_type, properties)),
         _ => None,
     }
 }
@@ -198,8 +218,15 @@ fn parse_opf(
                     "manifest" => in_manifest = true,
                     "spine" => in_spine = true,
                     "item" if in_manifest => {
-                        if let Some((id, href, media_type)) = manifest_attrs(&event) {
-                            manifest.insert(id, ManifestItem { href, media_type });
+                        if let Some((id, href, media_type, properties)) = manifest_attrs(&event) {
+                            manifest.insert(
+                                id,
+                                ManifestItem {
+                                    href,
+                                    media_type,
+                                    properties,
+                                },
+                            );
                         }
                     }
                     "itemref" if in_spine => {
@@ -212,6 +239,15 @@ fn parse_opf(
                             match name.as_str() {
                                 "characters" => metadata.characters = Some(content),
                                 "tags" => metadata.tags = Some(content),
+                                "series-count" => metadata.series_count = Some(content),
+                                "rating" => metadata.age_rating = Some(content),
+                                "cover" => metadata.cover_manifest_id = Some(content),
+                                "series" if metadata.series.is_none() => {
+                                    metadata.series = Some(content)
+                                }
+                                "number" if metadata.number.is_none() => {
+                                    metadata.number = Some(content)
+                                }
                                 _ => {}
                             }
                         }
@@ -220,7 +256,15 @@ fn parse_opf(
                         let dc_tag = tag.strip_prefix("dc:").unwrap_or(&tag);
                         if matches!(
                             dc_tag,
-                            "title" | "creator" | "publisher" | "description" | "language"
+                            "title"
+                                | "creator"
+                                | "publisher"
+                                | "description"
+                                | "language"
+                                | "series"
+                                | "number"
+                                | "date"
+                                | "subject"
                         ) {
                             current_dc_tag = Some(dc_tag.to_string());
                             text_buf.clear();
@@ -241,10 +285,17 @@ fn parse_opf(
                     if !value.is_empty() {
                         match tag.as_str() {
                             "title" => metadata.title = Some(value.to_string()),
-                            "creator" => metadata.creator = Some(value.to_string()),
+                            "creator" => metadata.creators.push(value.to_string()),
                             "publisher" => metadata.publisher = Some(value.to_string()),
                             "description" => metadata.description = Some(value.to_string()),
                             "language" => metadata.language = Some(value.to_string()),
+                            "series" => metadata.series = Some(value.to_string()),
+                            "number" => metadata.number = Some(value.to_string()),
+                            "date" => {
+                                metadata.published_date =
+                                    normalize_opf_published_date(value);
+                            }
+                            "subject" => metadata.subjects.push(value.to_string()),
                             _ => {}
                         }
                     }
@@ -435,10 +486,89 @@ fn resolve_archive_href(base_dir: &str, href: &str) -> Result<String, String> {
     Ok(segments.join("/"))
 }
 
+fn normalize_opf_published_date(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let date_part = trimmed
+        .split(['T', ' ', 't'].as_ref())
+        .next()
+        .unwrap_or(trimmed)
+        .trim();
+    if parse_published_date(date_part).is_some() {
+        return Some(date_part.to_string());
+    }
+
+    if let Some(parts) = parse_published_date(trimmed) {
+        return merge_year_month_day(Some(parts.year), parts.month, parts.day);
+    }
+
+    None
+}
+
+fn join_opf_text_values(values: &[String]) -> Option<String> {
+    let parts: Vec<&str> = values
+        .iter()
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .collect();
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join(", "))
+    }
+}
+
+fn cover_image_path_from_opf(
+    metadata: &ParsedOpfMetadata,
+    manifest: &HashMap<String, ManifestItem>,
+    opf_dir: &str,
+) -> Option<String> {
+    if let Some(id) = metadata.cover_manifest_id.as_deref() {
+        if let Some(item) = manifest.get(id) {
+            if item.media_type.starts_with("image/") {
+                return join_opf_href(opf_dir, &item.href).ok();
+            }
+        }
+    }
+
+    for item in manifest.values() {
+        if item
+            .properties
+            .as_deref()
+            .is_some_and(|properties| properties.split_whitespace().any(|part| part == "cover-image"))
+            && item.media_type.starts_with("image/")
+        {
+            return join_opf_href(opf_dir, &item.href).ok();
+        }
+    }
+
+    None
+}
+
+fn resolve_opf_cover_page_index(
+    metadata: &ParsedOpfMetadata,
+    manifest: &HashMap<String, ManifestItem>,
+    opf_dir: &str,
+    page_paths: &[String],
+) -> i32 {
+    let Some(cover_path) = cover_image_path_from_opf(metadata, manifest, opf_dir) else {
+        return 0;
+    };
+    page_paths
+        .iter()
+        .position(|path| path == &cover_path)
+        .unwrap_or(0) as i32
+}
+
 pub fn metadata_from_opf(
     opf: &ParsedOpfMetadata,
     fallback_title: &str,
     page_count: i32,
+    cover_page_index: i32,
 ) -> crate::db::MetadataRecord {
     let title = opf
         .title
@@ -448,20 +578,37 @@ pub fn metadata_from_opf(
         .trim()
         .to_string();
 
+    let tags = opf
+        .tags
+        .as_deref()
+        .and_then(normalize_comma_separated_tags)
+        .or_else(|| join_opf_text_values(&opf.subjects));
+
     crate::db::MetadataRecord {
         title,
-        writer: opf.creator.clone(),
-        publisher: opf.publisher.clone(),
-        summary: opf.description.clone(),
-        language_iso: opf.language.clone(),
+        series: optional_trimmed_copy(&opf.series),
+        number: optional_trimmed_copy(&opf.number),
+        series_count: optional_trimmed_copy(&opf.series_count),
+        published_date: opf.published_date.clone(),
+        language_iso: optional_trimmed_copy(&opf.language),
+        author: join_opf_text_values(&opf.creators),
+        tags,
         characters: opf
             .characters
             .as_deref()
             .and_then(normalize_comma_separated_tags),
-        tags: opf.tags.as_deref().and_then(normalize_comma_separated_tags),
+        age_rating: optional_trimmed_copy(&opf.age_rating),
+        description: optional_trimmed_copy(&opf.description),
+        cover_page_index,
         page_count,
-        ..Default::default()
     }
+}
+
+fn optional_trimmed_copy(value: &Option<String>) -> Option<String> {
+    value
+        .as_ref()
+        .map(|text| text.trim().to_string())
+        .filter(|text| !text.is_empty())
 }
 
 pub(crate) fn write_epub(
@@ -699,13 +846,18 @@ fn build_content_opf(
         escape_xml(language),
     ));
 
-    append_dc_element(&mut opf, "creator", metadata.writer.as_deref());
-    append_dc_element(&mut opf, "publisher", metadata.publisher.as_deref());
-    append_dc_element(&mut opf, "description", metadata.summary.as_deref());
+    append_dc_creators(&mut opf, metadata.author.as_deref());
+    append_dc_element(&mut opf, "description", metadata.description.as_deref());
     append_dc_element(&mut opf, "series", metadata.series.as_deref());
-    append_dc_element(&mut opf, "number", metadata.issue_number.as_deref());
-    append_dc_element(&mut opf, "source", metadata.web.as_deref());
-    append_meta_name_content(&mut opf, "comic:volume", metadata.volume.as_deref());
+    append_dc_element(&mut opf, "number", metadata.number.as_deref());
+    if let Some(published_date) = metadata.published_date.as_deref() {
+        append_dc_element(&mut opf, "date", Some(published_date));
+    }
+    append_meta_name_content(
+        &mut opf,
+        "series-count",
+        metadata.series_count.as_deref(),
+    );
     append_meta_name_content(
         &mut opf,
         "characters",
@@ -724,6 +876,7 @@ fn build_content_opf(
             .and_then(normalize_comma_separated_tags)
             .as_deref(),
     );
+    append_meta_name_content(&mut opf, "rating", metadata.age_rating.as_deref());
     opf.push_str(r#"    <meta name="cover" content="cover_img"/>"#);
     opf.push('\n');
 
@@ -757,36 +910,16 @@ fn build_content_opf(
     opf
 }
 
-fn opf_identifier_id(metadata: &crate::db::MetadataRecord) -> String {
-    if metadata
-        .gtin
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        "KSBN".to_string()
-    } else {
-        "book-id".to_string()
-    }
+fn opf_identifier_id(_metadata: &crate::db::MetadataRecord) -> String {
+    "book-id".to_string()
 }
 
-fn opf_identifier_scheme(metadata: &crate::db::MetadataRecord) -> Option<String> {
-    if metadata
-        .gtin
-        .as_deref()
-        .is_some_and(|v| !v.trim().is_empty())
-    {
-        Some("KSBN".to_string())
-    } else {
-        None
-    }
+fn opf_identifier_scheme(_metadata: &crate::db::MetadataRecord) -> Option<String> {
+    None
 }
 
 fn opf_identifier_value(metadata: &crate::db::MetadataRecord) -> &str {
-    metadata
-        .gtin
-        .as_deref()
-        .filter(|v| !v.trim().is_empty())
-        .unwrap_or(metadata.title.as_str())
+    metadata.title.as_str()
 }
 
 fn append_dc_element(opf: &mut String, tag: &str, value: Option<&str>) {
@@ -794,6 +927,19 @@ fn append_dc_element(opf: &mut String, tag: &str, value: Option<&str>) {
         return;
     };
     opf.push_str(&format!("    <dc:{tag}>{}</dc:{tag}>\n", escape_xml(value)));
+}
+
+fn append_dc_creators(opf: &mut String, author: Option<&str>) {
+    let Some(author) = author.map(str::trim).filter(|value| !value.is_empty()) else {
+        return;
+    };
+    for part in author
+        .split(',')
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        append_dc_element(opf, "creator", Some(part));
+    }
 }
 
 fn append_meta_name_content(opf: &mut String, name: &str, value: Option<&str>) {
@@ -1075,10 +1221,10 @@ mod tests {
             None,
         );
 
-        let (paths, metadata, _, _) = scan_epub_page_paths(&epub).expect("scan");
+        let (paths, metadata, _, _, _) = scan_epub_page_paths(&epub).expect("scan");
         assert_eq!(paths, vec!["OEBPS/images/1.png", "OEBPS/images/2.png"]);
         assert_eq!(metadata.title.as_deref(), Some("Spine Order"));
-        assert_eq!(metadata.creator.as_deref(), Some("Test Author"));
+        assert_eq!(metadata.creators, vec!["Test Author".to_string()]);
     }
 
     #[test]
@@ -1140,9 +1286,302 @@ mod tests {
         zip.write_all(opf.as_bytes()).expect("opf body");
         zip.finish().expect("finish");
 
-        let (paths, metadata, _, opf_section) = scan_epub_page_paths(&epub).expect("scan");
+        let (paths, metadata, _, opf_section, _) = scan_epub_page_paths(&epub).expect("scan");
         assert_eq!(paths, vec!["OEBPS/image/page1.png"]);
         assert_eq!(metadata.title.as_deref(), Some("Relative"));
         assert!(opf_section.is_some());
+    }
+
+    #[test]
+    fn parse_opf_reads_canonical_metadata_fields() {
+        let opf = r#"<?xml version="1.0"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>OPF Title</dc:title>
+    <dc:creator>Alice</dc:creator>
+    <dc:creator>Bob</dc:creator>
+    <dc:series>Sample Series</dc:series>
+    <dc:number>7</dc:number>
+    <dc:date>2024-05-31T00:00:00Z</dc:date>
+    <dc:language>zh-CN</dc:language>
+    <dc:description>Summary text</dc:description>
+    <dc:subject>标签A</dc:subject>
+    <meta name="series-count" content="12"/>
+    <meta name="characters" content="角色A,角色B"/>
+    <meta name="tags" content="标签A,标签B"/>
+    <meta name="rating" content="Teen"/>
+    <meta name="cover" content="cover_img"/>
+  </metadata>
+  <manifest>
+    <item id="cover_img" href="images/cover.png" media-type="image/png" properties="cover-image"/>
+    <item id="page1" href="images/1.png" media-type="image/png"/>
+  </manifest>
+  <spine></spine>
+</package>"#;
+
+        let (metadata, manifest, _) = parse_opf(opf).expect("parse");
+        assert_eq!(metadata.title.as_deref(), Some("OPF Title"));
+        assert_eq!(metadata.creators, vec!["Alice".to_string(), "Bob".to_string()]);
+        assert_eq!(metadata.series.as_deref(), Some("Sample Series"));
+        assert_eq!(metadata.number.as_deref(), Some("7"));
+        assert_eq!(metadata.series_count.as_deref(), Some("12"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024-05-31"));
+        assert_eq!(metadata.language.as_deref(), Some("zh-CN"));
+        assert_eq!(metadata.description.as_deref(), Some("Summary text"));
+        assert_eq!(metadata.tags.as_deref(), Some("标签A,标签B"));
+        assert_eq!(metadata.characters.as_deref(), Some("角色A,角色B"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Teen"));
+        assert_eq!(metadata.cover_manifest_id.as_deref(), Some("cover_img"));
+        assert!(manifest.contains_key("cover_img"));
+    }
+
+    #[test]
+    fn metadata_from_opf_maps_to_canonical_record() {
+        let opf = ParsedOpfMetadata {
+            title: Some("Title".to_string()),
+            creators: vec!["Alice".to_string(), "Bob".to_string()],
+            series: Some("Series".to_string()),
+            number: Some("3".to_string()),
+            series_count: Some("10".to_string()),
+            published_date: Some("2024".to_string()),
+            language: Some("en".to_string()),
+            description: Some("Desc".to_string()),
+            characters: Some("Char".to_string()),
+            tags: Some("Tag".to_string()),
+            age_rating: Some("Mature".to_string()),
+            ..Default::default()
+        };
+
+        let metadata = metadata_from_opf(&opf, "Fallback", 5, 2);
+        assert_eq!(metadata.title, "Title");
+        assert_eq!(metadata.author.as_deref(), Some("Alice, Bob"));
+        assert_eq!(metadata.series.as_deref(), Some("Series"));
+        assert_eq!(metadata.number.as_deref(), Some("3"));
+        assert_eq!(metadata.series_count.as_deref(), Some("10"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2024"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("en"));
+        assert_eq!(metadata.description.as_deref(), Some("Desc"));
+        assert_eq!(metadata.characters.as_deref(), Some("Char"));
+        assert_eq!(metadata.tags.as_deref(), Some("Tag"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Mature"));
+        assert_eq!(metadata.page_count, 5);
+        assert_eq!(metadata.cover_page_index, 2);
+    }
+
+    #[test]
+    fn metadata_from_opf_uses_dc_subject_when_tags_meta_missing() {
+        let opf = ParsedOpfMetadata {
+            subjects: vec!["标签A".to_string(), "标签B".to_string()],
+            ..Default::default()
+        };
+        let metadata = metadata_from_opf(&opf, "Fallback", 1, 0);
+        assert_eq!(metadata.tags.as_deref(), Some("标签A, 标签B"));
+    }
+
+    #[test]
+    fn resolve_opf_cover_page_index_matches_manifest_cover_item() {
+        let opf = ParsedOpfMetadata {
+            cover_manifest_id: Some("cover_img".to_string()),
+            ..Default::default()
+        };
+        let mut manifest = HashMap::new();
+        manifest.insert(
+            "cover_img".to_string(),
+            ManifestItem {
+                href: "images/2.png".to_string(),
+                media_type: "image/png".to_string(),
+                properties: Some("cover-image".to_string()),
+            },
+        );
+        manifest.insert(
+            "img1".to_string(),
+            ManifestItem {
+                href: "images/1.png".to_string(),
+                media_type: "image/png".to_string(),
+                properties: None,
+            },
+        );
+
+        let page_paths = vec![
+            "OEBPS/images/1.png".to_string(),
+            "OEBPS/images/2.png".to_string(),
+        ];
+        let index = resolve_opf_cover_page_index(&opf, &manifest, "OEBPS/", &page_paths);
+        assert_eq!(index, 1);
+    }
+
+    #[test]
+    fn export_opf_splits_author_into_multiple_creators() {
+        use crate::db::MetadataRecord;
+
+        let metadata = MetadataRecord {
+            title: "Title".to_string(),
+            author: Some("Alice, Bob".to_string()),
+            age_rating: Some("Teen".to_string()),
+            ..Default::default()
+        };
+
+        let opf = build_content_opf(
+            &metadata,
+            "",
+            "",
+            "",
+            "",
+            "image/cover.png",
+            "800x1200",
+        );
+        assert!(opf.contains("<dc:creator>Alice</dc:creator>"));
+        assert!(opf.contains("<dc:creator>Bob</dc:creator>"));
+        assert!(opf.contains(r#"<meta name="rating" content="Teen"/>"#));
+        assert!(opf.contains(r#"<meta property="rendition:layout">pre-paginated</meta>"#));
+        assert!(opf.contains(r#"<meta name="fixed-layout" content="true"/>"#));
+    }
+
+    #[test]
+    fn epub_import_export_reimport_preserves_opf_metadata() {
+        use crate::db::Library;
+        use crate::export_epub::export_epub;
+        use crate::import::import_epub;
+
+        let app_data = temp_dir("roundtrip-app");
+        let mut library = Library::open(app_data.clone()).expect("open library");
+        let dir = temp_dir("roundtrip-epub");
+        let epub = dir.join("source.epub");
+        let png = png_bytes();
+
+        let opf = format!(
+            r#"<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="book-id">urn:uuid:test</dc:identifier>
+    <dc:title>Roundtrip Title</dc:title>
+    <dc:language>ja</dc:language>
+    <dc:creator>Alice</dc:creator>
+    <dc:creator>Bob</dc:creator>
+    <dc:series>Series X</dc:series>
+    <dc:number>5</dc:number>
+    <dc:date>2023-07-04</dc:date>
+    <dc:description>About this comic</dc:description>
+    <meta name="series-count" content="20"/>
+    <meta name="characters" content="Hero"/>
+    <meta name="tags" content="Action"/>
+    <meta name="rating" content="Everyone"/>
+    <meta name="cover" content="img2"/>
+  </metadata>
+  <manifest>
+    <item id="page1" href="page1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img1" href="images/1.png" media-type="image/png"/>
+    <item id="page2" href="page2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img2" href="images/2.png" media-type="image/png" properties="cover-image"/>
+  </manifest>
+  <spine>
+    <itemref idref="page1"/>
+    <itemref idref="page2"/>
+  </spine>
+</package>
+"#
+        );
+
+        write_epub_with_opf(&epub, &opf, &[
+            ("page1.xhtml", "images/1.png", png.clone()),
+            ("page2.xhtml", "images/2.png", png),
+        ]);
+
+        let imported = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
+        let metadata = library
+            .get_project_metadata_inner(&imported.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.title, "Roundtrip Title");
+        assert_eq!(metadata.author.as_deref(), Some("Alice, Bob"));
+        assert_eq!(metadata.series.as_deref(), Some("Series X"));
+        assert_eq!(metadata.number.as_deref(), Some("5"));
+        assert_eq!(metadata.series_count.as_deref(), Some("20"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2023-07-04"));
+        assert_eq!(metadata.language_iso.as_deref(), Some("ja"));
+        assert_eq!(metadata.description.as_deref(), Some("About this comic"));
+        assert_eq!(metadata.characters.as_deref(), Some("Hero"));
+        assert_eq!(metadata.tags.as_deref(), Some("Action"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("Everyone"));
+        assert_eq!(metadata.cover_page_index, 1);
+
+        let export_path = dir.join("exported.epub");
+        export_epub(
+            &library,
+            &imported.project_id,
+            &export_path.to_string_lossy(),
+        )
+        .expect("export");
+
+        let exported_opf = read_zip_entry(&export_path, "content.opf");
+        assert!(exported_opf.contains("<dc:creator>Alice</dc:creator>"));
+        assert!(exported_opf.contains("<dc:creator>Bob</dc:creator>"));
+        assert!(exported_opf.contains(r#"<meta name="rating" content="Everyone"/>"#));
+        assert!(exported_opf.contains(r#"<meta property="rendition:layout">pre-paginated</meta>"#));
+
+        let reimported = import_epub(&mut library, &export_path.to_string_lossy()).expect("reimport");
+        let roundtrip = library
+            .get_project_metadata_inner(&reimported.project_id)
+            .expect("roundtrip metadata");
+        assert_eq!(roundtrip.author.as_deref(), Some("Alice, Bob"));
+        assert_eq!(roundtrip.series.as_deref(), Some("Series X"));
+        assert_eq!(roundtrip.published_date.as_deref(), Some("2023-07-04"));
+        assert_eq!(roundtrip.age_rating.as_deref(), Some("Everyone"));
+    }
+
+    fn write_epub_with_opf(
+        path: &Path,
+        opf: &str,
+        pages: &[(&str, &str, Vec<u8>)],
+    ) {
+        use std::io::Write;
+
+        let file = File::create(path).expect("create epub");
+        let mut zip = ZipWriter::new(file);
+        let stored = SimpleFileOptions::default().compression_method(CompressionMethod::Stored);
+        let deflated = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+        zip.start_file("mimetype", stored).expect("mimetype");
+        zip.write_all(EPUB_MIMETYPE.as_bytes())
+            .expect("mimetype body");
+
+        let container = r#"<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+"#;
+        zip.start_file("META-INF/container.xml", deflated)
+            .expect("container");
+        zip.write_all(container.as_bytes()).expect("container body");
+
+        for (xhtml_name, image_href, image_bytes) in pages {
+            let xhtml = format!(
+                r#"<?xml version="1.0" encoding="utf-8"?>
+<html xmlns="http://www.w3.org/1999/xhtml"><body><img src="{image_href}"/></body></html>
+"#
+            );
+            zip.start_file(format!("OEBPS/{xhtml_name}"), deflated)
+                .expect("xhtml");
+            zip.write_all(xhtml.as_bytes()).expect("xhtml body");
+
+            zip.start_file(format!("OEBPS/{image_href}"), deflated)
+                .expect("image");
+            zip.write_all(image_bytes).expect("image body");
+        }
+
+        zip.start_file("OEBPS/content.opf", deflated).expect("opf");
+        zip.write_all(opf.as_bytes()).expect("opf body");
+        zip.finish().expect("finish epub");
+    }
+
+    fn read_zip_entry(path: &Path, entry_path: &str) -> String {
+        use std::io::Read;
+        let file = File::open(path).expect("open epub");
+        let mut archive = ZipArchive::new(file).expect("open archive");
+        let mut entry = archive.by_name(entry_path).expect("entry");
+        let mut text = String::new();
+        entry.read_to_string(&mut text).expect("read entry");
+        text
     }
 }

@@ -9,8 +9,11 @@ use crate::project_workflow::{ComicArchiveContainer, ProjectWorkflowDefaults};
 use super::library::{now_ms, Library};
 use super::metadata::{get_metadata, normalize_metadata, update_metadata, MetadataRecord};
 use super::records::{ProjectRecord, ProjectSettingsPatch, ProjectSettingsRecord};
+use super::project_title::next_letter_project_title;
 use super::schema;
 use super::storage::{remove_project_storage, restore_staged_project_storage};
+
+const PROJECT_DISPLAY_TITLE_SQL: &str = "COALESCE(NULLIF(project_title, ''), title)";
 
 fn sqlite_bool(value: i64) -> bool {
     value != 0
@@ -79,8 +82,10 @@ impl Library {
         let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
         self.connection
             .query_row(
-                "SELECT id, title, updated_at_ms, created_at_ms, last_opened_at_ms
-                 FROM projects WHERE id = ?1",
+                &format!(
+                    "SELECT id, {PROJECT_DISPLAY_TITLE_SQL}, updated_at_ms, created_at_ms, last_opened_at_ms
+                 FROM projects WHERE id = ?1"
+                ),
                 params![project_id],
                 |row| {
                     Ok(ProjectRecord {
@@ -115,9 +120,18 @@ impl Library {
     ) -> Result<ProjectRecord, String> {
         let id = Uuid::new_v4().to_string();
         let now = now_ms();
-        let title = title
+        let project_title = title
             .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| schema::DEFAULT_PROJECT_TITLE.to_string());
+            .map(|value| value.trim().to_string())
+            .unwrap_or_else(|| {
+                let existing = self
+                    .list_projects_inner()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(|project| project.title)
+                    .collect::<Vec<_>>();
+                next_letter_project_title(&existing)
+            });
 
         let storage_dir = project_storage_dir(&self.app_data_dir, &id);
         ensure_project_storage(&storage_dir)?;
@@ -127,14 +141,15 @@ impl Library {
         self.connection
             .execute(
                 "INSERT INTO projects (
-                    id, title, cover_page_index, export_format, inferred_import_kind,
+                    id, title, project_title, cover_page_index, export_format, inferred_import_kind,
                     delete_project_after_export, use_default_export_directory, export_directory,
                     comic_archive_container, use_comic_archive_extension,
                     created_at_ms, updated_at_ms, last_opened_at_ms
-                ) VALUES (?1, ?2, 0, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, NULL)",
+                ) VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?11, NULL)",
                 params![
                     id,
-                    title,
+                    schema::DEFAULT_PROJECT_TITLE,
+                    project_title,
                     export_format.as_str(),
                     inferred_import_kind.as_str(),
                     i32::from(workflow.delete_project_after_export),
@@ -149,7 +164,7 @@ impl Library {
 
         Ok(ProjectRecord {
             id,
-            title,
+            title: project_title,
             updated_at_ms: now,
             created_at_ms: now,
             last_opened_at_ms: None,
@@ -238,9 +253,11 @@ impl Library {
         let mut statement = self
             .connection
             .prepare(
-                "SELECT id, title, updated_at_ms, created_at_ms, last_opened_at_ms
+                &format!(
+                    "SELECT id, {PROJECT_DISPLAY_TITLE_SQL}, updated_at_ms, created_at_ms, last_opened_at_ms
                  FROM projects
-                 ORDER BY created_at_ms ASC",
+                 ORDER BY created_at_ms ASC"
+                ),
             )
             .map_err(|error| format!("prepare list projects: {error}"))?;
 
@@ -359,6 +376,36 @@ impl Library {
         update_metadata(&self.connection, project_id, &metadata, page_count)?;
         self.refresh_cover_thumbnail(project_id)?;
         get_metadata(&self.connection, project_id, page_count)
+    }
+
+    pub(crate) fn update_project_title_inner(
+        &mut self,
+        project_id: &str,
+        title: String,
+    ) -> Result<ProjectRecord, String> {
+        let trimmed = title.trim();
+        if trimmed.is_empty() {
+            return Err("project title must not be empty".to_string());
+        }
+
+        if !self.project_exists(project_id)? {
+            return Err(format!("project not found: {project_id}"));
+        }
+
+        let now = now_ms();
+        let updated = self
+            .connection
+            .execute(
+                "UPDATE projects SET project_title = ?1, updated_at_ms = ?2 WHERE id = ?3",
+                params![trimmed, now, project_id],
+            )
+            .map_err(|error| format!("update project title: {error}"))?;
+
+        if updated == 0 {
+            return Err(format!("project not found: {project_id}"));
+        }
+
+        self.find_project(project_id)
     }
 
     pub(crate) fn project_exists(&self, project_id: &str) -> Result<bool, String> {

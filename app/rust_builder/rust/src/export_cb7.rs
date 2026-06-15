@@ -130,8 +130,7 @@ mod tests {
     use crate::comicinfo::{cover_page_index_from_pages, parse_comicinfo_xml};
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::import::scan_archive_tree;
-    use crate::import_cb7::import_cb7;
-    use crate::import_cbz::import_cbz;
+    use crate::import::{import_cb7, import_cbz};
     use crate::paths::{project_assets_dir, project_storage_dir};
     use image::{ImageBuffer, Rgba};
     use sevenz_rust2::Archive;
@@ -272,7 +271,7 @@ mod tests {
         )
         .expect("reimport cb7");
 
-        assert_eq!(reimport.title, "Export Me");
+        assert_eq!(reimport.title, "exported");
         let pages = reimport_library
             .list_pages_inner(&reimport.project_id)
             .expect("pages");
@@ -283,7 +282,7 @@ mod tests {
             .expect("metadata");
         assert_eq!(metadata.title, "Export Me");
         assert_eq!(metadata.series.as_deref(), Some("Exported Series"));
-        assert_eq!(metadata.writer.as_deref(), Some("Bob"));
+        assert_eq!(metadata.author.as_deref(), Some("Bob"));
 
         let extract_root = temp_dir("roundtrip-scan");
         sevenz_rust2::decompress_file(&export_path, &extract_root).expect("extract cb7");
@@ -293,7 +292,7 @@ mod tests {
         let parsed = parse_comicinfo_xml(&comicinfo_xml.expect("comicinfo")).expect("parse");
         assert_eq!(parsed.title.as_deref(), Some("Export Me"));
         assert_eq!(parsed.series.as_deref(), Some("Exported Series"));
-        assert_eq!(parsed.writer.as_deref(), Some("Bob"));
+        assert_eq!(parsed.penciller.as_deref(), Some("Bob"));
         assert_eq!(cover_page_index_from_pages(&parsed.pages, 2, &[]), 0);
     }
 

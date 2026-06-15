@@ -67,15 +67,22 @@ void main() {
     await tester.tap(find.text('元数据'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ComicInfo'), findsWidgets);
+    expect(find.text('元数据'), findsWidgets);
     expect(find.text('添加页面'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  test('thumbnail cross axis count adapts to available space', () {
+  test('thumbnail tile and cache size adapt to available space', () {
     expect(pageThumbnailCrossAxisCount(360), 3);
     expect(pageThumbnailCrossAxisCount(900), 8);
     expect(pageThumbnailCrossAxisCount(1200), 8);
     expect(pageThumbnailCrossAxisCount(0), 2);
+
+    final wideTile = pageThumbnailTileSize(900);
+    expect(wideTile.width, 102);
+
+    final narrowTile = pageThumbnailTileSize(360);
+    expect(narrowTile.width, 112);
+    expect(narrowTile.width, greaterThan(wideTile.width));
   });
 }

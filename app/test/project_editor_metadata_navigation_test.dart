@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
+import 'support/frb/rust_integration.dart';
 import 'support/provider/core_gateway_scope.dart';
 
 Future<void> _openProjectEditor(
@@ -34,11 +35,19 @@ Future<void> _openProjectEditor(
   await tester.pumpAndSettle();
 }
 
+Future<void> _selectSeriesMetadataSection(WidgetTester tester) async {
+  await tester.tap(find.text('系列'));
+  await tester.pumpAndSettle();
+}
+
+Finder seriesNumberField() => find.byType(TextFormField).at(1);
+
 void main() {
   late InMemoryCoreGateway gateway;
 
-  setUpAll(() {
+  setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+    await initRustForExportTests();
   });
 
   setUp(() {
@@ -65,22 +74,24 @@ void main() {
   ) async {
     await _openProjectEditor(tester, gateway);
 
-    await tester.enterText(find.byType(TextFormField).last, '7');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '7');
     await tester.pump(const Duration(milliseconds: 100));
 
     await tester.tap(find.text('图片'));
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, greaterThanOrEqualTo(1));
-    expect(gateway.metadataByProjectId['p1']?.volume, '7');
+    expect(gateway.metadataByProjectId['p1']?.number, '7');
     expect(find.text('添加页面'), findsOneWidget);
     expect(find.text('放弃未保存'), findsNothing);
 
     await tester.tap(find.text('元数据'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(TextFormField).last, findsOneWidget);
-    expect(tester.widget<TextFormField>(find.byType(TextFormField).last).controller?.text, '7');
+    expect(find.byType(TextFormField).at(1), findsOneWidget);
+    expect(tester.widget<TextFormField>(seriesNumberField()).controller?.text, '7');
   });
 
   testWidgets('blocks tab switch when metadata validation fails', (
@@ -96,7 +107,7 @@ void main() {
 
     expect(gateway.metadataUpdateCallCount, 0);
     expect(find.text('必填'), findsOneWidget);
-    expect(find.text('ComicInfo'), findsWidgets);
+    expect(find.text('元数据'), findsWidgets);
     expect(find.text('添加页面'), findsNothing);
   });
 
@@ -105,7 +116,9 @@ void main() {
 
     gateway.failMetadataUpdates = true;
 
-    await tester.enterText(find.byType(TextFormField).last, '8');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '8');
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
 
@@ -115,7 +128,7 @@ void main() {
     await tester.tap(find.text('图片'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ComicInfo'), findsWidgets);
+    expect(find.text('元数据'), findsWidgets);
     expect(find.text('添加页面'), findsNothing);
     expect(find.textContaining('保存失败'), findsOneWidget);
   });
@@ -123,7 +136,9 @@ void main() {
   testWidgets('flushes pending metadata before export', (tester) async {
     await _openProjectEditor(tester, gateway);
 
-    await tester.enterText(find.byType(TextFormField).last, '55');
+    await _selectSeriesMetadataSection(tester);
+
+    await tester.enterText(seriesNumberField(), '55');
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(gateway.metadataUpdateCallCount, 0);
@@ -140,7 +155,7 @@ void main() {
     }
 
     expect(gateway.metadataUpdateCallCount, greaterThanOrEqualTo(1));
-    expect(gateway.metadataByProjectId['p1']?.volume, '55');
+    expect(gateway.metadataByProjectId['p1']?.number, '55');
     expect(gateway.exportCallCount, 1);
     expect(find.text('导出完成'), findsOneWidget);
     expect(find.byType(AlertDialog), findsNothing);

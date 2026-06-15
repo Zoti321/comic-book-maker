@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use crate::db::Library;
 use crate::epub_format::{metadata_from_opf, scan_epub_page_paths};
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 use super::archive_path::fallback_title_from_path;
@@ -22,7 +21,7 @@ pub fn import_epub(library: &mut Library, source_path: &str) -> Result<ImportEpu
     }
 
     let fallback_title = fallback_title_from_path(&path);
-    let (page_paths, opf_metadata, comicinfo_xml, opf_metadata_xml) =
+    let (page_paths, opf_metadata, comicinfo_xml, _opf_metadata_xml, cover_page_index) =
         scan_epub_page_paths(&path)?;
     if page_paths.is_empty() {
         return Err("EPUB 中未找到可用的 Page Image".to_string());
@@ -43,16 +42,14 @@ pub fn import_epub(library: &mut Library, source_path: &str) -> Result<ImportEpu
         (metadata, warnings)
     } else {
         (
-            metadata_from_opf(&opf_metadata, &fallback_title, page_count),
+            metadata_from_opf(&opf_metadata, &fallback_title, page_count, cover_page_index),
             Vec::new(),
         )
     };
 
-    let snapshot = snapshot_from_epub_scan(&comicinfo_xml, &opf_metadata_xml);
-
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.clone(),
         InferredImportKind::Epub,
         ExportFormat::Epub,
         |library, project_id| {
@@ -63,7 +60,7 @@ pub fn import_epub(library: &mut Library, source_path: &str) -> Result<ImportEpu
                 &page_paths,
                 0,
             )?;
-            Ok((metadata, staged, warnings, snapshot))
+            Ok((metadata, staged, warnings))
         },
     )
 }
@@ -79,7 +76,7 @@ pub fn append_epub(
     }
 
     let fallback_title = fallback_title_from_path(&path);
-    let (page_paths, _opf_metadata, comicinfo_xml, opf_metadata_xml) =
+    let (page_paths, _opf_metadata, comicinfo_xml, _opf_metadata_xml, _cover_page_index) =
         scan_epub_page_paths(&path)?;
     if page_paths.is_empty() {
         return Err("EPUB 中未找到可用的 Page Image".to_string());
@@ -91,8 +88,6 @@ pub fn append_epub(
         page_paths.len() as i32,
         &page_paths,
     );
-    let snapshot = snapshot_from_epub_scan(&comicinfo_xml, &opf_metadata_xml);
-
     run_append_import(
         library,
         project_id,
@@ -105,22 +100,9 @@ pub fn append_epub(
                 &page_paths,
                 start_sort_index,
             )?;
-            Ok((staged, warnings, snapshot))
+            Ok((staged, warnings))
         },
     )
-}
-
-fn snapshot_from_epub_scan(
-    comicinfo_xml: &Option<String>,
-    opf_metadata_xml: &Option<String>,
-) -> ImportMetadataSnapshot {
-    if let Some(ref xml) = comicinfo_xml {
-        ImportMetadataSnapshot::comicinfo(xml)
-    } else if let Some(ref section) = opf_metadata_xml {
-        ImportMetadataSnapshot::opf(section)
-    } else {
-        ImportMetadataSnapshot::none()
-    }
 }
 
 #[cfg(test)]
@@ -167,7 +149,7 @@ mod tests {
         );
 
         let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "ComicInfo Title");
+        assert_eq!(outcome.title, "sample");
 
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
         assert_eq!(pages.len(), 2);
@@ -179,15 +161,7 @@ mod tests {
 
         let storage = crate::paths::project_storage_dir(&app_data, &outcome.project_id);
         assert!(project_cache_dir(&storage).join("cover.webp").is_file());
-
-        let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
-            &crate::paths::project_storage_dir(&app_data, &outcome.project_id),
-        );
-        assert_eq!(
-            snapshot.kind,
-            crate::import_metadata_snapshot::ImportMetadataKind::ComicInfo
-        );
-        assert!(snapshot.xml.as_deref().unwrap().contains("ComicInfo Title"));
+        assert_eq!(metadata.title, "ComicInfo Title");
     }
 
     #[test]
@@ -206,22 +180,40 @@ mod tests {
         );
 
         let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
-        assert_eq!(outcome.title, "OPF Title");
+        assert_eq!(outcome.title, "opf");
 
         let metadata = library
             .get_project_metadata_inner(&outcome.project_id)
             .expect("metadata");
-        assert_eq!(metadata.writer.as_deref(), Some("Test Author"));
+        assert_eq!(metadata.author.as_deref(), Some("Test Author"));
+        assert_eq!(metadata.title, "OPF Title");
+    }
 
-        let snapshot = crate::import_metadata_snapshot::read_import_metadata_snapshot(
-            &crate::paths::project_storage_dir(&app_data, &outcome.project_id),
+    #[test]
+    fn imports_epub_prefers_comicinfo_over_opf_metadata() {
+        let app_data = temp_dir("comicinfo-priority");
+        let mut library = Library::open(app_data).expect("open library");
+        let dir = temp_dir("epub-priority");
+        let epub = dir.join("priority.epub");
+        let png = png_bytes();
+
+        write_minimal_epub(
+            &epub,
+            "OPF Title",
+            &[("page1.xhtml", "images/1.png", png)],
+            Some(
+                r#"<?xml version="1.0"?><ComicInfo><Title>ComicInfo Title</Title><Writer>ComicInfo Author</Writer><PageCount>1</PageCount></ComicInfo>"#,
+            ),
         );
-        assert_eq!(
-            snapshot.kind,
-            crate::import_metadata_snapshot::ImportMetadataKind::Opf
-        );
-        assert!(snapshot.xml.as_deref().unwrap().contains("<metadata"));
-        assert!(snapshot.xml.as_deref().unwrap().contains("OPF Title"));
+
+        let outcome = import_epub(&mut library, &epub.to_string_lossy()).expect("import");
+        assert_eq!(outcome.title, "priority");
+
+        let metadata = library
+            .get_project_metadata_inner(&outcome.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.author.as_deref(), Some("ComicInfo Author"));
+        assert_ne!(metadata.title, "OPF Title");
     }
 
     #[test]

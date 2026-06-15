@@ -12,7 +12,9 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - "**/*.g.dart"
+    - "**/*.freezed.dart"
     - "tool/riverpod_codegen/**"
+    - "tool/frb_freezed_codegen/**"
     - "rust_builder/cargokit/**"
 
 linter:

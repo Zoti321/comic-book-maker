@@ -1,6 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
+import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:flutter/material.dart';
 
@@ -31,7 +31,9 @@ class ComicArchiveExportControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final implemented = isComicArchiveContainerImplemented(settings);
+    final implemented = isComicArchiveContainerImplemented(
+      container: settings.comicArchiveContainer,
+    );
 
     final containerSelect = AppSelect<ComicArchiveContainerFrb>(
       key: ValueKey(settings.comicArchiveContainer),
@@ -44,8 +46,8 @@ class ComicArchiveExportControls extends StatelessWidget {
           AppSelectItem(
             value: container,
             label: comicArchiveContainerMenuLabel(container),
-            displayLabel: comicArchiveContainerLabel(container),
-            enabled: comicArchiveContainerSelectable(container),
+            displayLabel: comicArchiveContainerLabel(container: container),
+            enabled: isComicArchiveContainerSelectable(container: container),
           ),
       ],
     );
@@ -91,8 +93,8 @@ class ComicArchiveExportControls extends StatelessWidget {
 }
 
 String comicArchiveContainerMenuLabel(ComicArchiveContainerFrb container) {
-  final name = comicArchiveContainerLabel(container);
-  if (comicArchiveContainerSelectable(container)) {
+  final name = comicArchiveContainerLabel(container: container);
+  if (isComicArchiveContainerSelectable(container: container)) {
     return switch (container) {
       ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
       ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',

@@ -5,7 +5,6 @@ use std::path::{Path, PathBuf};
 use unrar_ng::Archive;
 
 use crate::db::Library;
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 use super::archive_path::fallback_title_from_path;
@@ -84,7 +83,6 @@ fn append_cbr_from_extracted(
         page_rel_paths.len() as i32,
         &page_rel_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
 
     run_append_import(
         library,
@@ -97,7 +95,7 @@ fn append_cbr_from_extracted(
                 &page_files,
                 start_sort_index,
             )?;
-            Ok((staged, warnings, snapshot))
+            Ok((staged, warnings))
         },
     )
 }
@@ -126,11 +124,10 @@ fn import_cbr_from_extracted(
         page_rel_paths.len() as i32,
         &page_rel_paths,
     );
-    let snapshot = ImportMetadataSnapshot::from_comicinfo_xml(&comicinfo_xml);
 
     run_import_with_rollback(
         library,
-        metadata.title.clone(),
+        fallback_title.to_string(),
         InferredImportKind::ComicArchive,
         ExportFormat::ComicArchive,
         |library, project_id| {
@@ -140,7 +137,7 @@ fn import_cbr_from_extracted(
                 &page_files,
                 0,
             )?;
-            Ok((metadata, staged, warnings, snapshot))
+            Ok((metadata, staged, warnings))
         },
     )
 }
@@ -280,6 +277,8 @@ mod tests {
 <ComicInfo>
   <Title>CBR Title</Title>
   <Series>CBR Series</Series>
+  <Year>2022</Year>
+  <Writer>Author One</Writer>
   <PageCount>2</PageCount>
 </ComicInfo>"#;
 
@@ -294,7 +293,13 @@ mod tests {
         let after = std::fs::metadata(&cbr).expect("meta").len();
         assert_eq!(before, after);
 
-        assert_eq!(outcome.title, "CBR Title");
+        assert_eq!(outcome.title, "sample");
+        let metadata = library
+            .get_project_metadata_inner(&outcome.project_id)
+            .expect("metadata");
+        assert_eq!(metadata.series.as_deref(), Some("CBR Series"));
+        assert_eq!(metadata.published_date.as_deref(), Some("2022"));
+        assert_eq!(metadata.author.as_deref(), Some("Author One"));
         let pages = library.list_pages_inner(&outcome.project_id).expect("pages");
         assert_eq!(pages.len(), 2);
         assert!(project_cache_dir(&crate::paths::project_storage_dir(&app_data, &outcome.project_id))

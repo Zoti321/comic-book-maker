@@ -13,14 +13,12 @@ class ProjectPageStructure {
   int get pageCount => pages.length;
 }
 
-/// [Metadata](CONTEXT.md) 保存后需同步到工作区的字段。
+/// [Metadata](CONTEXT.md) 保存后需同步到工作区的字段（不含项目标题）。
 class MetadataWorkspacePatch {
   const MetadataWorkspacePatch({
-    required this.projectTitle,
     required this.coverPageIndex,
   });
 
-  final String projectTitle;
   final int coverPageIndex;
 }
 

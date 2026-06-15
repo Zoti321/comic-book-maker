@@ -1,7 +1,6 @@
 //! Import transaction orchestration: create project, stage assets, commit or rollback.
 
 use crate::db::{Library, MetadataRecord};
-use crate::import_metadata_snapshot::ImportMetadataSnapshot;
 use crate::project_format::{ExportFormat, InferredImportKind};
 
 use super::staging::remove_staged_page_assets;
@@ -18,23 +17,13 @@ where
     F: FnOnce(
         &mut Library,
         &str,
-    ) -> Result<
-        (
-            MetadataRecord,
-            Vec<StagedImportPage>,
-            Vec<String>,
-            ImportMetadataSnapshot,
-        ),
-        String,
-    >,
+    ) -> Result<(MetadataRecord, Vec<StagedImportPage>, Vec<String>), String>,
 {
     let project =
         library.create_project_for_import(title, inferred_import_kind, export_format)?;
     match import_body(library, &project.id) {
-        Ok((metadata, staged, warnings, snapshot)) => {
-            if let Err(error) =
-                library.commit_import_project(&project.id, &metadata, &staged, &snapshot)
-            {
+        Ok((metadata, staged, warnings)) => {
+            if let Err(error) = library.commit_import_project(&project.id, &metadata, &staged) {
                 let _ = library.abandon_import_project(&project.id);
                 return Err(error);
             }
@@ -58,7 +47,7 @@ where
         &mut Library,
         &str,
         i32,
-    ) -> Result<(Vec<StagedImportPage>, Vec<String>, ImportMetadataSnapshot), String>,
+    ) -> Result<(Vec<StagedImportPage>, Vec<String>), String>,
 {
     if !library.project_exists(project_id)? {
         return Err(format!("project not found: {project_id}"));
@@ -73,13 +62,13 @@ where
     }
 
     let start_sort_index = library.next_page_sort_index(project_id)?;
-    let (staged, warnings, snapshot) = stage(library, project_id, start_sort_index)?;
+    let (staged, warnings) = stage(library, project_id, start_sort_index)?;
 
     if staged.is_empty() {
         return Err("档案中未找到可用的 Page Image".to_string());
     }
 
-    if let Err(error) = library.commit_append_pages(project_id, &staged, &snapshot) {
+    if let Err(error) = library.commit_append_pages(project_id, &staged) {
         remove_staged_page_assets(library.app_data_dir(), project_id, &staged);
         return Err(error);
     }

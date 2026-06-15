@@ -209,7 +209,7 @@ fn write_pdf(
         &mut document,
         export_title,
         pdf_document_author(metadata).as_deref(),
-        optional_trimmed(metadata.summary.as_deref()).as_deref(),
+        optional_trimmed(metadata.description.as_deref()).as_deref(),
         optional_trimmed(normalized_tags.as_deref()).as_deref(),
     );
     document.trailer.set("Root", Object::Reference(catalog_id));
@@ -416,7 +416,7 @@ mod tests {
     use lopdf::decode_text_string;
     use crate::db::Library;
     use crate::export_error::{ExportError, ExportErrorKind};
-    use crate::import_cbz::import_cbz;
+    use crate::import::import_cbz;
     use crate::paths::project_assets_dir;
     use image::{ImageBuffer, Rgba};
     use std::fs::File;
@@ -618,11 +618,16 @@ mod tests {
 
         let bytes = fs::read(&export_path).expect("read pdf");
         let embedded = String::from_utf8_lossy(&bytes);
-        assert!(embedded.contains("<Series>Series A</Series>"));
-        assert!(embedded.contains("<Number>3</Number>"));
-        assert!(embedded.contains("<Count>12</Count>"));
-        assert!(embedded.contains("<Writer>Author Name</Writer>"));
+        assert!(embedded.contains("<Penciller>Author Name</Penciller>"));
+        assert!(!embedded.contains("<Writer>"));
+        assert!(embedded.contains("<Summary>About this comic</Summary>"));
+        assert!(embedded.contains("<Tags>action,drama</Tags>"));
         assert!(embedded.contains("<PageCount>1</PageCount>"));
+        assert!(!embedded.contains("<Series>"));
+        assert!(!embedded.contains("<Number>"));
+        assert!(!embedded.contains("<Count>"));
+        assert!(!embedded.contains("<Characters>"));
+        assert!(!embedded.contains("<AgeRating>"));
         assert!(!embedded.contains("<Publisher>"));
 
         let document = Document::load(&export_path).expect("load pdf");
@@ -657,7 +662,7 @@ mod tests {
             .update_project_metadata_inner(
                 &outcome.project_id,
                 crate::db::MetadataRecord {
-                    penciller: Some("Pencil Artist".to_string()),
+                    author: Some("Pencil Artist".to_string()),
                     ..library
                         .get_project_metadata_inner(&outcome.project_id)
                         .expect("metadata")
@@ -686,7 +691,7 @@ mod tests {
     }
 
     #[test]
-    fn export_pdf_document_info_merges_writer_and_penciller_for_author() {
+    fn export_pdf_document_info_uses_author_field() {
         let app_data = temp_dir("merged-author");
         let mut library = Library::open(app_data.clone()).expect("open library");
         let fixtures = temp_dir("fixtures");
@@ -698,8 +703,7 @@ mod tests {
             .update_project_metadata_inner(
                 &outcome.project_id,
                 crate::db::MetadataRecord {
-                    writer: Some("Script Writer".to_string()),
-                    penciller: Some("Pencil Artist".to_string()),
+                    author: Some("Script Writer, Pencil Artist".to_string()),
                     ..library
                         .get_project_metadata_inner(&outcome.project_id)
                         .expect("metadata")
@@ -714,11 +718,6 @@ mod tests {
             &export_path.to_string_lossy(),
         )
         .expect("export");
-
-        let bytes = fs::read(&export_path).expect("read pdf");
-        let embedded = String::from_utf8_lossy(&bytes);
-        assert!(embedded.contains("<Writer>Script Writer</Writer>"));
-        assert!(embedded.contains("<Penciller>Pencil Artist</Penciller>"));
 
         let document = Document::load(&export_path).expect("load pdf");
         assert_eq!(

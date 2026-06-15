@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/models/project_page_structure.dart';
 import 'package:comic_book_maker/data/repositories/metadata_patch.dart';
 
 import '../../metadata/metadata_clone.dart';
@@ -15,13 +16,11 @@ const Metadata kEmptyLibraryMetadata = Metadata(
 const Metadata kMetadataPanelFixture = Metadata(
   title: '初始标题',
   series: '初始系列',
-  issueNumber: '01',
-  volume: '1',
-  summary: '简介',
-  writer: '作者',
-  publisher: '出版社',
+  number: '01',
+  seriesCount: '12',
+  description: '简介',
+  author: '作者',
   languageIso: 'zh-CN',
-  gtin: '123',
   coverPageIndex: 0,
   pageCount: 3,
 );
@@ -78,13 +77,11 @@ class InMemoryCoreGateway implements CoreGateway {
         'p1': Metadata(
           title: '初始标题',
           series: '初始系列',
-          issueNumber: '01',
-          volume: '1',
-          summary: '简介',
-          writer: '作者',
-          publisher: '出版社',
+          number: '01',
+          seriesCount: '12',
+          description: '简介',
+          author: '作者',
           languageIso: 'zh-CN',
-          gtin: '123',
           coverPageIndex: 0,
           pageCount: pageCount,
         ),
@@ -119,6 +116,9 @@ class InMemoryCoreGateway implements CoreGateway {
   @override
   List<ProjectSummary> listProjects() => List.of(projects);
 
+  /// 测试 fake：对齐 FRB `createProject`。
+  ProjectSummary createProject({String? title}) => _createProject(title: title);
+
   @override
   void touchProject({required String projectId}) {
     final index = projects.indexWhere((project) => project.id == projectId);
@@ -143,15 +143,48 @@ class InMemoryCoreGateway implements CoreGateway {
 
   ProjectSummary _createProject({String? title}) {
     final now = DateTime.now().millisecondsSinceEpoch;
+    final resolved = title?.trim();
+    final displayTitle = (resolved == null || resolved.isEmpty)
+        ? _nextLetterProjectTitle()
+        : resolved;
     final project = ProjectSummary(
       id: 'project-${projects.length + 1}',
-      title: title ?? '未命名',
+      title: displayTitle,
       updatedAtMs: now,
       createdAtMs: now,
       coverThumbnailPath: null,
     );
     projects.add(project);
+    metadataByProjectId.putIfAbsent(
+      project.id,
+      () => Metadata(
+        title: '未命名',
+        coverPageIndex: 0,
+        pageCount: 0,
+      ),
+    );
     return project;
+  }
+
+  String _nextLetterProjectTitle() {
+    const prefix = '项目';
+    final occupied = projects
+        .map((project) => project.title)
+        .where(
+          (name) =>
+              name.startsWith(prefix) &&
+              name.length == prefix.length + 1 &&
+              name.codeUnitAt(prefix.length) >= 0x41 &&
+              name.codeUnitAt(prefix.length) <= 0x5A,
+        )
+        .map((name) => name.codeUnitAt(prefix.length))
+        .toSet();
+    for (var code = 0x41; code <= 0x5A; code++) {
+      if (!occupied.contains(code)) {
+        return '$prefix${String.fromCharCode(code)}';
+      }
+    }
+    return '未命名';
   }
 
   @override
@@ -170,19 +203,37 @@ class InMemoryCoreGateway implements CoreGateway {
         ),
     };
 
-    final title = request.title;
-    if (title == null || title == project.title) {
+    final title = request.title?.trim();
+    if (title == null || title.isEmpty || title == project.title) {
       return project;
     }
-    patchProjectMetadataTitle(projectId: project.id, title: title);
-    return ProjectSummary(
-      id: project.id,
-      title: title,
-      updatedAtMs: project.updatedAtMs,
-      createdAtMs: project.createdAtMs,
-      lastOpenedAtMs: project.lastOpenedAtMs,
-      coverThumbnailPath: project.coverThumbnailPath,
+    return updateProjectTitle(projectId: project.id, title: title);
+  }
+
+  @override
+  ProjectSummary updateProjectTitle({
+    required String projectId,
+    required String title,
+  }) {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('project title must not be empty');
+    }
+    final index = projects.indexWhere((project) => project.id == projectId);
+    if (index < 0) {
+      throw StateError('project not found: $projectId');
+    }
+    final current = projects[index];
+    final updated = ProjectSummary(
+      id: current.id,
+      title: trimmed,
+      updatedAtMs: DateTime.now().millisecondsSinceEpoch,
+      createdAtMs: current.createdAtMs,
+      lastOpenedAtMs: current.lastOpenedAtMs,
+      coverThumbnailPath: current.coverThumbnailPath,
     );
+    projects[index] = updated;
+    return updated;
   }
 
   ProjectSummary _createFromImages({
@@ -197,7 +248,7 @@ class InMemoryCoreGateway implements CoreGateway {
   }
 
   ProjectSummary _createFromArchive({
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
     required ProjectSettingsUpdate settingsUpdate,
   }) {
@@ -237,7 +288,6 @@ class InMemoryCoreGateway implements CoreGateway {
   }) {
     return MetadataEditingContext(
       metadata: getProjectMetadata(projectId: projectId),
-      importSnapshot: getImportMetadataSnapshot(projectId: projectId),
       inferredImportKind:
           getProjectSettings(projectId: projectId).inferredImportKind,
     );
@@ -245,24 +295,63 @@ class InMemoryCoreGateway implements CoreGateway {
 
   @override
   ImportCbzResult importArchive({
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
   }) =>
-      _importArchive();
+      _importArchive(sourcePath: sourcePath);
 
-  ImportCbzResult _importArchive() => ImportCbzResult(
-        project: ProjectSummary(
-          id: 'imported-1',
-          title: 'Imported',
-          updatedAtMs: DateTime.now().millisecondsSinceEpoch,
-          createdAtMs: DateTime.now().millisecondsSinceEpoch,
-          coverThumbnailPath: null,
-        ),
-        warnings: const [],
-      );
+  ImportCbzResult _importArchive({required String sourcePath}) {
+    final displayTitle = _titleFromArchivePath(sourcePath);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final project = ProjectSummary(
+      id: 'imported-1',
+      title: displayTitle,
+      updatedAtMs: now,
+      createdAtMs: now,
+      coverThumbnailPath: null,
+    );
+    projects.add(project);
+    metadataByProjectId.putIfAbsent(
+      project.id,
+      () => Metadata(
+        title: displayTitle,
+        coverPageIndex: 0,
+        pageCount: 0,
+      ),
+    );
+    return ImportCbzResult(
+      project: project,
+      warnings: const [],
+    );
+  }
+
+  static String _titleFromArchivePath(String sourcePath) {
+    final normalized = sourcePath.replaceAll(r'\', '/');
+    final name = normalized.split('/').last;
+    final dot = name.lastIndexOf('.');
+    if (dot <= 0) {
+      return name;
+    }
+    return name.substring(0, dot);
+  }
+
+  ProjectPageStructure _pageStructureFor(String projectId) {
+    var coverPageIndex = 0;
+    try {
+      coverPageIndex = metadataFor(projectId).coverPageIndex;
+    } catch (_) {}
+    return ProjectPageStructure(
+      pages: listPages(projectId: projectId),
+      coverPageIndex: coverPageIndex,
+    );
+  }
 
   @override
-  List<PageSummary> addPageImages({
+  ProjectPageStructure loadPageStructure({required String projectId}) =>
+      _pageStructureFor(projectId);
+
+  @override
+  ProjectPageStructure addPageImages({
     required String projectId,
     required List<String> sourcePaths,
   }) {
@@ -277,7 +366,7 @@ class InMemoryCoreGateway implements CoreGateway {
         ),
       );
     }
-    return List.of(pages);
+    return _pageStructureFor(projectId);
   }
 
   @override
@@ -324,15 +413,6 @@ class InMemoryCoreGateway implements CoreGateway {
     metadataByProjectId[projectId] = metadata;
     return metadata;
   }
-
-  @override
-  ImportMetadataSnapshotFrb getImportMetadataSnapshot({
-    required String projectId,
-  }) =>
-      const ImportMetadataSnapshotFrb(
-        kind: ImportMetadataKindFrb.none,
-        xml: null,
-      );
 
   @override
   MetadataEditorSchemaFrb getMetadataEditorSchema({
@@ -412,7 +492,7 @@ class InMemoryCoreGateway implements CoreGateway {
   @override
   AppendImportResult appendArchive({
     required String projectId,
-    required ArchiveFormatKind format,
+    required ArchiveFormatFrb format,
     required String sourcePath,
   }) {
     final index = pages.length;
@@ -424,21 +504,22 @@ class InMemoryCoreGateway implements CoreGateway {
         absolutePath: sourcePath,
       ),
     );
-    return const AppendImportResult(warnings: [], addedPageCount: 1);
+    return AppendImportResult(
+      warnings: const [],
+      addedPageCount: 1,
+      pages: List.of(pages),
+      coverPageIndex: metadataFor(projectId).coverPageIndex,
+    );
   }
 
   @override
   int setProjectCoverPage({
     required String projectId,
     required int coverPageIndex,
-    required int pageCount,
   }) {
     final metadata = metadataFor(projectId);
     final patched = mockMetadataWithCoverPageIndex(
-      metadata: mockMetadataWithPageCount(
-        metadata: metadata,
-        pageCount: pageCount,
-      ),
+      metadata: metadata,
       coverPageIndex: coverPageIndex,
     );
     metadataByProjectId[projectId] = patched;
@@ -446,7 +527,10 @@ class InMemoryCoreGateway implements CoreGateway {
   }
 
   @override
-  void deletePage({required String projectId, required String pageId}) {
+  ProjectPageStructure deletePage({
+    required String projectId,
+    required String pageId,
+  }) {
     pages.removeWhere((page) => page.id == pageId);
     for (var index = 0; index < pages.length; index++) {
       final page = pages[index];
@@ -457,23 +541,30 @@ class InMemoryCoreGateway implements CoreGateway {
         absolutePath: page.absolutePath,
       );
     }
+    return _pageStructureFor(projectId);
   }
 
   @override
-  PageSummary replacePageImage({
+  ProjectPageStructure replacePageImage({
     required String projectId,
     required String pageId,
     required String sourcePath,
-  }) =>
-      PageSummary(
+  }) {
+    final index = pages.indexWhere((page) => page.id == pageId);
+    if (index >= 0) {
+      final page = pages[index];
+      pages[index] = PageSummary(
         id: pageId,
-        sortIndex: 0,
+        sortIndex: page.sortIndex,
         assetPath: 'assets/$pageId.png',
-        absolutePath: '/tmp/$pageId.png',
+        absolutePath: sourcePath,
       );
+    }
+    return _pageStructureFor(projectId);
+  }
 
   @override
-  List<PageSummary> reorderPages({
+  ProjectPageStructure reorderPages({
     required String projectId,
     required List<String> orderedPageIds,
   }) {
@@ -490,7 +581,7 @@ class InMemoryCoreGateway implements CoreGateway {
               absolutePath: byId[orderedPageIds[index]]!.absolutePath,
             ),
       ]);
-    return List.of(pages);
+    return _pageStructureFor(projectId);
   }
 
   @override

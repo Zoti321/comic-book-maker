@@ -148,17 +148,42 @@ class MyFeature extends _$MyFeature {
 
 历史名称 `InlineErrorBanner` / `EmptyState` 为 `AppInlineErrorBanner` / `AppEmptyState` 的 typedef，新代码优先用 `App*` 前缀并通过 `design_system.dart` import。
 
+### 项目编辑页顶栏
+
+- 组件：`ProjectEditorAppBar`（`project_editor_app_bar.dart`）。
+- **项目标题 vs 漫画标题**：顶栏与漫画库列表仅显示 `ProjectSummary.title`（库内项目名 / `project_title`）；**禁止**用 `metadata.title`（导出漫画标题）。元数据保存不得同步项目标题。
+- **布局**：横向 `Row` — 标题 `Expanded` + `8px` + 页数（`labelSmall` secondary）；0 页时不显示页数。
+- **截断 tooltip**：标题用 `EllipsisTooltipText`；仅溢出时 hover 显示全文，`waitDuration: 1500ms`（显式 override，长于主题默认）。
+- **重命名**：在项目属性 → 概览 Tab 编辑「项目名称」；调用 `updateProjectTitle`，不影响元数据 `title`。
+
+### 项目标题默认命名（Core）
+
+| 场景 | `project_title` |
+| ---- | --------------- |
+| 向导填写 | 用户输入 |
+| 向导留空 + 图片导入 | `项目A` / `项目B` / …（查库递增字母） |
+| 向导留空 + 档案导入 | 档案文件名（去扩展名） |
+| 元数据 Tab 改漫画标题 | 不影响项目标题 |
+
 ### 元数据 Tab
 
 - 组件：`MetadataPanel`；字段与分段由 Core `getMetadataEditorSchema` 驱动，禁止在 Flutter 硬编码字段表。
+- **分区（3 Tab）**：`常规`（`general`）→ 标题、发布日期、语言、年龄分级、描述；`系列`（`series`）→ 系列、期号、系列总期数；`创作`（`creative`）→ 作者、标签、登场人物。PDF 与 CBZ/EPUB 共用同一 schema（`editable: true`）。
+- **发布日期**：Material `showDatePicker`；只读中文展示（`2024年` / `2024年5月` / `2024年5月31日` / `未设置`）；选日历写入完整 `YYYY-MM-DD`；Import 的 partial 仅展示、不改库直至用户选择或清空；suffix ✕ 清空存 `NULL`。内部仍映射 `published_date_year/month/day` form 字段。
+- **年龄分级**：`MetadataAgeRatingField`（`dropdown_button2` 的 `DropdownButtonFormField2`）；选项仅 Core `ageRatingPresets` 四项，不可自由输入；未选占位「未设置」，有值时 suffix ✕ 清空为 `NULL`。Core `age_rating` 模块负责导入/加载别名归一化；`mergeMetadataFromForm` 保存时校验非空值必须在预设内。
+- **创作 Tab 逗号标签**：作者 / 标签 / 登场人物共用 `MetadataCommaTagsField`（`textfield_tags`）；Chip 与输入同区换行，Material 填充描边；逗号或回车添加（不用空格分隔）；大小写不敏感去重；持久化为逗号分隔且逗号后无空格。Core `mergeMetadataFromForm` 对三字段均 `normalize_comma_separated_tags`。
+- Chip 栏切换分区；**不**在 Chip 下方重复显示分区标题。
 - 未保存：`onDirtyChanged` 同步至编辑页；切换 Tab / 返回漫画库前 `confirmDiscardMetadataEdits`（`metadata_unsaved_guard.dart`）。
 - 导入元数据：`ImportMetadataPreview` 为只读归档预览；可编辑区为「导出元数据」表单。
-- **页数 / 封面**：不在元数据 Tab 编辑；页数随页面列表与导入由应用写入，封面在图片 Tab「设为封面」。
+- **页数 / 封面**：不在元数据 Tab 展示或编辑；页数见编辑页顶栏，封面在图片 Tab「设为封面」。schema 不含 `PageCountInfo` / `CoverPageIndex` 字段类型。
+- `editable: false` 时仍显示「当前格式不支持编辑」空状态（基础设施保留，当前各格式均为可编辑）。
 - 保存成功用 SnackBar；保存失败用表单上方的 `AppInlineErrorBanner`。
 
 ### 图片 Tab
 
-- 组件：`PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `2:3`，列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
+- 组件：`ProjectEditorImagesTab`（`project_editor_images_tab.dart`）+ `PageThumbnailGrid`（`pages/pages_panel.dart`）；`SliverGrid` 布局，缩略图宽高比 `3:4`，格子直角（页码/封面角标仍用小圆角），列数由 `pageThumbnailCrossAxisCount` 按可用宽度计算（2–8 列，单格最小约 `96px` 宽），末格为「添加页面」。
+- **缩略图解码**：禁止裸 `Image.file` 全分辨率解码；用 `pageThumbnailTileSize` + `pageThumbnailCacheSize` 按单格逻辑尺寸 × `devicePixelRatio` 设置 `cacheWidth` / `cacheHeight`；`FilterQuality.low`、`gaplessPlayback: true`；加载前以 `surfaceContainer` 底色占位。大项目（约 300+ 页）可后续在 Core 引入 page 级缩略图缓存。
+- **重建隔离**：`ProjectEditorImagesTab` 经 `ref.watch(…select((s) => (s.pages, s.coverPageIndex)))` 订阅页列表；每格 `RepaintBoundary`；workspace 其他字段（导出格式保存、error 等）变化不得重建整网格。
 - 页面操作统一走缩略图右上角 overflow 菜单（`PageThumbnailAction`）：查看原图、替换、设封面、前移/后移、删除。
 - 查看原图（`page_image_viewer.dart`）：全屏黑底；点图片外留白关闭（无顶部关闭按钮）；左右圆形半透明翻页按钮（44px、常见 lightbox 样式，首/末页隐藏不可用侧）；`Escape` 关闭，`←` / `→` 翻页；`InteractiveViewer` 仅覆盖图片显示区域。
 - 封面页：`sortIndex == coverPageIndex` 时主色描边 +「封面」角标。
@@ -179,6 +204,8 @@ class MyFeature extends _$MyFeature {
 ## Tooltip 约定
 
 默认**不要**在 hover 时显示 tooltip；仅下列场景使用：
+
+**出现延迟**：`AppTheme.light()` 通过 `tooltipTheme.waitDuration` 设为 [`AppDurations.tooltipWait`](../../app/lib/ui/core/theme/app_tokens.dart)（**1 秒**）。未显式传 `waitDuration` 的 `Tooltip` / `AppIconButton` 继承该值；已有局部 override（如漫画库卡片标题 400ms、`EllipsisTooltipText` 1500ms）**保持不变**。
 
 | 场景 | 做法 |
 | ---- | ---- |

@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_command.dart';
 import 'package:comic_book_maker/domain/models/create_project_import_source.dart';
-import 'package:comic_book_maker/domain/models/import_archive_format.dart';
 
 export 'package:comic_book_maker/domain/models/create_project_import_source.dart'
     show
@@ -37,10 +36,11 @@ class CreateProjectDraft {
     return switch (source) {
       CreateProjectImageImport() => InferredImportKindFrb.images,
       CreateProjectArchiveImport(:final format) => switch (format) {
-          ImportArchiveFormat.cbz => InferredImportKindFrb.comicArchive,
-          ImportArchiveFormat.cbr => InferredImportKindFrb.comicArchive,
-          ImportArchiveFormat.cb7 => InferredImportKindFrb.comicArchive,
-          ImportArchiveFormat.epub => InferredImportKindFrb.epub,
+          ArchiveFormatFrb.cbz ||
+          ArchiveFormatFrb.cbr ||
+          ArchiveFormatFrb.cb7 =>
+            InferredImportKindFrb.comicArchive,
+          ArchiveFormatFrb.epub => InferredImportKindFrb.epub,
         },
     };
   }

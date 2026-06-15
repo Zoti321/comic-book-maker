@@ -53,6 +53,12 @@ abstract final class AppTypography {
   static const controlHeightCompact = 32.0;
 }
 
+/// 时长 token（动画、tooltip 等）。
+abstract final class AppDurations {
+  /// 全局 tooltip 悬停后出现延迟（见 [AppTheme.light] `tooltipTheme`）。
+  static const tooltipWait = Duration(seconds: 1);
+}
+
 /// 阴影 token（贴顶栏、浮层等共用数值，按场景选用）。
 abstract final class AppElevation {
   /// [PageHeader] 底部轻阴影，替代底部分割线以制造层次。

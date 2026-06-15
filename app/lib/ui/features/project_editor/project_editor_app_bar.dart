@@ -3,11 +3,12 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/widgets/ellipsis_tooltip_text.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// Project 编辑页顶栏：返回 + 导出 / 追加导入。
+/// Project 编辑页顶栏：返回 + 项目标题 / 页数 + 导出 / 追加导入。
 class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ProjectEditorAppBar({
     super.key,
@@ -34,6 +35,7 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
     final exportFormat =
         workspace.settings?.exportFormat ?? ExportFormatFrb.comicArchive;
     final useWideActions = !isCompact(context);
+    final pageCount = workspace.pages.length;
 
     return AppBar(
       surfaceTintColor: Colors.transparent,
@@ -45,24 +47,25 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
         icon: const Icon(LucideIcons.arrowLeft),
         onPressed: onBack,
       ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: Row(
         children: [
-          Text(
-            workspace.project.title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
+          Expanded(
+            child: EllipsisTooltipText(
+              text: workspace.project.title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          if (workspace.pages.isNotEmpty)
+          if (pageCount > 0) ...[
+            const SizedBox(width: 8),
             Text(
-              '${workspace.pages.length} 页',
+              '$pageCount 页',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: scheme.onSurfaceVariant,
               ),
             ),
+          ],
         ],
       ),
       actions: [

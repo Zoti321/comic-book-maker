@@ -2,7 +2,6 @@
 
 use rusqlite::params;
 
-use crate::import_metadata_snapshot::{write_import_metadata_snapshot, ImportMetadataSnapshot};
 use crate::paths::project_storage_dir;
 use crate::project_format::InferredImportKind;
 
@@ -43,9 +42,6 @@ impl Library {
             ..MetadataRecord::default()
         };
         update_metadata(&self.connection, project_id, &metadata, 0)?;
-
-        let storage_dir = project_storage_dir(&self.app_data_dir, project_id);
-        write_import_metadata_snapshot(&storage_dir, &ImportMetadataSnapshot::none())?;
 
         let now = now_ms();
         self.connection

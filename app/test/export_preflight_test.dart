@@ -1,11 +1,42 @@
 import 'dart:io';
 
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
+import 'package:comic_book_maker/src/rust/api/export.dart';
+import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
+import 'support/frb/rust_integration.dart';
+
+const _baseSettings = ProjectSettings(
+  exportFormat: ExportFormatFrb.comicArchive,
+  inferredImportKind: InferredImportKindFrb.images,
+  deleteProjectAfterExport: false,
+  useDefaultExportDirectory: true,
+  exportDirectory: null,
+  comicArchiveContainer: ComicArchiveContainerFrb.zip,
+  useComicArchiveExtension: true,
+);
+
+ExportPlanResultFrb _planTo({
+  required String destinationParent,
+  required String projectTitle,
+  ProjectSettings settings = _baseSettings,
+}) {
+  return planExport(
+    request: ExportPlanRequestFrb(
+      projectTitle: projectTitle,
+      settings: settings,
+      globalExportDirectory: destinationParent,
+      hasPages: true,
+    ),
+  );
+}
+
 void main() {
-  group('checkExportPreflight', () {
+  exportRustTestSetUpAll();
+
+  group('planExport preflight', () {
     late Directory tempRoot;
 
     setUp(() {
@@ -21,11 +52,16 @@ void main() {
     test('blocks when destination is a directory', () {
       final exportDir = Directory(p.join(tempRoot.path, 'exports'));
       exportDir.createSync();
+      Directory(p.join(exportDir.path, 'comic.cbz')).createSync();
 
-      final result = checkExportPreflight(exportDir.path);
+      final result = _planTo(
+        destinationParent: exportDir.path,
+        projectTitle: 'comic',
+      );
 
-      expect(result.isBlocked, isTrue);
-      expect(result.presentation?.message, contains('文件夹'));
+      expect(result, isA<ExportPlanResultFrb_Blocked>());
+      final blocked = result as ExportPlanResultFrb_Blocked;
+      expect(blocked.presentation.message, contains('文件夹'));
     });
 
     test('requires overwrite confirmation when destination file exists', () {
@@ -34,41 +70,68 @@ void main() {
       final destination = File(p.join(exportDir.path, 'comic.cbz'));
       destination.writeAsStringSync('existing');
 
-      final result = checkExportPreflight(destination.path);
+      final result = _planTo(
+        destinationParent: exportDir.path,
+        projectTitle: 'comic',
+      );
 
-      expect(result.needsOverwriteConfirmation, isTrue);
-      expect(result.isBlocked, isFalse);
+      expect(result, isA<ExportPlanResultFrb_Ready>());
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.needsOverwriteConfirmation, isTrue);
+      expect(ready.target.destinationPath, destination.path);
     });
 
     test('blocks when parent directory does not exist', () {
-      final destination = p.join(tempRoot.path, 'missing', 'comic.cbz');
+      final missingParent = p.join(tempRoot.path, 'missing');
+      final result = _planTo(
+        destinationParent: missingParent,
+        projectTitle: 'comic',
+      );
 
-      final result = checkExportPreflight(destination);
-
-      expect(result.isBlocked, isTrue);
-      expect(result.presentation?.message, contains('写入'));
+      expect(result, isA<ExportPlanResultFrb_Blocked>());
+      final blocked = result as ExportPlanResultFrb_Blocked;
+      expect(blocked.presentation.message, contains('写入'));
     });
 
     test('is ready for new file in writable directory', () {
       final exportDir = Directory(p.join(tempRoot.path, 'exports'));
       exportDir.createSync();
-      final destination = p.join(exportDir.path, 'new-comic.cbz');
 
-      final result = checkExportPreflight(destination);
+      final result = _planTo(
+        destinationParent: exportDir.path,
+        projectTitle: 'new-comic',
+      );
 
-      expect(result.status, ExportPreflightStatus.ready);
+      expect(result, isA<ExportPlanResultFrb_Ready>());
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.needsOverwriteConfirmation, isFalse);
     });
 
     test('treats pdf destination like other archive formats', () {
       final exportDir = Directory(p.join(tempRoot.path, 'exports'));
       exportDir.createSync();
-      final destination = File(p.join(exportDir.path, 'comic.pdf'));
-      destination.writeAsStringSync('existing');
+      File(p.join(exportDir.path, 'comic.pdf')).writeAsStringSync('existing');
 
-      final result = checkExportPreflight(destination.path);
+      final result = planExport(
+        request: ExportPlanRequestFrb(
+          projectTitle: 'comic',
+          settings: const ProjectSettings(
+            exportFormat: ExportFormatFrb.pdf,
+            inferredImportKind: InferredImportKindFrb.images,
+            deleteProjectAfterExport: false,
+            useDefaultExportDirectory: true,
+            exportDirectory: null,
+            comicArchiveContainer: ComicArchiveContainerFrb.zip,
+            useComicArchiveExtension: true,
+          ),
+          globalExportDirectory: exportDir.path,
+          hasPages: true,
+        ),
+      );
 
-      expect(result.needsOverwriteConfirmation, isTrue);
-      expect(result.isBlocked, isFalse);
+      expect(result, isA<ExportPlanResultFrb_Ready>());
+      final ready = (result as ExportPlanResultFrb_Ready).field0;
+      expect(ready.needsOverwriteConfirmation, isTrue);
     });
   });
 
@@ -77,7 +140,7 @@ void main() {
       final order = <String>[];
 
       final confirmed = await runExportConfirmations(
-        preflight: const ExportPreflightResult.needsOverwriteConfirmation(),
+        needsOverwriteConfirmation: true,
         deleteAfterExport: true,
         confirmOverwrite: () async {
           order.add('overwrite');
@@ -97,7 +160,7 @@ void main() {
       var deleteCalled = false;
 
       final confirmed = await runExportConfirmations(
-        preflight: const ExportPreflightResult.needsOverwriteConfirmation(),
+        needsOverwriteConfirmation: true,
         deleteAfterExport: true,
         confirmOverwrite: () async => false,
         confirmDeleteProject: () async {
@@ -114,7 +177,7 @@ void main() {
       var overwriteCalled = false;
 
       final confirmed = await runExportConfirmations(
-        preflight: const ExportPreflightResult.ready(),
+        needsOverwriteConfirmation: false,
         deleteAfterExport: false,
         confirmOverwrite: () async {
           overwriteCalled = true;

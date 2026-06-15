@@ -41,10 +41,12 @@ app.*.map.json
 
 # Riverpod / FRB 生成物（规则亦在仓库根 .gitignore；克隆后需跑 codegen）
 lib/**/*.g.dart
+lib/**/*.freezed.dart
 lib/src/rust/
 
-# Riverpod codegen 工作区：联接目录，勿提交
+# Codegen 工作区：联接目录与 lock，勿提交
 /tool/riverpod_codegen/lib/
+/tool/frb_freezed_codegen/lib/
 
 # Android Studio will place build artifacts here
 /android/app/debug

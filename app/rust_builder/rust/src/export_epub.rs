@@ -31,8 +31,7 @@ mod tests {
     use super::*;
     use crate::export_error::{ExportError, ExportErrorKind};
     use crate::epub_format::scan_epub_page_paths;
-    use crate::import_cbz::import_cbz;
-    use crate::import_epub::import_epub;
+    use crate::import::{import_cbz, import_epub};
     use crate::paths::project_assets_dir;
     use image::{ImageBuffer, Rgba};
     use std::fs::File;
@@ -164,11 +163,11 @@ mod tests {
         assert!(opf.contains("<dc:title>Export EPUB</dc:title>"));
         assert!(opf.contains("<dc:series>SeriesName</dc:series>"));
         assert!(opf.contains("<dc:number>No.7</dc:number>"));
-        assert!(opf.contains("<dc:source>https://example.com</dc:source>"));
-        assert!(opf.contains("<meta name=\"comic:volume\" content=\"Vol.2\"/>"));
-        assert!(opf.contains(
-            "<dc:identifier id=\"KSBN\" opf:scheme=\"KSBN\">9781234567890</dc:identifier>"
-        ));
+        assert!(opf.contains("<dc:creator>Bob</dc:creator>"));
+        assert!(opf.contains("<dc:description>Summary</dc:description>"));
+        assert!(opf.contains("<meta name=\"characters\" content=\"角色A,角色B\"/>"));
+        assert!(opf.contains("<meta name=\"tags\" content=\"标签A,标签B\"/>"));
+        assert!(opf.contains("<dc:identifier id=\"book-id\">Export EPUB</dc:identifier>"));
         assert!(opf.contains("<guide>"));
         assert!(opf.contains("type=\"cover\""));
         assert!(!opf.contains("ComicInfo"));
@@ -189,7 +188,7 @@ mod tests {
         assert!(opf.contains(r#"<meta name="tags" content="标签A,标签B"/>"#));
 
         let reimport = import_epub(&mut library, &export_path.to_string_lossy()).expect("reimport");
-        assert_eq!(reimport.title, "Export EPUB");
+        assert_eq!(reimport.title, "exported");
         let reimport_metadata = library
             .get_project_metadata_inner(&reimport.project_id)
             .expect("reimport metadata");
@@ -231,7 +230,7 @@ mod tests {
         )
         .expect("export");
 
-        let (page_paths, _, _, _) = scan_epub_page_paths(&export_path).expect("scan export");
+        let (page_paths, _, _, _, _) = scan_epub_page_paths(&export_path).expect("scan export");
         assert!(!page_paths.is_empty());
 
         let file = File::open(&export_path).expect("open epub");

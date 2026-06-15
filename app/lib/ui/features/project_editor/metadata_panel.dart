@@ -4,9 +4,9 @@ import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/metadata_editing_session.dart';
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/features/project_editor/import_metadata_preview.dart';
-import 'package:comic_book_maker/ui/features/project_editor/metadata_tags_input.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_age_rating_field.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_published_date_field.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/section_chip_bar.dart';
@@ -58,7 +58,7 @@ class MetadataPanel extends HookConsumerWidget {
   final MetadataPanelController? controller;
   final ValueChanged<Metadata>? onSaved;
   final ScrollController? scrollController;
-  final CoreGateway? gateway;
+  final MetadataSessionGateway? gateway;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -128,8 +128,8 @@ class MetadataPanel extends HookConsumerWidget {
     Map<String, String> captureTextFieldValues() {
       final values = <String, String>{};
       for (final field in session.schema.sections.expand((s) => s.fields)) {
-        if (MetadataEditingSession.fieldUsesTextController(field.kind)) {
-          values[field.id] = fieldController(field.id).text;
+        for (final fieldId in MetadataEditingSession.textFieldIdsFor(field)) {
+          values[fieldId] = fieldController(fieldId).text;
         }
       }
       return values;
@@ -139,14 +139,10 @@ class MetadataPanel extends HookConsumerWidget {
 
     void syncControllersFromSession({Set<String> skipFieldIds = const {}}) {
       for (final field in session.schema.sections.expand((s) => s.fields)) {
-        if (!MetadataEditingSession.fieldUsesTextController(field.kind)) {
-          continue;
+        for (final fieldId in MetadataEditingSession.textFieldIdsFor(field)) {
+          if (skipFieldIds.contains(fieldId)) continue;
+          syncController(fieldId, session.displayValueForField(fieldId));
         }
-        if (skipFieldIds.contains(field.id)) continue;
-        syncController(
-          field.id,
-          session.displayValueForField(field.id),
-        );
       }
     }
 
@@ -179,18 +175,6 @@ class MetadataPanel extends HookConsumerWidget {
       return panelController.detach;
     }, [controller, session]);
 
-    Widget readOnlyField(String label, String value) {
-      return InputDecorator(
-        decoration: InputDecoration(labelText: label),
-        child: Text(
-          value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      );
-    }
-
     void onTextFieldChanged() {
       session.scheduleDebouncedSave(
         validateForm: validateForm,
@@ -198,11 +182,27 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Widget tagsField(MetadataFieldSpecFrb field) {
-      return MetadataTagsInput(
+    Widget commaTagsField(MetadataFieldSpecFrb field) {
+      return MetadataCommaTagsField(
         controller: fieldController(field.id),
         focusNode: focusNodeFor(field.id),
         label: field.label,
+        onChanged: onTextFieldChanged,
+        onEditingComplete: () => unawaited(saveNow()),
+      );
+    }
+
+    Widget publishedDateField(MetadataFieldSpecFrb field) {
+      final formIds = MetadataEditingSession.formFieldIdsFor(field).toList();
+      assert(
+        formIds.length == 3,
+        'publishedDate field must expose year/month/day form ids',
+      );
+      return MetadataPublishedDateField(
+        label: field.label,
+        yearController: fieldController(formIds[0]),
+        monthController: fieldController(formIds[1]),
+        dayController: fieldController(formIds[2]),
         onChanged: onTextFieldChanged,
         onEditingComplete: () => unawaited(saveNow()),
       );
@@ -250,91 +250,23 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Widget dropdownField(MetadataFieldSpecFrb field) {
-      final value = session.displayValueForField(field.id);
-      final selected = value.isEmpty ? null : value;
-
-      return DropdownButtonFormField<String>(
-        key: ValueKey('${field.id}-$selected'),
-        initialValue:
-            selected != null && field.options.contains(selected) ? selected : null,
-        decoration: InputDecoration(labelText: field.label),
-        items: [
-          const DropdownMenuItem<String>(value: null, child: Text('未设置')),
-          ...field.options.map((o) => DropdownMenuItem(value: o, child: Text(o))),
-        ],
-        onChanged: (next) {
-          session.patchDropdownField(fieldId: field.id, value: next);
-          unawaited(saveNow());
-        },
-      );
-    }
-
     Widget ageRatingField(MetadataFieldSpecFrb field) {
-      final controller = fieldController(field.id);
-
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) {
-              return TextFormField(
-                controller: controller,
-                focusNode: focusNodeFor(field.id),
-                decoration: InputDecoration(
-                  labelText: field.label,
-                  hintText: '可选择预设或手动输入',
-                  suffixIcon: value.text.isEmpty
-                      ? null
-                      : AppIconButton(
-                          tooltip: '清空',
-                          onPressed: () {
-                            controller.clear();
-                            onTextFieldChanged();
-                          },
-                          icon: const Icon(LucideIcons.x),
-                        ),
-                ),
-                onChanged: (_) => onTextFieldChanged(),
-                onEditingComplete: () => unawaited(saveNow()),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final preset in session.schema.ageRatingPresets)
-                ActionChip(
-                  label: Text(preset),
-                  onPressed: () {
-                    controller.text = preset;
-                    onTextFieldChanged();
-                  },
-                ),
-            ],
-          ),
-        ],
+      return MetadataAgeRatingField(
+        label: field.label,
+        controller: fieldController(field.id),
+        presets: session.schema.ageRatingPresets,
+        onChanged: onTextFieldChanged,
       );
     }
 
     Widget fieldWidget(MetadataFieldSpecFrb field) {
       return switch (field.kind) {
-        MetadataFieldKindFrb.text when field.id == 'tags' => tagsField(field),
+        MetadataFieldKindFrb.commaSeparatedTags => commaTagsField(field),
         MetadataFieldKindFrb.text => textField(field),
         MetadataFieldKindFrb.multilineText => textField(field, maxLines: 5),
         MetadataFieldKindFrb.integer => intField(field),
-        MetadataFieldKindFrb.dropdown => dropdownField(field),
         MetadataFieldKindFrb.ageRating => ageRatingField(field),
-        MetadataFieldKindFrb.readOnly => readOnlyField(
-          field.label,
-          field.readOnlyValue ?? '',
-        ),
-        MetadataFieldKindFrb.pageCountInfo ||
-        MetadataFieldKindFrb.coverPageIndex =>
-          const SizedBox.shrink(),
+        MetadataFieldKindFrb.publishedDate => publishedDateField(field),
       };
     }
 
@@ -372,24 +304,13 @@ class MetadataPanel extends HookConsumerWidget {
       return Row(
         children: [
           Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  session.schema.editorTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Export：${exportFormatLabel(exportFormat)}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            child: Text(
+              session.schema.editorTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (session.schema.editable && session.saving) ...[
@@ -441,29 +362,6 @@ class MetadataPanel extends HookConsumerWidget {
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
               sliver: SliverToBoxAdapter(child: headerRow()),
             ),
-            if (session.importSnapshot != null)
-              SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-                sliver: SliverToBoxAdapter(
-                  child: ImportMetadataPreview(
-                    snapshot: session.importSnapshot!,
-                    inferredImportKind: session.inferredImportKind,
-                    exportFormatLabel: exportFormatLabel(exportFormat),
-                  ),
-                ),
-              ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  '导出元数据',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
               sliver: SliverToBoxAdapter(
@@ -474,20 +372,6 @@ class MetadataPanel extends HookConsumerWidget {
                 ),
               ),
             ),
-            if (sectionIndex.value < session.schema.sections.length)
-              SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
-                sliver: SliverToBoxAdapter(
-                  child: Text(
-                    session.schema.sections[sectionIndex.value].label,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
             if (session.saveError != null)
               SliverPadding(
                 padding:

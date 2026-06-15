@@ -21,11 +21,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
       - uses: dtolnay/rust-toolchain@stable
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: core
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
 
       - name: cargo test
         run: cargo test --manifest-path core/Cargo.toml
@@ -56,11 +71,14 @@ jobs:
       - uses: taiki-e/cache-cargo-install-action@v2
         with:
           tool: flutter_rust_bridge_codegen
-          version: ${{ env.FRB_CODEGEN_VERSION }}
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
 
       - name: FRB codegen
         working-directory: app
         run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
 
       - name: Riverpod codegen
         run: bash app/tool/riverpod_codegen/run_codegen.sh
@@ -69,12 +87,17 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Build native core library for tests
+        run: cargo build --manifest-path core/Cargo.toml
+
       - name: flutter analyze
         working-directory: app
         run: flutter analyze --no-fatal-infos
 
       - name: flutter test
         working-directory: app
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/core/target/debug
         run: flutter test
 
       - name: FRB UI isolation

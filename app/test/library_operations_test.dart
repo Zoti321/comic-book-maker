@@ -13,7 +13,7 @@ void main() {
   });
 
   LibraryOperations operations() => LibraryOperations(
-        gateway: gateway,
+        library: gateway,
         onLibraryChanged: () => changeCount++,
       );
 
@@ -58,7 +58,7 @@ void main() {
 
     final created = await library.createFromDraft(draft);
 
-    expect(created.title, '未命名');
+    expect(created.title, '项目A');
     expect(gateway.projects, hasLength(1));
     expect(gateway.pages, hasLength(1));
     expect(changeCount, 1);
@@ -69,7 +69,7 @@ void main() {
     final draft = CreateProjectDraft(projectTitle: '库漫画')
       ..applyImportSource(
         const CreateProjectArchiveImport(
-          format: ImportArchiveFormat.cbz,
+          format: ArchiveFormatFrb.cbz,
           sourcePath: r'C:\comic.cbz',
         ),
       );
@@ -77,7 +77,7 @@ void main() {
     final created = await library.createFromDraft(draft);
 
     expect(created.title, '库漫画');
-    expect(gateway.metadataByProjectId[created.id]?.title, '库漫画');
+    expect(gateway.metadataByProjectId[created.id]?.title, 'comic');
     expect(changeCount, 1);
   });
 
@@ -85,7 +85,7 @@ void main() {
     final library = operations();
 
     final result = await library.importArchive(
-      format: ImportArchiveFormat.cbz,
+      format: ArchiveFormatFrb.cbz,
       sourcePath: r'C:\comic.cbz',
     );
 

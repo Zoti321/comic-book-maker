@@ -53,7 +53,7 @@ void main() {
     await session.load();
 
     final values = _textFieldValues(session);
-    values['volume'] = '42';
+    values['number'] = '42';
     session.scheduleDebouncedSave(
       validateForm: () => true,
       readTextFieldValues: () => values,
@@ -62,7 +62,7 @@ void main() {
     await Future<void>.delayed(metadataAutosaveDebounce + const Duration(milliseconds: 50));
 
     expect(gateway.metadataUpdateCallCount, 1);
-    expect(gateway.metadataByProjectId['p1']?.volume, '42');
+    expect(gateway.metadataByProjectId['p1']?.number, '42');
     expect(session.dirty, isFalse);
   });
 
@@ -77,7 +77,7 @@ void main() {
     await session.load();
 
     final values = _textFieldValues(session);
-    values['volume'] = '8';
+    values['number'] = '8';
     session.markDirty();
     final ok = await session.flushForNavigation(
       validateForm: () => true,
@@ -86,7 +86,7 @@ void main() {
 
     expect(ok, isTrue);
     expect(gateway.metadataUpdateCallCount, 1);
-    expect(gateway.metadataByProjectId['p1']?.volume, '8');
+    expect(gateway.metadataByProjectId['p1']?.number, '8');
   });
 
   test('concurrent text edits reschedule save after server write', () async {
@@ -100,10 +100,10 @@ void main() {
     await session.load();
 
     final values = _textFieldValues(session);
-    values['volume'] = '12';
+    values['number'] = '12';
 
     gateway.onMetadataUpdate = () {
-      values['volume'] = '123';
+      values['number'] = '123';
     };
 
     session.markDirty();
@@ -112,18 +112,18 @@ void main() {
       readTextFieldValues: () => values,
     );
 
-    expect(gateway.metadataByProjectId['p1']?.volume, '12');
-    expect(session.takeSkipSyncFieldIds(), contains('volume'));
+    expect(gateway.metadataByProjectId['p1']?.number, '12');
+    expect(session.takeSkipSyncFieldIds(), contains('number'));
     expect(session.dirty, isTrue);
 
-    values['volume'] = '123';
+    values['number'] = '123';
     session.markDirty();
     await session.save(
       validateForm: () => true,
       readTextFieldValues: () => values,
     );
 
-    expect(gateway.metadataByProjectId['p1']?.volume, '123');
+    expect(gateway.metadataByProjectId['p1']?.number, '123');
     expect(session.dirty, isFalse);
   });
 }

@@ -32,7 +32,7 @@ fn create_and_list_projects() {
     let mut library = Library::open(app_data.clone()).expect("open library");
 
     let created = library.create_project_inner(None).expect("create project");
-    assert_eq!(created.title, schema::DEFAULT_PROJECT_TITLE);
+    assert_eq!(created.title, "项目A");
 
     let storage = project_storage_dir(&app_data, &created.id);
     assert!(project_assets_dir(&storage).is_dir());
@@ -174,9 +174,28 @@ fn change_inferred_import_kind_clears_pages_and_resets_metadata() {
 
 #[test]
 fn install_is_idempotent_for_same_app_data_dir() {
+    let _ = Library::reset_for_test();
     let app_data = temp_dir("install-twice");
     Library::install(app_data.clone()).expect("first install");
     Library::install(app_data).expect("second install should no-op");
+    let _ = Library::reset_for_test();
+}
+
+#[test]
+fn reset_for_test_allows_installing_a_different_app_data_dir() {
+    let _ = Library::reset_for_test();
+    let first = temp_dir("reset-first");
+    let second = temp_dir("reset-second");
+    Library::install(first).expect("first install");
+    Library::reset_for_test().expect("reset");
+    Library::install(second.clone()).expect("second install after reset");
+
+    let mut library = Library::open(second).expect("open library");
+    let project = library
+        .create_project_inner(Some("After reset".to_string()))
+        .expect("create");
+    assert_eq!(project.title, "After reset");
+    let _ = Library::reset_for_test();
 }
 
 #[test]
@@ -329,12 +348,10 @@ fn get_and_update_project_metadata() {
     let updated = MetadataRecord {
         title: "My Comic".to_string(),
         series: Some("Adventures".to_string()),
-        issue_number: Some("1".to_string()),
-        writer: Some("Alice".to_string()),
-        penciller: Some("Bob".to_string()),
-        publisher: Some("Example Pub".to_string()),
+        number: Some("1".to_string()),
+        author: Some("Alice".to_string()),
         language_iso: Some("zh-CN".to_string()),
-        year: Some(2025),
+        published_date: Some("2025".to_string()),
         ..Default::default()
     };
 
@@ -348,7 +365,7 @@ fn get_and_update_project_metadata() {
         .get_project_metadata_inner(&project.id)
         .expect("reload metadata");
     assert_eq!(reloaded.title, "My Comic");
-    assert_eq!(reloaded.writer.as_deref(), Some("Alice"));
+    assert_eq!(reloaded.author.as_deref(), Some("Alice"));
 }
 
 #[test]
@@ -512,7 +529,7 @@ fn abandon_import_project_removes_partial_disk_and_db_row() {
         .expect("create import project");
     let storage = project_storage_dir(&app_data, &project.id);
 
-    crate::import_shared::stage_pages_from_files(
+    crate::import::stage_pages_from_files(
         &app_data,
         &project.id,
         &[png],

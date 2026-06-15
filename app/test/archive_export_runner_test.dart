@@ -45,6 +45,7 @@ void main() {
         formatLabel: 'CBZ',
         exportComicArchive: true,
         comicArchiveContainer: ComicArchiveContainerFrb.zip,
+        exportPdf: false,
       ),
       deleteProjectAfterExport: false,
     );
@@ -61,6 +62,7 @@ void main() {
         formatLabel: 'CB7',
         exportComicArchive: true,
         comicArchiveContainer: ComicArchiveContainerFrb.sevenZip,
+        exportPdf: false,
       ),
       deleteProjectAfterExport: false,
     );
@@ -80,6 +82,7 @@ void main() {
         formatLabel: 'CBR',
         exportComicArchive: true,
         comicArchiveContainer: ComicArchiveContainerFrb.rar,
+        exportPdf: false,
       ),
       deleteProjectAfterExport: false,
     );
@@ -95,6 +98,7 @@ void main() {
         destinationPath: '/tmp/out.epub',
         formatLabel: 'EPUB',
         exportComicArchive: false,
+        exportPdf: false,
       ),
       deleteProjectAfterExport: false,
     );

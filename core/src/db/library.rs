@@ -10,7 +10,11 @@ use crate::paths::{library_db_path, projects_root};
 use super::migrate;
 use super::schema;
 
-static LIBRARY: OnceCell<Mutex<Library>> = OnceCell::new();
+static LIBRARY: OnceCell<Mutex<Option<Library>>> = OnceCell::new();
+
+fn library_slot() -> &'static Mutex<Option<Library>> {
+    LIBRARY.get_or_init(|| Mutex::new(None))
+}
 
 pub struct Library {
     pub(crate) app_data_dir: PathBuf,
@@ -39,10 +43,10 @@ impl Library {
     }
 
     pub fn install(app_data_dir: PathBuf) -> Result<(), String> {
-        if let Some(mutex) = LIBRARY.get() {
-            let library = mutex
-                .lock()
-                .map_err(|_| "library lock poisoned".to_string())?;
+        let mut slot = library_slot()
+            .lock()
+            .map_err(|_| "library lock poisoned".to_string())?;
+        if let Some(library) = slot.as_ref() {
             if library.app_data_dir == app_data_dir {
                 return Ok(());
             }
@@ -52,20 +56,29 @@ impl Library {
             ));
         }
 
-        let library = Self::open(app_data_dir)?;
-        LIBRARY
-            .set(Mutex::new(library))
-            .map_err(|_| "library already initialized".to_string())
+        *slot = Some(Self::open(app_data_dir)?);
+        Ok(())
+    }
+
+    /// 测试专用：卸载当前 Library，允许在另一临时目录重新 [install]。
+    pub fn reset_for_test() -> Result<(), String> {
+        let mut slot = library_slot()
+            .lock()
+            .map_err(|_| "library lock poisoned".to_string())?;
+        *slot = None;
+        Ok(())
     }
 
     pub(crate) fn with_library<T>(
         operation: impl FnOnce(&mut Library) -> Result<T, String>,
     ) -> Result<T, String> {
-        let mutex = LIBRARY.get().ok_or("library not initialized".to_string())?;
-        let mut library = mutex
+        let mut slot = library_slot()
             .lock()
             .map_err(|_| "library lock poisoned".to_string())?;
-        operation(&mut library)
+        let library = slot
+            .as_mut()
+            .ok_or_else(|| "library not initialized".to_string())?;
+        operation(library)
     }
 
     pub(crate) fn with_library_export(
@@ -73,17 +86,19 @@ impl Library {
     ) -> Result<(), crate::export_error::ExportError> {
         use crate::export_error::{ExportError, ExportErrorKind};
 
-        let mutex = LIBRARY.get().ok_or(ExportError::new(
-            ExportErrorKind::ArchiveWriteFailed,
-            "library not initialized",
-        ))?;
-        let mut library = mutex
+        let mut slot = library_slot()
             .lock()
             .map_err(|_| ExportError::new(
                 ExportErrorKind::ArchiveWriteFailed,
                 "library lock poisoned",
             ))?;
-        operation(&mut library)
+        let library = slot.as_mut().ok_or_else(|| {
+            ExportError::new(
+                ExportErrorKind::ArchiveWriteFailed,
+                "library not initialized",
+            )
+        })?;
+        operation(library)
     }
 
     pub(crate) fn app_data_dir(&self) -> &PathBuf {
