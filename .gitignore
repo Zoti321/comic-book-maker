@@ -35,6 +35,13 @@ Thumbs.db
 
 # Flutter / Dart codegen (regenerate locally; do not commit)
 app/lib/**/*.g.dart
+app/lib/**/*.freezed.dart
 app/lib/src/rust/
+app/tool/riverpod_codegen/lib/
 app/tool/riverpod_codegen/pubspec.lock
+app/tool/frb_freezed_codegen/lib/
+app/tool/frb_freezed_codegen/pubspec.lock
 app/rust_builder/cargokit/build_tool/pubspec.lock
+
+# Rust FRB codegen
+**/frb_generated.rs

@@ -471,7 +471,7 @@ mod tests {
             author: Some("Edited Author".to_string()),
             tags: Some("tag2".to_string()),
             characters: Some("Villain".to_string()),
-            age_rating: Some("Teen".to_string()),
+            age_rating: Some("R18+".to_string()),
             description: Some("Edited summary".to_string()),
             cover_page_index: 1,
             page_count: 2,
@@ -508,7 +508,7 @@ mod tests {
         assert_eq!(metadata.author.as_deref(), Some("Edited Author"));
         assert_eq!(metadata.tags.as_deref(), Some("tag2"));
         assert_eq!(metadata.characters.as_deref(), Some("Villain"));
-        assert_eq!(metadata.age_rating.as_deref(), Some("Teen"));
+        assert_eq!(metadata.age_rating.as_deref(), Some("R18+"));
         assert_eq!(metadata.description.as_deref(), Some("Edited summary"));
         assert_eq!(metadata.page_count, 2);
         assert_eq!(metadata.cover_page_index, 1);

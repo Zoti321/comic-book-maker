@@ -174,13 +174,16 @@ fn change_inferred_import_kind_clears_pages_and_resets_metadata() {
 
 #[test]
 fn install_is_idempotent_for_same_app_data_dir() {
+    let _ = Library::reset_for_test();
     let app_data = temp_dir("install-twice");
     Library::install(app_data.clone()).expect("first install");
     Library::install(app_data).expect("second install should no-op");
+    let _ = Library::reset_for_test();
 }
 
 #[test]
 fn reset_for_test_allows_installing_a_different_app_data_dir() {
+    let _ = Library::reset_for_test();
     let first = temp_dir("reset-first");
     let second = temp_dir("reset-second");
     Library::install(first).expect("first install");
@@ -192,6 +195,7 @@ fn reset_for_test_allows_installing_a_different_app_data_dir() {
         .create_project_inner(Some("After reset".to_string()))
         .expect("create");
     assert_eq!(project.title, "After reset");
+    let _ = Library::reset_for_test();
 }
 
 #[test]

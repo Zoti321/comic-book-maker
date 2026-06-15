@@ -442,28 +442,41 @@ mod tests {
 
     #[test]
     fn resolve_export_target_uses_global_directory() {
+        let export_dir = std::env::temp_dir().join("cbm-export-global");
         let target = resolve_export_target(
             &base_settings(),
-            Some(r"D:\exports"),
+            Some(export_dir.to_str().expect("temp dir utf-8")),
             "My Comic",
         )
         .expect("target");
 
-        assert_eq!(target.destination_path, r"D:\exports\My Comic.cbz");
+        assert_eq!(
+            target.destination_path,
+            export_dir.join("My Comic.cbz").to_string_lossy()
+        );
         assert!(target.export_comic_archive);
         assert_eq!(target.format_label, "CBZ");
     }
 
     #[test]
     fn resolve_export_target_uses_project_directory() {
+        let project_dir = std::env::temp_dir().join("cbm-project-out");
         let settings = ExportPlanSettings {
             use_default_export_directory: false,
-            export_directory: Some(r"E:\project-out".to_string()),
+            export_directory: Some(project_dir.to_string_lossy().into_owned()),
             use_comic_archive_extension: false,
             ..base_settings()
         };
-        let target = resolve_export_target(&settings, Some(r"D:\exports"), "Issue 1").expect("target");
-        assert_eq!(target.destination_path, r"E:\project-out\Issue 1.zip");
+        let target = resolve_export_target(
+            &settings,
+            Some(std::env::temp_dir().to_str().expect("temp dir utf-8")),
+            "Issue 1",
+        )
+        .expect("target");
+        assert_eq!(
+            target.destination_path,
+            project_dir.join("Issue 1.zip").to_string_lossy()
+        );
         assert_eq!(target.format_label, "ZIP");
     }
 
