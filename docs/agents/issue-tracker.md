@@ -1,40 +1,38 @@
-# Issue tracker: Local Markdown
+# Issue tracker: GitHub
 
-Issues and PRDs for this repo live as markdown files in `.scratch/`（**不纳入 git**；每人本地维护，见仓库根 `.gitignore`）。
+Issues and PRDs for this repo live as GitHub issues on `Zoti321/comic-book-maker`. Use the `gh` CLI for all operations.
 
 ## Conventions
 
-- One feature per directory: `.scratch/<feature-slug>/`
-- The PRD is `.scratch/<feature-slug>/PRD.md`
-- Implementation issues are `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`
-- Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
-- Category is recorded as `Category:` (`bug` or `enhancement`)
-- Use `Status: done` when the slice is implemented and verified; agents should not pick these up
-- Comments and conversation history append to the bottom of the file under a `## Comments` heading
+- **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
+- **Read an issue**: `gh issue view <number> --comments`
+- **List issues**: `gh issue list --state open --json number,title,body,labels,comments`
+- **Comment on an issue**: `gh issue comment <number> --body "..."`
+- **Close**: `gh issue close <number> --comment "..."`
 
-## 已完成的工作（`Status: done`）
+Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
-Matt Pocock 系 skill **不要求**删除已完成的 issue；`Status: done` 即表示 agent 不应再领取。
+## Labels
 
-当某个 feature 目录下**全部** issue 均为 `done` 时，可以**本地删除**对应 `.scratch/<feature>/` 以减负——该目录本就不纳入 git（见根 `.gitignore`）。删除前请确认：
+This repo does **not** use Matt Pocock triage labels (`needs-triage`, `ready-for-agent`, etc.). When a skill says to apply a triage label, **skip it** — do not create labels or call `gh issue edit --add-label` unless the user explicitly asks.
 
-1. 仍需保留的决策已写入 **`docs/adr/`** 或 **`CONTEXT.md`**（勿只留在 issue 里）。
-2. 仓库内 **`README.md` / `docs/`** 不再把 `.scratch/...` 当作「待办」引用。
+You may use GitHub's built-in `bug` / `enhancement` labels for category if helpful; they are optional.
 
-需要留档时，可归档到个人笔记，或在 ADR 的「相关」段简要记录已完成切片，而不必长期维护完整 issue 树。
+## PRD vs implementation issues
+
+- **PRD**: one GitHub issue with a title like `[PRD] <feature name>` and the full PRD in the body.
+- **Implementation slices**: separate issues; reference the parent PRD issue number in the body under `## Parent`.
 
 ## When a skill says "publish to the issue tracker"
 
-Create a new file under `.scratch/<feature-slug>/` (creating the directory if needed).
+Create a GitHub issue (no triage labels unless the user requests them).
 
 ## When a skill says "fetch the relevant ticket"
 
-Read the file at the referenced path. The user will normally pass the path or the issue number directly.
+Run `gh issue view <number> --comments`.
 
 ## Cancelled / out-of-scope features
 
-Do not add a repo-root `.out-of-scope/` directory. When a feature is cancelled after triage:
-
 1. Record the decision in **`docs/adr/`** (brief ADR: what was proposed, why not doing, alternatives).
-2. Link the ADR from the related `.scratch/.../issues/*.md` issue (e.g. under **Cancelled** or **Comments**).
-3. Mark the issue `Status: done` or `wontfix` as appropriate; do not leave orphan notes only in a side folder.
+2. Link the ADR from the GitHub issue (comment or body update).
+3. Close the issue with a short comment explaining why.

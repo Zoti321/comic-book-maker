@@ -28,8 +28,8 @@
 
 | 文件 | 用途 |
 | --- | --- |
-| [`issue-tracker.md`](agents/issue-tracker.md) | 本地 issue 跟踪（`.scratch/`，不纳入 git） |
-| [`triage-labels.md`](agents/triage-labels.md) | Triage 状态与 Category 词汇 |
+| [`issue-tracker.md`](agents/issue-tracker.md) | GitHub Issues（`gh` CLI） |
+| [`triage-labels.md`](agents/triage-labels.md) | Triage 标签（本仓库未启用） |
 | [`domain.md`](agents/domain.md) | 如何消费 CONTEXT 与 ADR |
 | [`flutter-ui.md`](agents/flutter-ui.md) | Flutter 目录、design_system、Riverpod、测试 support |
 
@@ -42,11 +42,11 @@
 
 ## 项目进度（2026-06）
 
-以下能力已在代码库中实现，**不以 `.scratch/` 为待办来源**：
+以下能力已在代码库中实现：
 
 - MVP：库、项目 CRUD、页操作、CBZ/CBR 导入导出、元数据编辑
 - UI/UX：Material 3、`design_system`、全局反馈模式、编辑页 Tab 交互
 - 架构：`data/` / `domain/` / `ui/features/` 分层，FRB 隔离
 - 编辑增强：导出格式、工作流设置、新建项目向导、项目属性侧边 Tab、元数据自动保存
 
-新工作：在 `.scratch/<feature>/` 新建 PRD/issue，或将决策写入 ADR；已完成且无需留档的 `.scratch` 目录可本地删除。
+新工作：在 GitHub Issues 新建 PRD/实现 issue，或将决策写入 ADR。

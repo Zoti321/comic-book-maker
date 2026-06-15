@@ -2,11 +2,7 @@
 
 ### Issue tracker
 
-Issues live as markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Five canonical triage roles; status recorded as `Status:` in each issue file. See `docs/agents/triage-labels.md`.
+Issues live in GitHub Issues (`Zoti321/comic-book-maker`). No triage labels. See `docs/agents/issue-tracker.md`.
 
 ### Domain docs
 
