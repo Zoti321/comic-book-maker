@@ -1,5 +1,4 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -48,77 +47,80 @@ class ProjectEditorSettingsBar extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
-      child: AppCard(
-        padding: const EdgeInsets.all(12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final stacked = constraints.maxWidth < 520;
-            final exportField = DropdownButtonFormField<ExportFormatFrb>(
-              key: ValueKey(settings.exportFormat),
-              initialValue: settings.exportFormat,
-              decoration: InputDecoration(
-                labelText: 'Export 格式',
-                enabled: !savingExportFormat,
-                suffixIcon: savingExportFormat
-                    ? const Padding(
-                        padding: EdgeInsets.all(12),
-                        child: SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : null,
-              ),
-              items: ExportFormatFrb.values
-                  .map(
-                    (format) => DropdownMenuItem(
-                      value: format,
-                      child: Text(exportFormatLabel(format)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: savingExportFormat
-                  ? null
-                  : (value) {
-                      if (value == null) return;
-                      onExportFormatChanged(value);
-                    },
-            );
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final stacked = constraints.maxWidth < 520;
+              final exportField = DropdownButtonFormField<ExportFormatFrb>(
+                key: ValueKey(settings.exportFormat),
+                initialValue: settings.exportFormat,
+                decoration: InputDecoration(
+                  labelText: 'Export 格式',
+                  enabled: !savingExportFormat,
+                  suffixIcon: savingExportFormat
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : null,
+                ),
+                items: ExportFormatFrb.values
+                    .map(
+                      (format) => DropdownMenuItem(
+                        value: format,
+                        child: Text(exportFormatLabel(format)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: savingExportFormat
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        onExportFormatChanged(value);
+                      },
+              );
 
-            final inferredField = InputDecorator(
-              decoration: const InputDecoration(
-                labelText: '推断的导入类型',
-                helperText: '由首次 Import 确定，不可修改',
-              ),
-              child: Text(
-                inferredImportKindLabel(settings.inferredImportKind),
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: onSurfaceVariant,
-                    ),
-              ),
-            );
+              final inferredField = InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: '推断的导入类型',
+                  helperText: '由首次 Import 确定，不可修改',
+                ),
+                child: Text(
+                  inferredImportKindLabel(settings.inferredImportKind),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: onSurfaceVariant,
+                      ),
+                ),
+              );
 
-            if (stacked) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              if (stacked) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    exportField,
+                    const SizedBox(height: 12),
+                    inferredField,
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  exportField,
-                  const SizedBox(height: 12),
-                  inferredField,
+                  Expanded(child: exportField),
+                  const SizedBox(width: 16),
+                  Expanded(child: inferredField),
                 ],
               );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: exportField),
-                const SizedBox(width: 16),
-                Expanded(child: inferredField),
-              ],
-            );
-          },
+            },
+          ),
         ),
       ),
     );

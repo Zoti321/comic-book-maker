@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_states.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
@@ -20,7 +21,7 @@ Future<void> showProjectPropertiesDialog({
   required BuildContext context,
   required String projectId,
 }) {
-  return showAppFeatureDialog<void>(
+  return showProjectEditorFeatureDialog<void>(
     context: context,
     builder: (dialogContext) => _ProjectPropertiesDialog(
       projectId: projectId,
@@ -62,7 +63,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
       if (value == settings.inferredImportKind) return;
       if (value == InferredImportKindFrb.pdf) return;
 
-      final confirmed = await showAppConfirmDialog(
+      final confirmed = await showProjectEditorConfirmDialog(
         context: context,
         title: '更改导入格式',
         description: const Text(
@@ -82,14 +83,17 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
     }
 
     if (settings == null) {
-      return AppDialog(
-        title: '项目属性',
+      return AlertDialog(
+        title: const Text('项目属性'),
         content: const SizedBox(
           height: 200,
-          child: AppPageLoading(message: '正在加载项目设置…', compact: true),
+          child: ProjectEditorPageLoading(
+            message: '正在加载项目设置…',
+            compact: true,
+          ),
         ),
         actions: [
-          AppButton(
+          TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('关闭'),
           ),
@@ -154,7 +158,7 @@ class _ProjectPropertiesDialog extends HookConsumerWidget {
       onTabSelected: (index) => tabIndex.value = index,
       body: SingleChildScrollView(child: panel),
       actions: [
-        AppButton(
+        TextButton(
           onPressed: () => Navigator.pop(dialogContext),
           child: const Text('关闭'),
         ),
@@ -232,12 +236,14 @@ class _OverviewTab extends HookConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppTextField(
+        TextFormField(
           controller: titleController,
           focusNode: titleFocusNode,
-          label: '项目名称',
-          enabled: !savingTitle.value,
-          errorText: titleError.value,
+          decoration: InputDecoration(
+            labelText: '项目名称',
+            enabled: !savingTitle.value,
+            errorText: titleError.value,
+          ),
         ),
         const SizedBox(height: 12),
         _PropertyRow(
@@ -268,18 +274,17 @@ class _ImportTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSelect<InferredImportKindFrb>(
+    return DropdownButtonFormField<InferredImportKindFrb>(
       key: ValueKey(settings.inferredImportKind),
-      label: '导入格式',
-      enabled: !saving,
-      value: settings.inferredImportKind,
+      decoration: const InputDecoration(labelText: '导入格式'),
+      initialValue: settings.inferredImportKind,
       onChanged: saving ? null : onImportKindChanged,
       items: [
         for (final kind in InferredImportKindFrb.values)
-          AppSelectItem(
+          DropdownMenuItem(
             value: kind,
-            label: inferredImportKindLabel(kind),
             enabled: kind != InferredImportKindFrb.pdf,
+            child: Text(inferredImportKindLabel(kind)),
           ),
       ],
     );

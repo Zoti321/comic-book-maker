@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_draft.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
@@ -146,12 +145,11 @@ class CreateProjectWizardDialog extends HookConsumerWidget {
       onTabSelected: (index) => tabIndex.value = index,
       body: SingleChildScrollView(child: panel),
       actions: [
-        AppButton(
-          variant: AppButtonVariant.secondary,
+        TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
-        AppButton(
+        FilledButton(
           onPressed: current.canCreate
               ? () {
                   Navigator.pop(
@@ -188,28 +186,31 @@ class _ImportTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppButton(
-          variant: AppButtonVariant.secondary,
-          expanded: true,
-          icon: const Icon(LucideIcons.image),
-          onPressed: onPickImages,
-          child: const Text('导入图片'),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(LucideIcons.image),
+            onPressed: onPickImages,
+            label: const Text('导入图片'),
+          ),
         ),
         const SizedBox(height: 8),
-        AppButton(
-          variant: AppButtonVariant.secondary,
-          expanded: true,
-          icon: const Icon(LucideIcons.folderArchive),
-          onPressed: onPickComicArchive,
-          child: const Text('导入漫画压缩包'),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(LucideIcons.folderArchive),
+            onPressed: onPickComicArchive,
+            label: const Text('导入漫画压缩包'),
+          ),
         ),
         const SizedBox(height: 8),
-        AppButton(
-          variant: AppButtonVariant.secondary,
-          expanded: true,
-          icon: const Icon(LucideIcons.bookOpen),
-          onPressed: onPickEpub,
-          child: const Text('导入 EPUB'),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            icon: const Icon(LucideIcons.bookOpen),
+            onPressed: onPickEpub,
+            label: const Text('导入 EPUB'),
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -282,17 +283,27 @@ class _BehaviorTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppTextField(
+        TextField(
           controller: titleController,
-          label: '项目名称',
-          hint: '留空则自动命名（图片：项目A/B/…；档案：文件名）',
+          decoration: const InputDecoration(
+            labelText: '项目名称',
+            hintText: '留空则自动命名（图片：项目A/B/…；档案：文件名）',
+          ),
           onChanged: onTitleChanged,
         ),
         const SizedBox(height: 16),
-        AppCheckbox(
-          value: deleteAfterExport,
-          onChanged: (value) => onDeleteAfterExportChanged(value ?? false),
-          label: '导出后删除项目',
+        Row(
+          children: [
+            Checkbox(
+              value: deleteAfterExport,
+              onChanged: (value) =>
+                  onDeleteAfterExportChanged(value ?? false),
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('导出后删除项目'),
+            ),
+          ],
         ),
       ],
     );

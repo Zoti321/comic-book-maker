@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/main.dart';
 import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
-import 'package:comic_book_maker/ui/core/design_system/app_icon_button.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -63,7 +62,7 @@ void main() {
     await pumpSettings(tester, viewport: const Size(400, 800));
 
     expect(find.text('未设置'), findsOneWidget);
-    expect(find.byType(AppIconButton), findsWidgets);
+    expect(find.byType(IconButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 

@@ -1,12 +1,13 @@
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_images_tab.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_append_flow.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_app_bar.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_export_flow.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_states.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_tab_switcher.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_properties_dialog.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -99,7 +100,7 @@ class ProjectEditorPage extends HookConsumerWidget {
 
     if (!workspace.initialized) {
       return const Scaffold(
-        body: AppPageLoading(message: '正在加载项目…'),
+        body: ProjectEditorPageLoading(message: '正在加载项目…'),
       );
     }
 
@@ -133,7 +134,7 @@ class ProjectEditorPage extends HookConsumerWidget {
                   pagePadding.right,
                   0,
                 ),
-                child: AppInlineErrorBanner(
+                child: ProjectEditorInlineErrorBanner(
                   message: workspace.error!,
                   onDismiss: workspaceNotifier.clearError,
                   padding: EdgeInsets.zero,
@@ -153,7 +154,7 @@ class ProjectEditorPage extends HookConsumerWidget {
                     ProjectEditorTabSwitcher(
                       selectedTab: selectedTab.value,
                       onTabSelected: selectTab,
-                      trailing: AppIconButton(
+                      trailing: IconButton(
                         tooltip: '项目属性',
                         onPressed: openProjectProperties,
                         icon: const Icon(LucideIcons.settings),

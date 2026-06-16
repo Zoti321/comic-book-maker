@@ -1,4 +1,3 @@
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -118,10 +117,11 @@ class _MetadataAgeRatingFieldState extends State<MetadataAgeRatingField> {
             if (hasValue)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: AppIconButton(
+                child: IconButton(
                   tooltip: '清空',
                   onPressed: _clear,
                   icon: const Icon(LucideIcons.x),
+                  visualDensity: VisualDensity.compact,
                 ),
               ),
           ],
