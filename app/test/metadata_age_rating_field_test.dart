@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_age_rating_field.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,7 +69,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(DropdownButtonFormField2<String>), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
     expect(find.byTooltip('清空'), findsOneWidget);
   });
 }

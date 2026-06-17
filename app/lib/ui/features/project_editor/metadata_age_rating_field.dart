@@ -1,4 +1,3 @@
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -22,12 +21,9 @@ class MetadataAgeRatingField extends StatefulWidget {
 }
 
 class _MetadataAgeRatingFieldState extends State<MetadataAgeRatingField> {
-  late final ValueNotifier<String?> _valueListenable;
-
   @override
   void initState() {
     super.initState();
-    _valueListenable = ValueNotifier(_selectedValue());
     widget.controller.addListener(_syncFromController);
   }
 
@@ -44,7 +40,6 @@ class _MetadataAgeRatingFieldState extends State<MetadataAgeRatingField> {
   @override
   void dispose() {
     widget.controller.removeListener(_syncFromController);
-    _valueListenable.dispose();
     super.dispose();
   }
 
@@ -56,77 +51,69 @@ class _MetadataAgeRatingFieldState extends State<MetadataAgeRatingField> {
   }
 
   void _syncFromController() {
-    final next = _selectedValue();
-    if (_valueListenable.value != next) {
-      _valueListenable.value = next;
-    }
+    setState(() {});
   }
 
   void _applySelection(String? value) {
     widget.controller.text = value ?? '';
-    _valueListenable.value = value;
     widget.onChanged();
+    setState(() {});
   }
 
   void _clear() {
     widget.controller.clear();
-    _valueListenable.value = null;
     widget.onChanged();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final selected = _selectedValue();
+    final hasValue = selected != null;
 
-    return ListenableBuilder(
-      listenable: _valueListenable,
-      builder: (context, _) {
-        final hasValue = _valueListenable.value != null;
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: DropdownButtonFormField2<String>(
-                valueListenable: _valueListenable,
-                isExpanded: true,
-                decoration: InputDecoration(
-                  labelText: widget.label,
-                  hintText: '未设置',
-                ),
-                hint: Text(
-                  '未设置',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                ),
-                items: widget.presets
-                    .map(
-                      (preset) => DropdownItem<String>(
-                        value: preset,
-                        child: Text(
-                          preset,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: _applySelection,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<String>(
+            value: selected,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: widget.label,
+              hintText: '未设置',
             ),
-            if (hasValue)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: IconButton(
-                  tooltip: '清空',
-                  onPressed: _clear,
-                  icon: const Icon(LucideIcons.x),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ),
-          ],
-        );
-      },
+            hint: Text(
+              '未设置',
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+            ),
+            items: widget.presets
+                .map(
+                  (preset) => DropdownMenuItem<String>(
+                    value: preset,
+                    child: Text(
+                      preset,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            onChanged: _applySelection,
+          ),
+        ),
+        if (hasValue)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: IconButton(
+              tooltip: '清空',
+              onPressed: _clear,
+              icon: const Icon(LucideIcons.x),
+              visualDensity: VisualDensity.compact,
+            ),
+          ),
+      ],
     );
   }
 }
