@@ -1,5 +1,7 @@
 # 弃用 shadcn_ui，采用 Material 3 + design_system
 
+**Status:** accepted（feature 层 `design_system` 入口已由 [ADR-0013](0013-material-you-migration.md) 修订）
+
 UI/UX 全面优化 Phase 1 需要统一视觉与组件入口。当前全应用混用 `shadcn_ui` 与 Material 控件，橙色消费向配色与「专业创作工具」目标不符，且 `ShadApp.router` 下无法使用 `ScaffoldMessenger`，反馈路径分裂。
 
 ## 决策
