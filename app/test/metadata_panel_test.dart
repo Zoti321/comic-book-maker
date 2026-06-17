@@ -2,7 +2,6 @@ import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
-import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
@@ -192,7 +191,7 @@ void main() {
     await selectMetadataSection(tester, '常规');
 
     expect(find.text('Everyone'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField2<String>), findsOneWidget);
+    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
 
     await tester.tap(find.text('Everyone'), warnIfMissed: false);
     await tester.pumpAndSettle();

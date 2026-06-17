@@ -7,7 +7,8 @@ import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_age_rating_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_published_date_field.dart';
 import 'package:comic_book_maker/ui/features/project_editor/metadata_comma_tags_field.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_states.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/section_chip_bar.dart';
 import 'package:flutter/material.dart';
@@ -280,14 +281,14 @@ class MetadataPanel extends HookConsumerWidget {
     }
 
     if (session.loading) {
-      return const AppPageLoading(message: '正在加载元数据…');
+      return const ProjectEditorPageLoading(message: '正在加载元数据…');
     }
 
     if (session.metadata == null) {
-      return AppPageErrorState(
+      return ProjectEditorPageErrorState(
         title: '无法加载元数据',
         message: session.loadError,
-        action: AppButton(
+        action: FilledButton(
           onPressed: () => unawaited(session.load()),
           child: const Text('重试'),
         ),
@@ -338,7 +339,7 @@ class MetadataPanel extends HookConsumerWidget {
     if (!session.schema.editable) {
       return Padding(
         padding: padding,
-        child: AppEmptyState(
+        child: ProjectEditorEmptyState(
           icon: LucideIcons.fileText,
           title: '当前格式不支持编辑',
           subtitle: session.schema.pdfMessage ??
@@ -377,7 +378,7 @@ class MetadataPanel extends HookConsumerWidget {
                 padding:
                     EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
                 sliver: SliverToBoxAdapter(
-                  child: AppInlineErrorBanner(
+                  child: ProjectEditorInlineErrorBanner(
                     message: '保存失败：${session.saveError}',
                     onRetry: () => unawaited(saveNow()),
                     onDismiss: session.clearSaveError,

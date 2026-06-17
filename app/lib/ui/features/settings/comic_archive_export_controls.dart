@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:flutter/material.dart';
 
@@ -35,36 +34,61 @@ class ComicArchiveExportControls extends StatelessWidget {
       container: settings.comicArchiveContainer,
     );
 
-    final containerSelect = AppSelect<ComicArchiveContainerFrb>(
+    final containerSelect = DropdownButtonFormField<ComicArchiveContainerFrb>(
       key: ValueKey(settings.comicArchiveContainer),
-      label: _horizontal ? null : '压缩算法',
-      enabled: enabled,
+      decoration: InputDecoration(
+        labelText: _horizontal ? null : '压缩算法',
+        enabled: enabled,
+      ),
       value: settings.comicArchiveContainer,
-      onChanged: enabled ? onContainerChanged : null,
+      onChanged: enabled
+          ? (value) {
+              if (value == null) return;
+              if (!isComicArchiveContainerSelectable(container: value)) {
+                return;
+              }
+              onContainerChanged(value);
+            }
+          : null,
+      isExpanded: true,
       items: [
         for (final container in _containers)
-          AppSelectItem(
+          DropdownMenuItem<ComicArchiveContainerFrb>(
             value: container,
-            label: comicArchiveContainerMenuLabel(container),
-            displayLabel: comicArchiveContainerLabel(container: container),
-            enabled: isComicArchiveContainerSelectable(container: container),
+            child: Text(
+              comicArchiveContainerMenuLabel(container),
+              style: !isComicArchiveContainerSelectable(container: container)
+                  ? theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    )
+                  : null,
+            ),
           ),
       ],
     );
 
-    final extensionCheckbox = AppCheckbox(
-      value: settings.useComicArchiveExtension,
-      onChanged: enabled
-          ? (value) => onUseComicExtensionChanged(value ?? false)
-          : null,
-      label: kComicArchiveExtensionCheckboxLabel,
+    final extensionCheckbox = Row(
+      children: [
+        Checkbox(
+          value: settings.useComicArchiveExtension,
+          onChanged: enabled
+              ? (value) => onUseComicExtensionChanged(value ?? false)
+              : null,
+        ),
+        Expanded(
+          child: Text(
+            kComicArchiveExtensionCheckboxLabel,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_horizontal)
-          AppLabeledFieldRow(
+          _LabeledFieldRow(
             label: '压缩算法',
             child: containerSelect,
           )
@@ -81,12 +105,51 @@ class ComicArchiveExportControls extends StatelessWidget {
         ],
         const SizedBox(height: 12),
         if (_horizontal)
-          AppLabeledFieldRow(
+          _LabeledFieldRow(
             reserveLeadingSpace: true,
             child: extensionCheckbox,
           )
         else
           extensionCheckbox,
+      ],
+    );
+  }
+}
+
+class _LabeledFieldRow extends StatelessWidget {
+  const _LabeledFieldRow({
+    required this.child,
+    this.label,
+    this.reserveLeadingSpace = false,
+  });
+
+  final Widget child;
+  final String? label;
+  final bool reserveLeadingSpace;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    const labelWidth = 160.0;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: labelWidth,
+          child: label == null
+              ? const SizedBox.shrink()
+              : Text(
+                  label!,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(child: child),
       ],
     );
   }

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
+import 'package:comic_book_maker/ui/features/project_editor/pages/page_thumbnail_hover_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -255,7 +255,7 @@ class _PageThumbnailTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final menuButtonStyle = RevealMenuButtonStyle(
+    final menuButtonStyle = (
       iconColor: scheme.onSurface,
       backgroundColor: scheme.surface.withValues(alpha: 0.92),
     );
@@ -272,10 +272,11 @@ class _PageThumbnailTile extends StatelessWidget {
           ),
         ),
         clipBehavior: Clip.antiAlias,
-        child: HoverRevealMenuAnchor<PageThumbnailAction>(
+        child: PageThumbnailHoverMenu<PageThumbnailAction>(
           buttonTop: 6,
           buttonRight: 6,
-          menuButtonStyle: menuButtonStyle,
+          menuButtonIconColor: menuButtonStyle.iconColor,
+          menuButtonBackgroundColor: menuButtonStyle.backgroundColor,
           onSelected: onAction,
           menuItemsBuilder: (context) => _pageThumbnailMenuItems(
             context: context,
@@ -379,8 +380,8 @@ PopupMenuItem<PageThumbnailAction> _menuRow({
   return PopupMenuItem(
     value: value,
     padding: EdgeInsets.zero,
-    height: RevealPopupMenuRow.menuItemHeight,
-    child: RevealPopupMenuRow(
+    height: PageThumbnailMenuRow.menuItemHeight,
+    child: PageThumbnailMenuRow(
       icon: icon,
       label: label,
       foregroundColor: foregroundColor,

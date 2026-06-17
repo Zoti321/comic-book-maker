@@ -1,4 +1,3 @@
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,8 +36,8 @@ void main() {
       expect(find.text('导入 EPUB'), findsOneWidget);
       expect(find.text('选择要导入的资源（必选）'), findsNothing);
 
-      final createButton = tester.widget<AppButton>(
-        find.widgetWithText(AppButton, '创建'),
+      final createButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, '创建'),
       );
       expect(createButton.onPressed, isNull);
     });
@@ -84,7 +83,7 @@ class _WizardHost extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: AppButton(
+        child: FilledButton(
           onPressed: () => showDialog<void>(
             context: context,
             builder: (context) => const CreateProjectWizardDialog(),

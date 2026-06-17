@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/settings/comic_archive_export_controls.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -48,27 +47,43 @@ class ProjectExportSettingsPanel extends StatelessWidget {
       onExportDirectoryChanged(selected);
     }
 
-    final exportFormatSelect = AppSelect<ExportFormatFrb>(
+    final exportFormatSelect = DropdownButtonFormField<ExportFormatFrb>(
       key: ValueKey(settings.exportFormat),
-      label: _horizontal ? null : '导出格式',
-      enabled: enabled,
+      decoration: InputDecoration(
+        labelText: _horizontal ? null : '导出格式',
+      ),
       value: settings.exportFormat,
-      onChanged: enabled ? onExportFormatChanged : null,
+      onChanged: enabled
+          ? (value) {
+              if (value == null) return;
+              onExportFormatChanged(value);
+            }
+          : null,
+      isExpanded: true,
       items: [
         for (final format in ExportFormatFrb.values)
-          AppSelectItem(
+          DropdownMenuItem<ExportFormatFrb>(
             value: format,
-            label: exportFormatLabel(format),
+            child: Text(exportFormatLabel(format)),
           ),
       ],
     );
 
-    final defaultDirectoryCheckbox = AppCheckbox(
-      value: settings.useDefaultExportDirectory,
-      onChanged: enabled
-          ? (value) => onUseDefaultDirectoryChanged(value ?? true)
-          : null,
-      label: '使用默认导出目录',
+    final defaultDirectoryCheckbox = Row(
+      children: [
+        Checkbox(
+          value: settings.useDefaultExportDirectory,
+          onChanged: enabled
+              ? (value) => onUseDefaultDirectoryChanged(value ?? true)
+              : null,
+        ),
+        Expanded(
+          child: Text(
+            '使用默认导出目录',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
 
     final customDirectoryFields = !settings.useDefaultExportDirectory
@@ -83,11 +98,10 @@ class ProjectExportSettingsPanel extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 8),
-              AppButton(
-                variant: AppButtonVariant.secondary,
+              OutlinedButton.icon(
                 onPressed: enabled ? pickProjectExportDirectory : null,
                 icon: const Icon(LucideIcons.folder),
-                child: const Text('选择导出目录'),
+                label: const Text('选择导出目录'),
               ),
             ],
           )
@@ -96,40 +110,33 @@ class ProjectExportSettingsPanel extends StatelessWidget {
     final exportDirectorySection = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_horizontal)
-          AppLabeledFieldRow(
-            reserveLeadingSpace: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                defaultDirectoryCheckbox,
-                customDirectoryFields,
-              ],
-            ),
-          )
-        else ...[
-          defaultDirectoryCheckbox,
-          customDirectoryFields,
-        ],
+        defaultDirectoryCheckbox,
+        customDirectoryFields,
       ],
     );
 
-    final deleteAfterExportCheckbox = AppCheckbox(
-      value: settings.deleteProjectAfterExport,
-      onChanged: enabled
-          ? (value) => onDeleteAfterExportChanged(value ?? false)
-          : null,
-      label: '导出后删除项目',
+    final deleteAfterExportCheckbox = Row(
+      children: [
+        Checkbox(
+          value: settings.deleteProjectAfterExport,
+          onChanged: enabled
+              ? (value) => onDeleteAfterExportChanged(value ?? false)
+              : null,
+        ),
+        Expanded(
+          child: Text(
+            '导出后删除项目',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+      ],
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_horizontal)
-          AppLabeledFieldRow(
-            label: '导出格式',
-            child: exportFormatSelect,
-          )
+          _LabeledFieldRow(label: '导出格式', child: exportFormatSelect)
         else
           exportFormatSelect,
         if (settings.exportFormat == ExportFormatFrb.comicArchive) ...[
@@ -143,17 +150,59 @@ class ProjectExportSettingsPanel extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 16),
-        exportDirectorySection,
+        if (_horizontal)
+          _LabeledFieldRow(reserveLeadingSpace: true, child: exportDirectorySection)
+        else
+          exportDirectorySection,
         if (showDeleteAfterExport) ...[
           const SizedBox(height: 16),
           if (_horizontal)
-            AppLabeledFieldRow(
+            _LabeledFieldRow(
               reserveLeadingSpace: true,
               child: deleteAfterExportCheckbox,
             )
           else
             deleteAfterExportCheckbox,
         ],
+      ],
+    );
+  }
+}
+
+class _LabeledFieldRow extends StatelessWidget {
+  const _LabeledFieldRow({
+    required this.child,
+    this.label,
+    this.reserveLeadingSpace = false,
+  });
+
+  final Widget child;
+  final String? label;
+  final bool reserveLeadingSpace;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    const labelWidth = 160.0;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: labelWidth,
+          child: label == null
+              ? const SizedBox.shrink()
+              : Text(
+                  label!,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(child: child),
       ],
     );
   }

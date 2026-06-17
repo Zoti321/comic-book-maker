@@ -34,7 +34,7 @@ void main() {
     );
 
     expect(find.text('压缩算法'), findsOneWidget);
-    expect(find.text('ZIP'), findsOneWidget);
+    expect(find.textContaining('ZIP'), findsOneWidget);
     expect(find.text(kComicArchiveExtensionCheckboxLabel), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
@@ -65,7 +65,7 @@ void main() {
       ),
     );
 
-    expect(find.text('7Z'), findsOneWidget);
+    expect(find.textContaining('7Z'), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
       findsNothing,
@@ -95,7 +95,7 @@ void main() {
       ),
     );
 
-    expect(find.text('RAR'), findsOneWidget);
+    expect(find.textContaining('RAR'), findsOneWidget);
     expect(
       find.text('当前算法尚未实现 Export，请改用 ZIP 或等待后续版本。'),
       findsNothing,

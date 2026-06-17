@@ -1,7 +1,7 @@
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
-/// 应用壳层侧栏布局常量（色值统一走 [ThemeData.colorScheme]）。
+/// 应用壳层导航轨道布局常量（宽度与桌面标题栏左区对齐；色值走 [ThemeData.colorScheme]）。
 abstract final class AppSidebarTheme {
   static const width = AppLayout.sidebarWidth;
 

@@ -1,9 +1,9 @@
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -31,7 +31,7 @@ class SettingsPage extends HookConsumerWidget {
         await ref.read(exportPathProvider.notifier).setDirectory(selected);
       } catch (error) {
         if (context.mounted) {
-          showAppToast(context, '更新默认导出目录失败：$error');
+          _showSettingsToast(context, '更新默认导出目录失败：$error');
         }
       } finally {
         savingExportPath.value = false;
@@ -44,7 +44,7 @@ class SettingsPage extends HookConsumerWidget {
         await ref.read(exportPathProvider.notifier).clear();
       } catch (error) {
         if (context.mounted) {
-          showAppToast(context, '清除默认导出目录失败：$error');
+          _showSettingsToast(context, '清除默认导出目录失败：$error');
         }
       } finally {
         savingExportPath.value = false;
@@ -52,12 +52,31 @@ class SettingsPage extends HookConsumerWidget {
     }
 
     Future<void> confirmClearExportDirectory() async {
-      final confirmed = await showAppConfirmDialog(
+      final confirmed = await showDialog<bool>(
         context: context,
-        title: '清除默认导出目录',
-        description: const Text('清除后，沿用全局默认目录的项目在导出前需要重新配置目录。'),
-        confirmLabel: '清除',
-        destructive: true,
+        builder: (dialogContext) {
+          final scheme = Theme.of(dialogContext).colorScheme;
+          return AlertDialog(
+            title: const Text('清除默认导出目录'),
+            content: const Text(
+              '清除后，沿用全局默认目录的项目在导出前需要重新配置目录。',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: scheme.error,
+                  foregroundColor: scheme.onError,
+                ),
+                child: const Text('清除'),
+              ),
+            ],
+          );
+        },
       );
       if (confirmed != true || !context.mounted) return;
       await clearExportDirectory();
@@ -83,11 +102,11 @@ class SettingsPage extends HookConsumerWidget {
                     _SettingsSectionCard(
                       title: '外观',
                       child: themeModeAsync.when(
-                        loading: () => const AppPageLoading(
+                        loading: () => const _SettingsPageLoading(
                           message: '正在读取设置…',
                           compact: true,
                         ),
-                        error: (error, _) => AppInlineErrorBanner(
+                        error: (error, _) => ProjectEditorInlineErrorBanner(
                           message: '无法读取设置：$error',
                           padding: EdgeInsets.zero,
                         ),
@@ -105,11 +124,11 @@ class SettingsPage extends HookConsumerWidget {
                     _SettingsSectionCard(
                       title: '默认导出目录',
                       child: exportPathAsync.when(
-                        loading: () => const AppPageLoading(
+                        loading: () => const _SettingsPageLoading(
                           message: '正在读取设置…',
                           compact: true,
                         ),
-                        error: (error, _) => AppInlineErrorBanner(
+                        error: (error, _) => ProjectEditorInlineErrorBanner(
                           message: '无法读取设置：$error',
                           padding: EdgeInsets.zero,
                         ),
@@ -181,6 +200,55 @@ class _ThemeModeSelector extends StatelessWidget {
   }
 }
 
+void _showSettingsToast(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
+
+class _SettingsPageLoading extends StatelessWidget {
+  const _SettingsPageLoading({
+    required this.message,
+    this.compact = false,
+  });
+
+  final String message;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(compact ? 16 : 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            if (message.isNotEmpty) ...[
+              SizedBox(height: compact ? 12 : 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DefaultExportDirectoryRow extends StatelessWidget {
   const _DefaultExportDirectoryRow({
     required this.path,
@@ -233,7 +301,7 @@ class _DefaultExportDirectoryRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 4),
-        AppIconButton(
+        IconButton(
           tooltip: hasDirectory ? '更改目录' : '选择目录',
           onPressed: onPick,
           icon: busy
@@ -248,9 +316,8 @@ class _DefaultExportDirectoryRow extends StatelessWidget {
               : Icon(LucideIcons.folder, size: 18),
         ),
         if (onClear != null)
-          AppIconButton(
+          IconButton(
             tooltip: '清除目录',
-            variant: AppButtonVariant.ghost,
             onPressed: onClear,
             icon: Icon(LucideIcons.trash2, size: 18, color: scheme.error),
           ),
@@ -275,29 +342,34 @@ class _SettingsSectionCard extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface,
-            ),
-          ),
-          if (description != null) ...[
-            const SizedBox(height: 4),
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Text(
-              description!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
               ),
             ),
+            if (description != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                description!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            SizedBox(height: description != null ? 12 : 8),
+            child,
           ],
-          SizedBox(height: description != null ? 12 : 8),
-          child,
-        ],
+        ),
       ),
     );
   }

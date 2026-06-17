@@ -10,4 +10,4 @@ Single-context layout: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/
 
 ### Flutter UI
 
-Material 3 `design_system` + `go_router` + Riverpod + hooks. See `docs/agents/flutter-ui.md`.
+Material 3（Material You，`ColorScheme.fromSeed`）+ `go_router` + Riverpod + hooks. Feature 直用 Material 控件；见 `docs/agents/flutter-ui.md`。

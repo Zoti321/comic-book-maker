@@ -5,7 +5,7 @@ import 'package:comic_book_maker/ui/features/library/providers/library_provider.
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +50,7 @@ Future<void> runProjectExport({
     final ready = await prepareMetadataForExport();
     if (!context.mounted) return;
     if (!ready) {
-      await showAppOperationFailure(
+      await showProjectEditorOperationFailure(
         context,
         title: '无法导出',
         message: '元数据未保存成功，请先修正表单错误后重试。',
@@ -79,7 +79,7 @@ Future<void> runProjectExport({
   switch (plan) {
     case ExportWorkflowBlocked(:final presentation):
       if (!context.mounted) return;
-      await showAppOperationFailure(
+      await showProjectEditorOperationFailure(
         context,
         title: presentation.title,
         message: presentation.message,
@@ -95,7 +95,7 @@ Future<void> runProjectExport({
     deleteAfterExport: readyPlan.deleteAfterExport,
     confirmOverwrite: () async {
       if (!context.mounted) return false;
-      final result = await showAppConfirmDialog(
+      final result = await showProjectEditorConfirmDialog(
         context: context,
         title: '覆盖已有文件？',
         description: Text(
@@ -109,7 +109,7 @@ Future<void> runProjectExport({
     },
     confirmDeleteProject: () async {
       if (!context.mounted) return false;
-      final result = await showAppConfirmDialog(
+      final result = await showProjectEditorConfirmDialog(
         context: context,
         title: '导出并删除项目',
         description: Text(
@@ -126,7 +126,7 @@ Future<void> runProjectExport({
   if (!confirmed || !context.mounted) return;
 
   try {
-    await runAppDismissibleBackgroundOperation(
+    await runProjectEditorDismissibleBackgroundOperation(
       context: context,
       message: readyPlan.progressMessage,
       dismissHint: '可点击空白处关闭，导出将在后台继续',
@@ -139,7 +139,7 @@ Future<void> runProjectExport({
   } catch (e) {
     if (!context.mounted) return;
     final failure = workflow.presentationForCaughtFailure(e);
-    await showAppOperationFailure(
+    await showProjectEditorOperationFailure(
       context,
       title: failure?.title ?? '导出失败',
       message: failure?.message ?? '导出过程中发生未知错误。',
@@ -151,7 +151,7 @@ Future<void> runProjectExport({
 
   if (!context.mounted) return;
 
-  showAppExportSuccessSnackBar(
+  showProjectEditorExportSuccessSnackBar(
     context,
     deletedProject: readyPlan.deleteAfterExport,
   );

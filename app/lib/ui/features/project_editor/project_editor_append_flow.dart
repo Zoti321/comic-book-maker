@@ -2,7 +2,7 @@ import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
 import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +22,7 @@ Future<void> runProjectAppendImport({
       await _appendImages(context, workspaceNotifier, kind);
     case InferredImportKindFrb.pdf:
       if (!context.mounted) return;
-      await showAppOperationFailure(
+      await showProjectEditorOperationFailure(
         context,
         title: '无法追加导入',
         message: appendImportBlockedReason(kind),
@@ -65,14 +65,14 @@ Future<void> _appendImages(
   if (!context.mounted) return;
 
   try {
-    await runAppBlockingOperation(
+    await runProjectEditorBlockingOperation(
       context: context,
       message: '正在添加图片…',
       operation: () => workspaceNotifier.addPageImages(sourcePaths),
     );
   } catch (e) {
     if (!context.mounted) return;
-    await showAppOperationFailure(
+    await showProjectEditorOperationFailure(
       context,
       title: '添加图片失败',
       message: e.toString(),
@@ -87,7 +87,7 @@ Future<void> _appendArchive(
   ProjectWorkspace workspaceNotifier,
   ArchiveGateway gateway,
 ) async {
-  final sheetFormat = await showAppendArchiveSheet(context);
+  final sheetFormat = await showProjectEditorAppendArchiveSheet(context);
   if (sheetFormat == null || !context.mounted) return;
 
   final runner = ArchiveImportRunner(gateway: gateway);
@@ -96,7 +96,7 @@ Future<void> _appendArchive(
     final sourcePath = await runner.pickSourcePath(sheetFormat);
     if (sourcePath == null || !context.mounted) return;
 
-    final appendResult = await runAppBlockingOperation(
+    final appendResult = await runProjectEditorBlockingOperation(
       context: context,
       message: runner.appendBlockingMessage(sheetFormat),
       operation: () => workspaceNotifier.appendArchive(
@@ -105,7 +105,7 @@ Future<void> _appendArchive(
       ),
     );
     if (!context.mounted) return;
-    await showAppAppendImportOutcome(
+    await showProjectEditorAppendImportOutcome(
       context,
       addedPageCount: appendResult.addedPageCount,
       warnings: appendResult.warnings,
@@ -114,7 +114,7 @@ Future<void> _appendArchive(
     workspaceNotifier.reportError(e.message);
   } catch (e) {
     if (!context.mounted) return;
-    await showAppOperationFailure(
+    await showProjectEditorOperationFailure(
       context,
       title: '追加导入失败',
       message: e.toString(),
@@ -136,7 +136,7 @@ Future<void> _appendEpubArchive(
     final sourcePath = await runner.pickSourcePath(format);
     if (sourcePath == null || !context.mounted) return;
 
-    final appendResult = await runAppBlockingOperation(
+    final appendResult = await runProjectEditorBlockingOperation(
       context: context,
       message: runner.appendBlockingMessage(format),
       operation: () => workspaceNotifier.appendArchive(
@@ -145,7 +145,7 @@ Future<void> _appendEpubArchive(
       ),
     );
     if (!context.mounted) return;
-    await showAppAppendImportOutcome(
+    await showProjectEditorAppendImportOutcome(
       context,
       addedPageCount: appendResult.addedPageCount,
       warnings: appendResult.warnings,
@@ -154,7 +154,7 @@ Future<void> _appendEpubArchive(
     workspaceNotifier.reportError(e.message);
   } catch (e) {
     if (!context.mounted) return;
-    await showAppOperationFailure(
+    await showProjectEditorOperationFailure(
       context,
       title: '追加导入失败',
       message: e.toString(),

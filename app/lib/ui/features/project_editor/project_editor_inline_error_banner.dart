@@ -1,0 +1,74 @@
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
+import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+/// 项目编辑页内联错误条（Material errorContainer）。
+class ProjectEditorInlineErrorBanner extends StatelessWidget {
+  const ProjectEditorInlineErrorBanner({
+    super.key,
+    required this.message,
+    this.onDismiss,
+    this.onRetry,
+    this.padding,
+  });
+
+  final String message;
+  final VoidCallback? onDismiss;
+  final VoidCallback? onRetry;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: padding ?? const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Material(
+        color: scheme.errorContainer,
+        borderRadius: AppRadius.mdBorder,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                LucideIcons.circleAlert,
+                size: 20,
+                color: scheme.onErrorContainer,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: scheme.onErrorContainer,
+                      ),
+                ),
+              ),
+              if (onRetry != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: onRetry,
+                  child: Text(
+                    '重试',
+                    style: TextStyle(color: scheme.onErrorContainer),
+                  ),
+                ),
+              ],
+              if (onDismiss != null) ...[
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: onDismiss,
+                  child: Text(
+                    '关闭',
+                    style: TextStyle(color: scheme.onErrorContainer),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

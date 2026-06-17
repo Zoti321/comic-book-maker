@@ -1,8 +1,8 @@
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/ellipsis_tooltip_text.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:flutter/material.dart';
@@ -40,12 +40,12 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
     return AppBar(
       surfaceTintColor: Colors.transparent,
       leadingWidth: 48,
-      leading: AppIconButton(
-        size: AppButtonSize.sm,
-        radius: AppButtonRadius.circle,
-        metrics: const AppButtonMetrics(iconSize: 18),
-        icon: const Icon(LucideIcons.arrowLeft),
+      leading: IconButton(
         onPressed: onBack,
+        icon: const Icon(LucideIcons.arrowLeft, size: 18),
+        style: IconButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+        ),
       ),
       title: Row(
         children: [
@@ -91,6 +91,26 @@ class ProjectEditorAppBar extends StatelessWidget implements PreferredSizeWidget
   }
 }
 
+ButtonStyle _compactFilledButtonStyle(BuildContext context) {
+  return FilledButton.styleFrom(
+    visualDensity: VisualDensity.compact,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    minimumSize: const Size(0, AppTypography.controlHeightCompact),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    textStyle: Theme.of(context).textTheme.labelLarge,
+  );
+}
+
+ButtonStyle _compactOutlinedButtonStyle(BuildContext context) {
+  return OutlinedButton.styleFrom(
+    visualDensity: VisualDensity.compact,
+    padding: const EdgeInsets.symmetric(horizontal: 12),
+    minimumSize: const Size(0, AppTypography.controlHeightCompact),
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    textStyle: Theme.of(context).textTheme.labelLarge,
+  );
+}
+
 class _AppendImportButton extends StatelessWidget {
   const _AppendImportButton({
     required this.workspace,
@@ -114,27 +134,31 @@ class _AppendImportButton extends StatelessWidget {
             : '当前无法追加导入'
         : null;
 
-    final button = AppButton(
-      variant: AppButtonVariant.secondary,
-      onPressed: enabled ? onPressed : null,
-      icon: const Icon(LucideIcons.download, size: 18),
-      child: Text(label),
-    );
-
     if (showLabel) {
+      final button = OutlinedButton.icon(
+        onPressed: enabled ? onPressed : null,
+        style: _compactOutlinedButtonStyle(context),
+        icon: const Icon(LucideIcons.download, size: 18),
+        label: Text(label),
+      );
       if (disabledTooltip != null) {
         return Tooltip(message: disabledTooltip, child: button);
       }
       return button;
     }
 
-    return AppIconButton(
-      variant: AppButtonVariant.secondary,
-      tooltip: enabled ? label : null,
-      disabledTooltip: disabledTooltip,
+    final iconButton = IconButton(
       onPressed: enabled ? onPressed : null,
       icon: const Icon(LucideIcons.download),
+      style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
     );
+    if (disabledTooltip != null) {
+      return Tooltip(message: disabledTooltip, child: iconButton);
+    }
+    if (enabled) {
+      return Tooltip(message: label, child: iconButton);
+    }
+    return iconButton;
   }
 }
 
@@ -155,22 +179,27 @@ class _ExportButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final canExport = workspace.canExport;
 
-    final button = AppButton(
-      onPressed: canExport ? onPressed : null,
-      icon: const Icon(LucideIcons.upload, size: 18),
-      child: const Text('导出'),
-    );
-
     if (showLabel) {
-      return button;
+      return FilledButton.icon(
+        onPressed: canExport ? onPressed : null,
+        style: _compactFilledButtonStyle(context),
+        icon: const Icon(LucideIcons.upload, size: 18),
+        label: const Text('导出'),
+      );
     }
 
-    return AppIconButton(
-      variant: AppButtonVariant.primary,
-      tooltip: canExport ? '导出为 ${exportFormatLabel(exportFormat)}' : null,
+    final iconButton = IconButton.filled(
       onPressed: canExport ? onPressed : null,
       icon: const Icon(LucideIcons.upload),
+      style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
     );
+    if (canExport) {
+      return Tooltip(
+        message: '导出为 ${exportFormatLabel(exportFormat)}',
+        child: iconButton,
+      );
+    }
+    return iconButton;
   }
 }
 
