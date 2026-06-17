@@ -67,7 +67,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Comic Book Maker'), findsOneWidget);
       expect(find.text('漫画库'), findsOneWidget);
       expect(find.text('还没有项目'), findsOneWidget);
       expect(find.text('新建项目'), findsWidgets);

@@ -27,7 +27,7 @@ void main() {
     testWidgets('subtracts sidebar width when sidebar is shown', (tester) async {
       await tester.pumpWidget(_shell(width: 1000));
       final context = tester.element(find.byType(Scaffold));
-      expect(contentWidthOf(context), 1000 - AppLayout.sidebarWidth - 1);
+      expect(contentWidthOf(context), 1000 - AppLayout.sidebarWidth);
     });
 
     testWidgets('uses full width on compact', (tester) async {

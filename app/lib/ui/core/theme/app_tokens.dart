@@ -8,7 +8,7 @@ abstract final class AppBreakpointWidths {
 
 /// 布局常量（侧栏宽度、内容区最大宽度等）。
 abstract final class AppLayout {
-  static const sidebarWidth = 256.0;
+  static const sidebarWidth = 80.0;
   static const contentMaxWidth = 1280.0;
 }
 
@@ -37,6 +37,12 @@ abstract final class AppRadius {
   static const md = 8.0;
   static const lg = 12.0;
   static const xl = 16.0;
+
+  /// 壳层内容 inset 面板左缘圆角。
+  static const shellContent = 28.0;
+
+  /// 导航图标胶囊全圆角（极大半径即可）。
+  static const pill = 999.0;
 
   static BorderRadius get smBorder => BorderRadius.circular(sm);
   static BorderRadius get mdBorder => BorderRadius.circular(md);

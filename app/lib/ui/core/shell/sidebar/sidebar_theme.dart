@@ -11,13 +11,14 @@ abstract final class AppSidebarTheme {
 
   /// 导航项常态：与侧栏/底栏面板同色，避免 `Colors.transparent` 在
   /// [AnimatedContainer] 中与 hover 色插值时中间帧发灰。见 `docs/agents/flutter-ui.md` §颜色过渡动画。
-  static Color menuItemBackgroundRest(ColorScheme scheme) => scheme.surface;
+  static Color menuItemBackgroundRest(ColorScheme scheme) =>
+      scheme.surfaceContainer;
 
-  /// 导航项悬停：浅灰高亮，轻于旧版 `surfaceContainerHigh`。
+  /// 导航项悬停：图标胶囊浅灰底。
   static Color menuItemBackgroundHover(ColorScheme scheme) =>
-      scheme.surfaceContainer;
+      scheme.surfaceContainerHighest;
 
-  /// 导航项选中：与悬停同底，靠描边与字重区分。
+  /// 导航项选中：图标胶囊浅蓝底。
   static Color menuItemBackgroundActive(ColorScheme scheme) =>
-      scheme.surfaceContainer;
+      scheme.secondaryContainer;
 }

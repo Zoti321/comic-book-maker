@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/main.dart';
-import 'package:comic_book_maker/ui/core/design_system/desktop_window_caption.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
-import 'package:comic_book_maker/ui/core/shell/app_shell_chrome.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_desktop_chrome.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -70,17 +69,17 @@ void main() {
       desktopWindowConfig = const DesktopWindowConfig(chromeEnabled: true);
     });
 
-    testWidgets('shows custom caption and library shell at desktop width', (
+    testWidgets('shows split chrome and library shell at desktop width', (
       WidgetTester tester,
     ) async {
       await pumpApp(tester, config: const DesktopWindowConfig(chromeEnabled: true));
 
-      expect(find.byKey(DesktopShell.captionSlotKey), findsOneWidget);
-      expect(find.byKey(AppShellChrome.captionBottomBorderKey), findsOneWidget);
-      expect(find.byKey(DesktopShellChromeLead.keySlot), findsOneWidget);
+      expect(find.byKey(DesktopShell.captionSlotKey), findsNothing);
+      expect(find.byKey(AppShellSidebarChromeRow.slotKey), findsOneWidget);
+      expect(find.byKey(AppShellContentChromeRow.slotKey), findsOneWidget);
       expect(find.byType(WindowCaption), findsOneWidget);
       expect(find.byType(WindowCaptionButton), findsWidgets);
-      expect(find.text('Comic Book Maker'), findsOneWidget);
+      expect(find.text('Comic Book Maker'), findsNothing);
       expect(find.text('漫画库'), findsOneWidget);
       expect(find.text('项目'), findsOneWidget);
       expect(find.text('设置'), findsOneWidget);
@@ -96,7 +95,7 @@ void main() {
       appRouter.go(AppRoutes.projectEditorPath(project.id), extra: project);
       await tester.pumpAndSettle();
 
-      expect(find.byKey(DesktopShell.captionSlotKey), findsOneWidget);
+      expect(find.byKey(AppShellFullWidthChromeRow.slotKey), findsOneWidget);
       expect(find.byType(AppBar), findsOneWidget);
       expect(find.text('导出'), findsOneWidget);
       expect(find.text('图片'), findsOneWidget);
@@ -118,7 +117,7 @@ void main() {
     ) async {
       await pumpApp(tester, config: DesktopWindowConfig.disabled);
 
-      expect(find.byKey(DesktopShell.captionSlotKey), findsNothing);
+      expect(find.byKey(AppShellSidebarChromeRow.slotKey), findsNothing);
       expect(find.byType(WindowCaption), findsNothing);
       expect(find.text('漫画库'), findsOneWidget);
       expect(find.text('还没有项目'), findsOneWidget);

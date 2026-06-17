@@ -37,7 +37,7 @@ double contentWidthOf(
 }) {
   final width = MediaQuery.sizeOf(context).width;
   if (subtractSidebar && useAppSidebar(context)) {
-    return width - AppLayout.sidebarWidth - 1;
+    return width - AppLayout.sidebarWidth;
   }
   return width;
 }

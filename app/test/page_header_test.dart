@@ -26,7 +26,7 @@ void main() {
     return tester.getSize(find.byType(PageHeader)).height;
   }
 
-  testWidgets('uses header shadow without bottom border', (tester) async {
+  testWidgets('uses flat surface background without shadow', (tester) async {
     setWideViewport(tester);
 
     await tester.pumpWidget(
@@ -45,7 +45,7 @@ void main() {
       ),
     );
     final decoration = decorated.decoration as BoxDecoration;
-    expect(decoration.boxShadow, equals(const [AppElevation.headerShadow]));
+    expect(decoration.boxShadow, isNull);
     expect(decoration.border, isNull);
   });
 

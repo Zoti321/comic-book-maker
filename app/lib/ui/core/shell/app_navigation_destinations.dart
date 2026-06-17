@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// 应用主导航目的地（漫画库 / 设置），与 [StatefulNavigationShell] 分支索引一致。
+/// 应用主导航目的地，与 [StatefulNavigationShell] 分支索引一致。
 abstract final class AppNavigationDestinations {
   static const destinations = <AppNavigationDestination>[
     AppNavigationDestination(
