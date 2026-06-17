@@ -1,7 +1,6 @@
-import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// 漫画库标题旁的项目数量 pill（仅数字）。
+/// 项目数量 [Badge]，显示在标题旁。
 class LibraryCountChip extends StatelessWidget {
   const LibraryCountChip({
     super.key,
@@ -12,25 +11,14 @@ class LibraryCountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainer,
-        borderRadius: AppRadius.mdBorder,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        child: Text(
-          '$count',
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
-        ),
-      ),
+    return Badge(
+      label: Text('$count'),
+      backgroundColor: scheme.primaryContainer,
+      textColor: scheme.onPrimaryContainer,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: const SizedBox(width: 8, height: 20),
     );
   }
 }

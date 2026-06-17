@@ -43,8 +43,11 @@ void main() {
 
     expect(find.text('漫画库'), findsOneWidget);
     expect(find.text('0'), findsOneWidget);
+    expect(find.byType(Badge), findsOneWidget);
+    expect(find.byIcon(Icons.folder_open_outlined), findsOneWidget);
     expect(find.text('还没有项目'), findsOneWidget);
     expect(find.text('新建项目'), findsWidgets);
+    expect(find.byIcon(Icons.add), findsWidgets);
     expect(find.byType(ProjectCard), findsNothing);
   });
 
@@ -69,12 +72,13 @@ void main() {
     expect(find.text('还没有项目'), findsNothing);
   });
 
-  testWidgets('compact width uses shorter create label without overflow', (
+  testWidgets('compact width uses icon-only header create without overflow', (
     tester,
   ) async {
     await pumpLibrary(tester, viewport: const Size(400, 800));
 
-    expect(find.text('新建'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsWidgets);
+    expect(find.text('新建项目'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

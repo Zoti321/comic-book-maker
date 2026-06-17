@@ -3,12 +3,10 @@ import 'dart:io';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 
-enum _ProjectCardMenuAction { delete }
-
-/// 漫画库项目卡片：Material [Card] + 封面区 overflow 菜单。
-class ProjectCard extends StatefulWidget {
+/// 漫画库项目卡片：M3 Elevated [Card] + 封面区 overflow 菜单。
+class ProjectCard extends HookWidget {
   const ProjectCard({
     super.key,
     required this.title,
@@ -28,6 +26,23 @@ class ProjectCard extends StatefulWidget {
   /// 标题区预估高度，用于计算网格 [childAspectRatio]（单行标题 + 状态标签）。
   static const double footerHeightEstimate = 56;
 
+  static const _restElevation = 1.0;
+  static const _hoverElevation = 2.0;
+  static const _menuMinWidth = 200.0;
+
+  static final _cardShape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(AppRadius.lg),
+  );
+
+  static final _cardMenuStyle = MenuStyle(
+    minimumSize: WidgetStatePropertyAll(Size(_menuMinWidth, 0)),
+  );
+
+  static final _overflowIconButtonStyle = IconButton.styleFrom(
+    shape: const CircleBorder(),
+    visualDensity: VisualDensity.compact,
+  );
+
   /// 根据单列卡片宽度估算网格宽高比。
   static double gridChildAspectRatioForCellWidth(double cellWidth) {
     final coverHeight = cellWidth / coverAspectRatio;
@@ -35,142 +50,168 @@ class ProjectCard extends StatefulWidget {
   }
 
   @override
-  State<ProjectCard> createState() => _ProjectCardState();
-}
-
-class _ProjectCardState extends State<ProjectCard> {
-  var _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final compact = isCompact(context);
-    final hasCover = _hasValidCover(widget.coverThumbnailPath);
-    final showMenuButton = widget.onDelete != null && _hovered && !compact;
+    final hovered = useState(false);
+    final menuController = useMemoized(MenuController.new);
+    final hasCover = _hasValidCover(coverThumbnailPath);
+    final showMenuButton = onDelete != null && hovered.value && !compact;
 
-    Widget coverContent = hasCover
-        ? _CoverImage(path: widget.coverThumbnailPath!)
+    final elevation = hovered.value && !compact
+        ? _hoverElevation
+        : _restElevation;
+
+    final deleteMenuItem = MenuItemButton(
+      style: MenuItemButton.styleFrom(
+        minimumSize: const Size(_menuMinWidth, 48),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      ),
+      onPressed: () {
+        menuController.close();
+        onDelete?.call();
+      },
+      child: Row(
+        children: [
+          Icon(Icons.delete_outline, size: 20, color: scheme.error),
+          const SizedBox(width: AppSpacing.sm),
+          Text('删除', style: TextStyle(color: scheme.error)),
+        ],
+      ),
+    );
+
+    final coverContent = hasCover
+        ? _CoverImage(path: coverThumbnailPath!)
         : _CoverPlaceholder(scheme: scheme);
 
-    if (widget.onDelete != null) {
-      coverContent = Stack(
-        fit: StackFit.expand,
-        children: [
-          coverContent,
-          if (showMenuButton)
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _ProjectCardMenuButton(onDelete: widget.onDelete!),
-            ),
-        ],
-      );
-    }
-
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => hovered.value = true,
+      onExit: (_) => hovered.value = false,
       cursor: SystemMouseCursors.click,
       child: Card(
         clipBehavior: Clip.antiAlias,
-        elevation: _hovered && !compact ? 2 : 0,
+        elevation: elevation,
+        shadowColor: scheme.shadow,
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.smBorder,
-          side: BorderSide(color: scheme.outline),
-        ),
-        child: InkWell(
-          onTap: widget.onTap,
-          onLongPress: widget.onDelete != null && compact
-              ? () => _showDeleteMenu(context)
-              : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: coverContent),
-              _CardFooter(
-                title: widget.title,
-                subtitle: '最近打开',
+        color: scheme.surface,
+        shape: _cardShape,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: InkWell(
+                onTap: onTap,
+                onLongPress: onDelete != null && compact
+                    ? () => _showCompactDeleteMenu(context)
+                    : null,
+                splashFactory: NoSplash.splashFactory,
+                overlayColor: WidgetStateProperty.resolveWith((states) {
+                  if (states.contains(WidgetState.pressed)) {
+                    return scheme.onSurface.withValues(alpha: 0.12);
+                  }
+                  if (states.contains(WidgetState.hovered)) {
+                    return scheme.onSurface.withValues(alpha: 0.08);
+                  }
+                  return null;
+                }),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: coverContent),
+                    _CardFooter(
+                      title: title,
+                      subtitle: '最近打开',
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+            if (onDelete != null && !compact)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: IgnorePointer(
+                  ignoring: !showMenuButton,
+                  child: Opacity(
+                    opacity: showMenuButton ? 1 : 0,
+                    child: MenuAnchor(
+                      controller: menuController,
+                      style: _cardMenuStyle,
+                      menuChildren: [deleteMenuItem],
+                      builder: (context, controller, child) {
+                        return IconButton(
+                          icon: const Icon(Icons.more_vert),
+                          tooltip: '更多',
+                          style: _overflowIconButtonStyle,
+                          onPressed: () {
+                            if (controller.isOpen) {
+                              controller.close();
+                            } else {
+                              controller.open();
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Future<void> _showDeleteMenu(BuildContext context) async {
-    final box = context.findRenderObject() as RenderBox?;
-    if (box == null || widget.onDelete == null) return;
+  Future<void> _showCompactDeleteMenu(BuildContext context) async {
+    if (onDelete == null) return;
 
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final position = RelativeRect.fromRect(
-      Rect.fromPoints(
-        box.localToGlobal(Offset.zero, ancestor: overlay),
-        box.localToGlobal(box.size.bottomRight(Offset.zero), ancestor: overlay),
-      ),
-      Offset.zero & overlay.size,
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null) return;
+
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+    final topRight = box.localToGlobal(
+      Offset(box.size.width, 0),
+      ancestor: overlay,
+    );
+    final position = RelativeRect.fromLTRB(
+      topRight.dx,
+      topRight.dy,
+      overlay.size.width - topRight.dx,
+      overlay.size.height - topRight.dy,
     );
 
-    final selected = await showMenu<_ProjectCardMenuAction>(
+    await showMenu<void>(
       context: context,
       position: position,
+      constraints: const BoxConstraints(minWidth: _menuMinWidth),
       items: [
-        PopupMenuItem(
-          value: _ProjectCardMenuAction.delete,
-          child: ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(
-              LucideIcons.trash2,
-              size: 20,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: Text(
-              '删除',
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
+        PopupMenuItem<void>(
+          onTap: onDelete,
+          child: Row(
+            children: [
+              Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                '删除',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
-
-    if (selected == _ProjectCardMenuAction.delete) {
-      widget.onDelete!();
-    }
   }
 
   bool _hasValidCover(String? path) {
     if (path == null || path.isEmpty) return false;
     return File(path).existsSync();
-  }
-}
-
-class _ProjectCardMenuButton extends StatelessWidget {
-  const _ProjectCardMenuButton({required this.onDelete});
-
-  final VoidCallback onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return PopupMenuButton<_ProjectCardMenuAction>(
-      icon: Icon(LucideIcons.ellipsisVertical, color: scheme.onSurface),
-      color: scheme.surface,
-      onSelected: (_) => onDelete(),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: _ProjectCardMenuAction.delete,
-          child: ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: Icon(LucideIcons.trash2, color: scheme.error),
-            title: Text('删除', style: TextStyle(color: scheme.error)),
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -188,38 +229,35 @@ class _CardFooter extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(color: scheme.surface),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Tooltip(
-              message: title,
-              waitDuration: const Duration(milliseconds: 400),
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Tooltip(
+            message: title,
+            waitDuration: const Duration(milliseconds: 400),
+            child: Text(
+              title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: scheme.onSurfaceVariant,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -252,16 +290,11 @@ class _CoverPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainer,
-        border: Border(
-          bottom: BorderSide(color: scheme.outlineVariant),
-        ),
-      ),
+    return ColoredBox(
+      color: scheme.surfaceContainerHighest,
       child: Center(
         child: Icon(
-          LucideIcons.bookOpen,
+          Icons.image_outlined,
           size: 32,
           color: scheme.onSurfaceVariant.withValues(alpha: 0.65),
         ),

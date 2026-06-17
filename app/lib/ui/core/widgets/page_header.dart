@@ -9,6 +9,7 @@ class PageHeader extends StatelessWidget {
     this.titleTrailing,
     this.subtitle,
     this.actions = const [],
+    this.horizontalPadding,
   });
 
   final String title;
@@ -16,13 +17,16 @@ class PageHeader extends StatelessWidget {
   final String? subtitle;
   final List<Widget> actions;
 
+  /// 覆盖水平内边距（如 [contentPaddingOf]），与下方内容区左缘对齐。
+  final EdgeInsets? horizontalPadding;
+
   static const _contentMinHeight = AppTypography.controlHeightCompact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final padding = AppSpacing.pagePadding(context);
+    final insets = horizontalPadding ?? AppSpacing.pagePadding(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -30,9 +34,9 @@ class PageHeader extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          padding.left,
+          insets.left,
           AppSpacing.md,
-          padding.right,
+          insets.right,
           AppSpacing.md,
         ),
         child: LayoutBuilder(
