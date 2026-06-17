@@ -48,7 +48,10 @@ void main() {
 
     expect(find.text('设置'), findsWidgets);
     expect(find.text('外观'), findsOneWidget);
+    expect(find.text('主题模式'), findsOneWidget);
     expect(find.text('跟随系统'), findsOneWidget);
+    await tester.tap(find.text('主题模式'));
+    await tester.pumpAndSettle();
     expect(find.text('浅色'), findsOneWidget);
     expect(find.text('深色'), findsOneWidget);
     expect(find.text('应用偏好与导出默认值'), findsNothing);
@@ -62,13 +65,14 @@ void main() {
     await pumpSettings(tester, viewport: const Size(400, 800));
 
     expect(find.text('未设置'), findsOneWidget);
-    expect(find.byType(IconButton), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('theme mode selection persists across restart', (tester) async {
     await pumpSettings(tester, viewport: const Size(1280, 800));
 
+    await tester.tap(find.text('主题模式'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('深色'));
     await tester.pumpAndSettle();
 
@@ -80,9 +84,7 @@ void main() {
 
     await pumpSettings(tester, viewport: const Size(1280, 800));
 
-    final segmented = tester.widget<SegmentedButton<ThemeMode>>(
-      find.byType(SegmentedButton<ThemeMode>),
-    );
-    expect(segmented.selected, {ThemeMode.dark});
+    expect(find.text('深色'), findsOneWidget);
+    expect(find.byType(SegmentedButton<ThemeMode>), findsNothing);
   });
 }
