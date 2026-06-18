@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 /// 功能对话框（Export 等）；宽屏限制最大宽度。
 ///
-/// 最大宽度在 [_AppFeatureDialogFrame] 的每次 build 时按当前 [MediaQuery] 断点计算
+/// 最大宽度在 [AppFeatureDialogFrame] 的每次 build 时按当前 [MediaQuery] 断点计算
 ///（[sideTabFeatureDialogMaxWidth]），窗口缩放后即时生效，无需关闭重开。
 Future<T?> showAppFeatureDialog<T>({
   required BuildContext context,
@@ -15,15 +15,30 @@ Future<T?> showAppFeatureDialog<T>({
   return showDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
-    builder: (dialogContext) => _AppFeatureDialogFrame(
+    builder: (dialogContext) => AppFeatureDialogFrame(
       child: builder(dialogContext),
     ),
   );
 }
 
-/// [showAppFeatureDialog] 外层限宽壳；独立 widget 以便 [MediaQuery] 变化时重建。
-class _AppFeatureDialogFrame extends StatelessWidget {
-  const _AppFeatureDialogFrame({required this.child});
+/// 侧栏 Tab 功能对话框（新建项目、项目属性等）；宽屏居中限宽。
+Future<T?> showSideTabFeatureDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+}) {
+  return showDialog<T>(
+    context: context,
+    barrierDismissible: barrierDismissible,
+    builder: (dialogContext) => AppFeatureDialogFrame(
+      child: builder(dialogContext),
+    ),
+  );
+}
+
+/// 功能 / 侧栏 Tab 对话框外层限宽壳；独立 widget 以便 [MediaQuery] 变化时重建。
+class AppFeatureDialogFrame extends StatelessWidget {
+  const AppFeatureDialogFrame({super.key, required this.child});
 
   final Widget child;
 
@@ -74,7 +89,14 @@ class AppDialog extends StatelessWidget {
     required this.content,
     this.titleTrailing,
     this.actions,
-    this.contentPadding = const EdgeInsets.fromLTRB(24, 16, 24, 16),
+    this.contentPadding = const EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.lg,
+    ),
+    this.showDividers = true,
+    this.scrollable = true,
   });
 
   final String title;
@@ -85,6 +107,12 @@ class AppDialog extends StatelessWidget {
   /// body 内边距；侧栏 Tab 功能对话框传 [EdgeInsets.zero] 以使 shell 贴边。
   final EdgeInsetsGeometry contentPadding;
 
+  /// 是否在标题 / 内容 / 操作区之间显示分割线。
+  final bool showDividers;
+
+  /// `false` 时内容区不外包 [SingleChildScrollView]，由子组件自行滚动（侧栏 Tab）。
+  final bool scrollable;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -92,7 +120,44 @@ class AppDialog extends StatelessWidget {
 
     final actionWidgets = actions;
     final hasActions = actionWidgets != null && actionWidgets.isNotEmpty;
-    final maxHeight = MediaQuery.sizeOf(context).height - 48;
+    final maxHeight =
+        MediaQuery.sizeOf(context).height - AppLayout.dialogViewportMargin;
+    final expandContent = !scrollable;
+
+    final titlePadding = EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      AppSpacing.lg,
+      AppSpacing.lg,
+      showDividers ? AppSpacing.md : AppSpacing.lg,
+    );
+    final actionsPadding = EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      showDividers ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md,
+      AppSpacing.lg,
+      AppSpacing.lg,
+    );
+
+    Widget contentChild;
+    if (scrollable) {
+      contentChild = Flexible(
+        fit: FlexFit.loose,
+        child: SingleChildScrollView(
+          padding: hasActions
+              ? contentPadding
+              : contentPadding.add(const EdgeInsets.only(bottom: AppSpacing.sm)),
+          child: SizedBox(width: double.maxFinite, child: content),
+        ),
+      );
+    } else {
+      contentChild = Expanded(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: AppLayout.sideTabDialogMinHeight,
+          ),
+          child: content,
+        ),
+      );
+    }
 
     return Dialog(
       backgroundColor: scheme.surface,
@@ -104,17 +169,17 @@ class AppDialog extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: 280, maxHeight: maxHeight),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize:
+              expandContent ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              padding: titlePadding,
               child: Row(
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       color: scheme.onSurface,
                     ),
                   ),
@@ -125,20 +190,14 @@ class AppDialog extends StatelessWidget {
                 ],
               ),
             ),
-            Divider(height: 1, thickness: 1, color: scheme.outline),
-            Flexible(
-              fit: FlexFit.loose,
-              child: SingleChildScrollView(
-                padding: hasActions
-                    ? contentPadding
-                    : contentPadding.add(const EdgeInsets.only(bottom: 8)),
-                child: SizedBox(width: double.maxFinite, child: content),
-              ),
-            ),
-            if (hasActions) ...[
+            if (showDividers)
               Divider(height: 1, thickness: 1, color: scheme.outline),
+            contentChild,
+            if (hasActions) ...[
+              if (showDividers)
+                Divider(height: 1, thickness: 1, color: scheme.outline),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                padding: actionsPadding,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [

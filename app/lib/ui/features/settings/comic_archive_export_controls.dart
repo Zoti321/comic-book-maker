@@ -150,11 +150,7 @@ class _LabeledFieldRow extends StatelessWidget {
 String comicArchiveContainerMenuLabel(ComicArchiveContainerFrb container) {
   final name = comicArchiveContainerLabel(container: container);
   if (isComicArchiveContainerSelectable(container: container)) {
-    return switch (container) {
-      ComicArchiveContainerFrb.zip => '$name（可用，对应 CBZ Export）',
-      ComicArchiveContainerFrb.rar => '$name（可用，对应 CBR Export）',
-      ComicArchiveContainerFrb.sevenZip => '$name（可用，对应 CB7 Export）',
-    };
+    return name;
   }
   return '$name（尚未实现）';
 }

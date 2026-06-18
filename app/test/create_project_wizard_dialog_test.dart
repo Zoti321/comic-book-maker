@@ -1,5 +1,8 @@
+import 'package:comic_book_maker/domain/models/create_project_draft.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_responsive.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_page.dart';
+import 'package:comic_book_maker/ui/features/create_project/providers/create_project_wizard_session_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -107,9 +110,24 @@ class _WizardHost extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: FilledButton(
-          onPressed: () => showDialog<void>(
+          onPressed: () => openSideTabFeature<CreateProjectDraft>(
             context: context,
-            builder: (context) => const CreateProjectWizardDialog(),
+            compactPageLocation: '/projects/create',
+            session: SideTabFeatureSessionHooks(
+              onOpen: (container) {
+                container
+                    .read(createProjectWizardSessionProvider.notifier)
+                    .reset();
+              },
+              onClose: (container) {
+                container.invalidate(createProjectWizardSessionProvider);
+              },
+            ),
+            dialogBuilder: (dialogContext, coordinator) =>
+                CreateProjectWizardDialog(
+              coordinator: coordinator,
+              dialogContext: dialogContext,
+            ),
           ),
           child: const Text('打开向导'),
         ),

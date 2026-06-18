@@ -9,7 +9,6 @@ class SideTabDialogShell extends StatelessWidget {
     required this.onTabSelected,
     required this.tabs,
     required this.child,
-    this.height,
   });
 
   final int selectedIndex;
@@ -17,49 +16,32 @@ class SideTabDialogShell extends StatelessWidget {
   final List<SideTabDialogTab> tabs;
   final Widget child;
 
-  /// 外壳高度；未设时按宽度选用 400 / 440，并在父级有界时不超过可用高度。
-  final double? height;
-
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final preferredHeight = 440.0;
-        final shellHeight = height ??
-            (constraints.hasBoundedHeight
-                ? constraints.maxHeight.clamp(240.0, preferredHeight)
-                : preferredHeight);
-
-        return SizedBox(
-          width: double.maxFinite,
-          height: shellHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: AppLayout.sideTabDialogNavWidth,
+          child: ListView(
+            padding: EdgeInsets.zero,
             children: [
-              SizedBox(
-                width: 112,
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    for (var i = 0; i < tabs.length; i++)
-                      _SideTabNavItem(
-                        tab: tabs[i],
-                        selected: selectedIndex == i,
-                        onTap: () => onTabSelected(i),
-                      ),
-                  ],
+              for (var i = 0; i < tabs.length; i++)
+                _SideTabNavItem(
+                  tab: tabs[i],
+                  selected: selectedIndex == i,
+                  onTap: () => onTabSelected(i),
                 ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: child,
-                ),
-              ),
             ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: SingleChildScrollView(child: child),
+          ),
+        ),
+      ],
     );
   }
 }

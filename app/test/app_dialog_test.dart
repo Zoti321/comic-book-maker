@@ -42,6 +42,39 @@ void main() {
       expect(tester.getSize(find.byType(Dialog)).width, 800);
     });
   });
+
+  group('showSideTabFeatureDialog', () {
+    testWidgets('uses expanded max width at wide viewport', (tester) async {
+      _setViewport(tester, const Size(1300, 800));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: _SideTabDialogHost()),
+      );
+      await tester.tap(find.text('打开'));
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(Dialog)).width, 800);
+    });
+
+    testWidgets('updates max width when window grows across breakpoints', (
+      tester,
+    ) async {
+      _setViewport(tester, const Size(900, 800));
+
+      await tester.pumpWidget(
+        const MaterialApp(home: _SideTabDialogHost()),
+      );
+      await tester.tap(find.text('打开'));
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(Dialog)).width, 680);
+
+      tester.view.physicalSize = const Size(1300, 800);
+      await tester.pumpAndSettle();
+
+      expect(tester.getSize(find.byType(Dialog)).width, 800);
+    });
+  });
 }
 
 class _FeatureDialogHost extends StatelessWidget {
@@ -57,6 +90,30 @@ class _FeatureDialogHost extends StatelessWidget {
             builder: (dialogContext) => const AppDialog(
               title: '测试',
               content: Text('内容'),
+            ),
+          ),
+          child: const Text('打开'),
+        ),
+      ),
+    );
+  }
+}
+
+class _SideTabDialogHost extends StatelessWidget {
+  const _SideTabDialogHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: AppButton(
+          onPressed: () => showSideTabFeatureDialog<void>(
+            context: context,
+            builder: (dialogContext) => const AppDialog(
+              title: '测试',
+              content: Text('内容'),
+              showDividers: false,
+              scrollable: false,
             ),
           ),
           child: const Text('打开'),

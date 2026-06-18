@@ -10,6 +10,15 @@ abstract final class AppBreakpointWidths {
 abstract final class AppLayout {
   static const sidebarWidth = 80.0;
   static const contentMaxWidth = 1280.0;
+
+  /// 侧栏 Tab 功能对话框内左侧导航宽度。
+  static const sideTabDialogNavWidth = 112.0;
+
+  /// 侧栏 Tab 对话框内容区最小高度（M3 内容驱动 + 下限）。
+  static const sideTabDialogMinHeight = 320.0;
+
+  /// 对话框相对视口上下的总留白（用于 [maxHeight]）。
+  static const dialogViewportMargin = 48.0;
 }
 
 /// 间距、圆角、排版等设计 token（与 [AppTheme.light] 配套）。

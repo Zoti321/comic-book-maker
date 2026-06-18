@@ -1,7 +1,8 @@
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_dialog.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_states.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_properties_body.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
-import 'package:comic_book_maker/ui/core/shell/side_tab_feature_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -12,14 +13,16 @@ class ProjectPropertiesDialog extends HookConsumerWidget {
     super.key,
     required this.projectId,
     required this.dialogContext,
+    required this.coordinator,
   });
 
   final String projectId;
   final BuildContext dialogContext;
+  final SideTabFeatureCoordinator<void> coordinator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabIndex = useState(0);
+    final tabIndex = useState(coordinator.tabIndex);
     final workspace = ref.watch(projectWorkspaceProvider(projectId));
     final settings = workspace.settings;
 
@@ -46,12 +49,13 @@ class ProjectPropertiesDialog extends HookConsumerWidget {
       title: '项目属性',
       tabs: projectPropertiesTabs,
       selectedIndex: tabIndex.value,
-      onTabSelected: (index) => tabIndex.value = index,
-      body: SingleChildScrollView(
-        child: ProjectPropertiesTabPanel(
-          projectId: projectId,
-          tabIndex: tabIndex.value,
-        ),
+      onTabSelected: (index) {
+        tabIndex.value = index;
+        coordinator.tabIndex = index;
+      },
+      body: ProjectPropertiesTabPanel(
+        projectId: projectId,
+        tabIndex: tabIndex.value,
       ),
       actions: [
         TextButton(

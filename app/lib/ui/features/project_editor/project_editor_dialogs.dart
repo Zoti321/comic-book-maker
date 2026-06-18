@@ -1,44 +1,7 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-/// 项目编辑相关功能对话框（限宽壳层）。
-Future<T?> showProjectEditorFeatureDialog<T>({
-  required BuildContext context,
-  required WidgetBuilder builder,
-  bool barrierDismissible = true,
-}) {
-  return showDialog<T>(
-    context: context,
-    barrierDismissible: barrierDismissible,
-    builder: (dialogContext) => _ProjectEditorFeatureDialogFrame(
-      child: builder(dialogContext),
-    ),
-  );
-}
-
-class _ProjectEditorFeatureDialogFrame extends StatelessWidget {
-  const _ProjectEditorFeatureDialogFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: sideTabFeatureDialogMaxWidth(context),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
 
 Future<bool?> showProjectEditorConfirmDialog({
   required BuildContext context,

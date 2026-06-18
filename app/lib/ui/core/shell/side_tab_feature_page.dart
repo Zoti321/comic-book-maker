@@ -11,16 +11,34 @@ class SideTabFeaturePage extends HookWidget {
     required this.tabs,
     required this.tabBodies,
     this.bottomNavigationBar,
+    this.initialTabIndex = 0,
+    this.onTabSelected,
   });
 
   final String title;
   final List<SideTabDialogTab> tabs;
   final List<Widget> tabBodies;
   final Widget? bottomNavigationBar;
+  final int initialTabIndex;
+  final ValueChanged<int>? onTabSelected;
 
   @override
   Widget build(BuildContext context) {
-    final tabController = useTabController(initialLength: tabs.length);
+    final tabController = useTabController(
+      initialLength: tabs.length,
+      initialIndex: initialTabIndex.clamp(0, tabs.length - 1),
+    );
+
+    useEffect(() {
+      void listener() {
+        if (!tabController.indexIsChanging) {
+          onTabSelected?.call(tabController.index);
+        }
+      }
+
+      tabController.addListener(listener);
+      return () => tabController.removeListener(listener);
+    }, [tabController, onTabSelected]);
 
     return Scaffold(
       appBar: AppBar(
@@ -46,7 +64,7 @@ class SideTabFeaturePage extends HookWidget {
 /// 全页 Tab 内容区标准内边距 + 滚动。
 Widget sideTabFeaturePageTabBody(Widget child) {
   return SingleChildScrollView(
-    padding: const EdgeInsets.all(AppSpacing.md),
+    padding: const EdgeInsets.all(AppSpacing.lg),
     child: child,
   );
 }
@@ -60,10 +78,10 @@ Widget sideTabFeaturePageActionBar({
   return SafeArea(
     child: Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
+        AppSpacing.lg,
         AppSpacing.sm,
-        AppSpacing.md,
-        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.lg,
       ),
       child: Row(
         children: [
