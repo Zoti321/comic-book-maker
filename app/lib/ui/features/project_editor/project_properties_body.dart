@@ -9,6 +9,7 @@ import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dar
 import 'package:comic_book_maker/ui/features/settings/project_export_settings_panel.dart';
 import 'package:comic_book_maker/ui/core/project_settings_update.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_dialog_shell.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -235,19 +236,20 @@ class ProjectPropertiesImportTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<InferredImportKindFrb>(
+    return AppDropdownMenu<InferredImportKindFrb>(
       key: ValueKey(settings.inferredImportKind),
-      decoration: const InputDecoration(labelText: '导入格式'),
-      initialValue: settings.inferredImportKind,
-      onChanged: saving ? null : onImportKindChanged,
+      label: '导入格式',
+      value: settings.inferredImportKind,
+      enabled: !saving,
       items: [
         for (final kind in InferredImportKindFrb.values)
-          DropdownMenuItem(
+          AppDropdownMenuItem(
             value: kind,
+            label: inferredImportKindLabel(kind),
             enabled: kind != InferredImportKindFrb.pdf,
-            child: Text(inferredImportKindLabel(kind)),
           ),
       ],
+      onChanged: saving ? null : onImportKindChanged,
     );
   }
 }

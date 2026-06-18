@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:flutter/material.dart';
 
@@ -34,13 +35,19 @@ class ComicArchiveExportControls extends StatelessWidget {
       container: settings.comicArchiveContainer,
     );
 
-    final containerSelect = DropdownButtonFormField<ComicArchiveContainerFrb>(
+    final containerSelect = AppDropdownMenu<ComicArchiveContainerFrb>(
       key: ValueKey(settings.comicArchiveContainer),
-      decoration: InputDecoration(
-        labelText: _horizontal ? null : '压缩算法',
-        enabled: enabled,
-      ),
+      label: _horizontal ? null : '压缩算法',
       value: settings.comicArchiveContainer,
+      enabled: enabled,
+      items: [
+        for (final container in _containers)
+          AppDropdownMenuItem(
+            value: container,
+            label: comicArchiveContainerMenuLabel(container),
+            enabled: isComicArchiveContainerSelectable(container: container),
+          ),
+      ],
       onChanged: enabled
           ? (value) {
               if (value == null) return;
@@ -50,21 +57,6 @@ class ComicArchiveExportControls extends StatelessWidget {
               onContainerChanged(value);
             }
           : null,
-      isExpanded: true,
-      items: [
-        for (final container in _containers)
-          DropdownMenuItem<ComicArchiveContainerFrb>(
-            value: container,
-            child: Text(
-              comicArchiveContainerMenuLabel(container),
-              style: !isComicArchiveContainerSelectable(container: container)
-                  ? theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    )
-                  : null,
-            ),
-          ),
-      ],
     );
 
     final extensionCheckbox = Row(

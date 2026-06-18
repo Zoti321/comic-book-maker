@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
 import 'package:comic_book_maker/ui/features/settings/comic_archive_export_controls.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
@@ -47,26 +48,24 @@ class ProjectExportSettingsPanel extends StatelessWidget {
       onExportDirectoryChanged(selected);
     }
 
-    final exportFormatSelect = DropdownButtonFormField<ExportFormatFrb>(
+    final exportFormatSelect = AppDropdownMenu<ExportFormatFrb>(
       key: ValueKey(settings.exportFormat),
-      decoration: InputDecoration(
-        labelText: _horizontal ? null : '导出格式',
-      ),
+      label: _horizontal ? null : '导出格式',
       value: settings.exportFormat,
+      enabled: enabled,
+      items: [
+        for (final format in ExportFormatFrb.values)
+          AppDropdownMenuItem(
+            value: format,
+            label: exportFormatLabel(format),
+          ),
+      ],
       onChanged: enabled
           ? (value) {
               if (value == null) return;
               onExportFormatChanged(value);
             }
           : null,
-      isExpanded: true,
-      items: [
-        for (final format in ExportFormatFrb.values)
-          DropdownMenuItem<ExportFormatFrb>(
-            value: format,
-            child: Text(exportFormatLabel(format)),
-          ),
-      ],
     );
 
     final defaultDirectoryCheckbox = Row(

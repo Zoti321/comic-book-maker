@@ -1,7 +1,8 @@
 import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
@@ -188,13 +189,34 @@ void main() {
     );
     await selectMetadataSection(tester, '常规');
 
-    expect(find.text('Everyone'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+    expect(find.text('Everyone'), findsWidgets);
+    expect(find.byType(AppDropdownMenu<String>), findsOneWidget);
 
-    await tester.tap(find.text('Everyone'), warnIfMissed: false);
+    await tester.ensureVisible(find.byType(AppDropdownMenu<String>));
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(AppDropdownMenu<String>),
+            matching: find.byIcon(Icons.arrow_drop_down),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('R18+'));
-    await tester.pump(const Duration(milliseconds: 700));
+
+    final menuItem = find.ancestor(
+      of: find.text('R18+').last,
+      matching: find.byType(MenuItemButton),
+    );
+    expect(menuItem, findsOneWidget);
+    await tester.ensureVisible(menuItem);
+    await tester.tap(menuItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('R18+'), findsWidgets);
+
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 1);

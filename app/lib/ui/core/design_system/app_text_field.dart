@@ -3,7 +3,7 @@ import 'package:comic_book_maker/ui/core/theme/app_fonts.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
-/// 自绘单行文本输入（与 [AppSelect] 对齐的 shadcn 风格）。
+/// 自绘单行文本输入（shadcn 风格遗留）。
 ///
 /// 内部使用无边框 [TextField]；描边、label、helper 由本组件绘制。
 class AppTextField extends StatefulWidget {

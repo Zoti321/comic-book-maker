@@ -57,6 +57,9 @@ abstract final class AppTypography {
 
   static const controlHeight = 36.0;
   static const controlHeightCompact = 32.0;
+
+  /// M3 Outlined 表单字段目标高度（`TextFormField` / `AppDropdownMenu`）。
+  static const controlHeightForm = 56.0;
 }
 
 /// 时长 token（动画、tooltip 等）。
