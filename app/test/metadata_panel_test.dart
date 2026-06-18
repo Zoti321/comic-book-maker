@@ -1,7 +1,8 @@
 import 'package:comic_book_maker/src/rust/api/metadata.dart';
 import 'package:comic_book_maker/src/rust/api/simple.dart';
-import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
+import 'package:comic_book_maker/ui/features/project_editor/metadata_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'support/ui/features/project_editor/metadata_panel_harness.dart';
@@ -56,8 +57,7 @@ void main() {
       exportFormat: ExportFormatFrb.comicArchive,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('ComicInfo'), findsNothing);
@@ -74,8 +74,7 @@ void main() {
       exportFormat: ExportFormatFrb.epub,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('OPF Metadata'), findsNothing);
@@ -91,35 +90,35 @@ void main() {
       exportFormat: ExportFormatFrb.pdf,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     expect(find.text('当前格式不支持编辑'), findsNothing);
   });
 
-  testWidgets('published date year-only displays partial until picker saves full date', (
-    tester,
-  ) async {
-    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
-      publishedDate: '2024',
-    );
+  testWidgets(
+    'published date year-only displays partial until picker saves full date',
+    (tester) async {
+      gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+        publishedDate: '2024',
+      );
 
-    await pumpMetadataPanel(
-      tester,
-      gateway: gateway,
-      exportFormat: ExportFormatFrb.comicArchive,
-    );
-    await selectMetadataSection(tester, '常规');
+      await pumpMetadataPanel(
+        tester,
+        gateway: gateway,
+        exportFormat: ExportFormatFrb.comicArchive,
+      );
+      await selectMetadataSection(tester, '常规');
 
-    expect(find.text('2024年'), findsOneWidget);
+      expect(find.text('2024年'), findsOneWidget);
 
-    await openPublishedDatePicker(tester);
-    await confirmDatePicker(tester);
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
+      await openPublishedDatePicker(tester);
+      await confirmDatePicker(tester);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
 
-    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-01-01');
-    expect(find.text('2024年1月1日'), findsOneWidget);
-  });
+      expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-01-01');
+      expect(find.text('2024年1月1日'), findsOneWidget);
+    },
+  );
 
   testWidgets('published date year-month displays partial', (tester) async {
     gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
@@ -190,13 +189,34 @@ void main() {
     );
     await selectMetadataSection(tester, '常规');
 
-    expect(find.text('Everyone'), findsOneWidget);
-    expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+    expect(find.text('Everyone'), findsWidgets);
+    expect(find.byType(AppDropdownMenu<String>), findsOneWidget);
 
-    await tester.tap(find.text('Everyone'), warnIfMissed: false);
+    await tester.ensureVisible(find.byType(AppDropdownMenu<String>));
+
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byType(AppDropdownMenu<String>),
+            matching: find.byIcon(Icons.arrow_drop_down),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('R18+'));
-    await tester.pump(const Duration(milliseconds: 700));
+
+    final menuItem = find.ancestor(
+      of: find.text('R18+').last,
+      matching: find.byType(MenuItemButton),
+    );
+    expect(menuItem, findsOneWidget);
+    await tester.ensureVisible(menuItem);
+    await tester.tap(menuItem);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('R18+'), findsWidgets);
+
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pumpAndSettle();
 
     expect(gateway.metadataUpdateCallCount, 1);

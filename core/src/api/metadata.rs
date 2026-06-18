@@ -97,6 +97,7 @@ pub enum MetadataFieldKindFrb {
 pub struct MetadataFieldSpecFrb {
     pub id: String,
     pub label: String,
+    pub hint: Option<String>,
     pub kind: MetadataFieldKindFrb,
     pub required: bool,
     pub options: Vec<String>,
@@ -213,6 +214,7 @@ impl From<MetadataFieldSpecDto> for MetadataFieldSpecFrb {
         Self {
             id: value.id,
             label: value.label,
+            hint: value.hint,
             kind: value.kind.into(),
             required: value.required,
             options: value.options,

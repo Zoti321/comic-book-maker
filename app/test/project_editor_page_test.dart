@@ -47,7 +47,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('compact editor shows icon toolbar and stacked tab row', (
+  testWidgets('compact editor shows icon toolbar actions in header', (
     tester,
   ) async {
     await openEditor(tester, viewport: const Size(400, 800));

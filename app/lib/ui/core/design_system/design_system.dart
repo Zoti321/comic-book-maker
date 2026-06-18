@@ -10,7 +10,6 @@ export 'app_button.dart';
 export 'app_operation_feedback.dart';
 export 'app_popup_menu.dart';
 export 'app_popup_menu_panel.dart';
-export 'app_select.dart';
 export 'app_card.dart';
 export 'app_checkbox.dart';
 export 'app_dialog.dart';

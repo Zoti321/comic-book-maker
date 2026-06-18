@@ -1,64 +1,51 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-/// 缩略图网格弹出菜单行。
-class PageThumbnailMenuRow extends StatelessWidget {
-  const PageThumbnailMenuRow({
-    super.key,
+/// 缩略图 overflow 菜单项描述（宽屏 [MenuAnchor] / 窄屏 [showMenu] 共用）。
+class PageThumbnailMenuAction<T> {
+  const PageThumbnailMenuAction({
+    required this.value,
     required this.icon,
     required this.label,
     this.foregroundColor,
   });
 
+  final T value;
   final IconData icon;
   final String label;
   final Color? foregroundColor;
-
-  static const menuItemHeight = 28.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = foregroundColor ?? scheme.onSurface;
-    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: color,
-        );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(label, style: textStyle),
-        ],
-      ),
-    );
-  }
 }
 
-/// 桌面悬停显示 ⋮；移动端长按弹出菜单。
+/// 桌面 hover 显示 [Icons.more_vert] + [MenuAnchor]；窄屏长按 [showMenu]。
 class PageThumbnailHoverMenu<T> extends StatefulWidget {
   const PageThumbnailHoverMenu({
     super.key,
     required this.child,
-    required this.menuItemsBuilder,
+    required this.menuActionsBuilder,
     required this.onSelected,
-    this.buttonTop = 6,
-    this.buttonRight = 6,
-    this.menuButtonBackgroundColor,
-    this.menuButtonIconColor,
+    this.buttonTop = 4,
+    this.buttonRight = 4,
   });
 
   final Widget child;
-  final List<PopupMenuEntry<T>> Function(BuildContext context) menuItemsBuilder;
+  final List<PageThumbnailMenuAction<T>> Function(BuildContext context)
+      menuActionsBuilder;
   final ValueChanged<T> onSelected;
   final double buttonTop;
   final double buttonRight;
-  final Color? menuButtonBackgroundColor;
-  final Color? menuButtonIconColor;
+
+  static const menuMinWidth = 200.0;
+  static const menuItemHeight = 48.0;
+
+  static final overflowIconButtonStyle = IconButton.styleFrom(
+    shape: const CircleBorder(),
+    visualDensity: VisualDensity.compact,
+  );
+
+  static final menuStyle = MenuStyle(
+    minimumSize: WidgetStatePropertyAll(Size(menuMinWidth, 0)),
+  );
 
   @override
   State<PageThumbnailHoverMenu<T>> createState() =>
@@ -67,13 +54,15 @@ class PageThumbnailHoverMenu<T> extends StatefulWidget {
 
 class _PageThumbnailHoverMenuState<T> extends State<PageThumbnailHoverMenu<T>> {
   bool _hovering = false;
+  bool _menuOpen = false;
   final GlobalKey _anchorKey = GlobalKey();
-  BuildContext? _menuThemeContext;
+  final MenuController _menuController = MenuController();
 
-  Future<void> _openMenu() async {
+  bool get _showOverflowButton => _hovering || _menuOpen;
+
+  Future<void> _openCompactMenu() async {
     final anchorContext = _anchorKey.currentContext;
-    final menuContext = _menuThemeContext;
-    if (anchorContext == null || menuContext == null) return;
+    if (anchorContext == null) return;
 
     final renderBox = anchorContext.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
@@ -91,10 +80,22 @@ class _PageThumbnailHoverMenuState<T> extends State<PageThumbnailHoverMenu<T>> {
       overlayBox.size.height - topLeft.dy - 8,
     );
 
+    final actions = widget.menuActionsBuilder(anchorContext);
     final selected = await showMenu<T>(
-      context: menuContext,
+      context: anchorContext,
       position: position,
-      items: widget.menuItemsBuilder(anchorContext),
+      constraints: const BoxConstraints(
+        minWidth: PageThumbnailHoverMenu.menuMinWidth,
+      ),
+      items: actions
+          .map(
+            (action) => PopupMenuItem<T>(
+              value: action.value,
+              height: PageThumbnailHoverMenu.menuItemHeight,
+              child: _ThumbnailMenuRow<T>(action: action),
+            ),
+          )
+          .toList(),
     );
 
     if (selected != null && mounted) {
@@ -102,92 +103,103 @@ class _PageThumbnailHoverMenuState<T> extends State<PageThumbnailHoverMenu<T>> {
     }
   }
 
+  List<Widget> _menuChildren(BuildContext context) {
+    final actions = widget.menuActionsBuilder(context);
+    return actions
+        .map(
+          (action) => MenuItemButton(
+            style: MenuItemButton.styleFrom(
+              minimumSize: const Size(
+                PageThumbnailHoverMenu.menuMinWidth,
+                PageThumbnailHoverMenu.menuItemHeight,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            ),
+            onPressed: () {
+              _menuController.close();
+              widget.onSelected(action.value);
+            },
+            child: _ThumbnailMenuRow<T>(action: action),
+          ),
+        )
+        .toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final showHover = !isCompact(context);
+    final showHoverButton = !isCompact(context);
     final longPress = isCompact(context);
-    final scheme = Theme.of(context).colorScheme;
-    final iconColor = widget.menuButtonIconColor ?? scheme.onSurface;
-    final bg = widget.menuButtonBackgroundColor;
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        popupMenuTheme: Theme.of(context).popupMenuTheme.copyWith(
-              color: scheme.surface,
-              surfaceTintColor: Colors.transparent,
-              textStyle: Theme.of(context).textTheme.bodySmall,
-            ),
-      ),
-      child: Builder(
-        builder: (menuContext) {
-          _menuThemeContext = menuContext;
-
-          return KeyedSubtree(
-            key: _anchorKey,
-            child: MouseRegion(
-              onEnter: showHover ? (_) => setState(() => _hovering = true) : null,
-              onExit: showHover ? (_) => setState(() => _hovering = false) : null,
-              child: GestureDetector(
-                onLongPress: longPress ? _openMenu : null,
-                behavior: HitTestBehavior.deferToChild,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  fit: StackFit.passthrough,
-                  children: [
-                    widget.child,
-                    if (showHover && _hovering)
-                      Positioned(
-                        top: widget.buttonTop,
-                        right: widget.buttonRight,
-                        child: Material(
-                          type: MaterialType.transparency,
-                          shape: const CircleBorder(),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            customBorder: const CircleBorder(),
-                            onTap: _openMenu,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: bg,
-                                border: bg != null
-                                    ? Border.all(
-                                        color: scheme.outline.withValues(
-                                          alpha: 0.8,
-                                        ),
-                                      )
-                                    : null,
-                                boxShadow: bg != null
-                                    ? [
-                                        BoxShadow(
-                                          color: scheme.shadow.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(6),
-                                child: Icon(
-                                  LucideIcons.ellipsisVertical,
-                                  size: 20,
-                                  color: iconColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+    return KeyedSubtree(
+      key: _anchorKey,
+      child: MouseRegion(
+        onEnter: showHoverButton ? (_) => setState(() => _hovering = true) : null,
+        onExit: showHoverButton ? (_) => setState(() => _hovering = false) : null,
+        child: GestureDetector(
+          onLongPress: longPress ? _openCompactMenu : null,
+          behavior: HitTestBehavior.deferToChild,
+          child: Stack(
+            clipBehavior: Clip.none,
+            fit: StackFit.passthrough,
+            children: [
+              widget.child,
+              if (showHoverButton)
+                Positioned(
+                  top: widget.buttonTop,
+                  right: widget.buttonRight,
+                  child: IgnorePointer(
+                    ignoring: !_showOverflowButton,
+                    child: Opacity(
+                      opacity: _showOverflowButton ? 1 : 0,
+                      child: MenuAnchor(
+                        controller: _menuController,
+                        style: PageThumbnailHoverMenu.menuStyle,
+                        onOpen: () => setState(() => _menuOpen = true),
+                        onClose: () => setState(() => _menuOpen = false),
+                        menuChildren: _menuChildren(context),
+                        builder: (context, controller, child) {
+                          return IconButton(
+                            icon: const Icon(Icons.more_vert),
+                            tooltip: '更多',
+                            style:
+                                PageThumbnailHoverMenu.overflowIconButtonStyle,
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                          );
+                        },
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _ThumbnailMenuRow<T> extends StatelessWidget {
+  const _ThumbnailMenuRow({required this.action});
+
+  final PageThumbnailMenuAction<T> action;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = action.foregroundColor ?? scheme.onSurface;
+
+    return Row(
+      children: [
+        Icon(action.icon, size: 20, color: color),
+        const SizedBox(width: AppSpacing.sm),
+        Text(action.label, style: TextStyle(color: color)),
+      ],
     );
   }
 }

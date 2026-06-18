@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
 import 'package:flutter/material.dart';
 
 String exportFormatLabel(ExportFormatFrb format) {
@@ -54,31 +55,28 @@ class ProjectEditorSettingsBar extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final stacked = constraints.maxWidth < 520;
-              final exportField = DropdownButtonFormField<ExportFormatFrb>(
+              final exportField = AppDropdownMenu<ExportFormatFrb>(
                 key: ValueKey(settings.exportFormat),
-                initialValue: settings.exportFormat,
-                decoration: InputDecoration(
-                  labelText: 'Export 格式',
-                  enabled: !savingExportFormat,
-                  suffixIcon: savingExportFormat
-                      ? const Padding(
-                          padding: EdgeInsets.all(12),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : null,
-                ),
-                items: ExportFormatFrb.values
-                    .map(
-                      (format) => DropdownMenuItem(
-                        value: format,
-                        child: Text(exportFormatLabel(format)),
-                      ),
-                    )
-                    .toList(),
+                label: 'Export 格式',
+                value: settings.exportFormat,
+                enabled: !savingExportFormat,
+                trailingIcon: savingExportFormat
+                    ? const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : null,
+                items: [
+                  for (final format in ExportFormatFrb.values)
+                    AppDropdownMenuItem(
+                      value: format,
+                      label: exportFormatLabel(format),
+                    ),
+                ],
                 onChanged: savingExportFormat
                     ? null
                     : (value) {

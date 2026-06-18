@@ -2,6 +2,8 @@ import 'package:comic_book_maker/ui/core/design_system/desktop_window_caption.da
 import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_chrome.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_desktop_chrome.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,10 +34,17 @@ void main() {
   Future<void> pumpShell(
     WidgetTester tester, {
     required DesktopWindowConfig config,
+    required Widget child,
+    Size surfaceSize = const Size(1280, 800),
     Widget? captionOverride,
     DesktopShellFrameBuilder? frameBuilderOverride,
   }) async {
     desktopWindowConfig = config;
+
+    tester.view.physicalSize = surfaceSize;
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(
       MaterialApp(
@@ -43,19 +52,50 @@ void main() {
         home: DesktopShell(
           captionOverride: captionOverride,
           frameBuilderOverride: frameBuilderOverride,
-          child: const Scaffold(body: Text('应用正文')),
+          child: child,
         ),
       ),
     );
     await tester.pump();
   }
 
-  testWidgets('renders caption slot and body when chrome is enabled', (
+  testWidgets('compact width adds full-width chrome row when chrome is enabled', (
     WidgetTester tester,
   ) async {
     await pumpShell(
       tester,
       config: const DesktopWindowConfig(chromeEnabled: true),
+      child: const Scaffold(body: Text('应用正文')),
+      surfaceSize: const Size(400, 800),
+      frameBuilderOverride: (child) => child,
+    );
+
+    expect(find.byKey(AppShellFullWidthChromeRow.slotKey), findsOneWidget);
+    expect(find.text('应用正文'), findsOneWidget);
+  });
+
+  testWidgets('wide width passes chrome handling to AppShell child', (
+    WidgetTester tester,
+  ) async {
+    await pumpShell(
+      tester,
+      config: const DesktopWindowConfig(chromeEnabled: true),
+      child: const Scaffold(body: Text('编辑页')),
+      frameBuilderOverride: (child) => child,
+    );
+
+    expect(find.byKey(AppShellFullWidthChromeRow.slotKey), findsNothing);
+    expect(find.text('编辑页'), findsOneWidget);
+  });
+
+  testWidgets('compact chrome override slot when captionOverride is set', (
+    WidgetTester tester,
+  ) async {
+    await pumpShell(
+      tester,
+      config: const DesktopWindowConfig(chromeEnabled: true),
+      child: const Scaffold(body: Text('应用正文')),
+      surfaceSize: const Size(400, 800),
       captionOverride: const Text('窗口顶栏'),
       frameBuilderOverride: (child) => child,
     );
@@ -71,6 +111,7 @@ void main() {
     await pumpShell(
       tester,
       config: DesktopWindowConfig.disabled,
+      child: const Scaffold(body: Text('应用正文')),
       captionOverride: const Text('窗口顶栏'),
       frameBuilderOverride: (child) => child,
     );
@@ -80,13 +121,13 @@ void main() {
     expect(find.text('应用正文'), findsOneWidget);
   });
 
-  testWidgets('DesktopWindowCaption uses shell chrome surface background',
+  testWidgets('DesktopWindowCaption uses content surface background',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
         home: const Scaffold(
-          body: DesktopWindowCaption(title: 'Comic Book Maker'),
+          body: DesktopWindowCaption(),
         ),
       ),
     );
@@ -95,25 +136,8 @@ void main() {
     final windowCaption = tester.widget<WindowCaption>(find.byType(WindowCaption));
     expect(
       windowCaption.backgroundColor,
-      AppTheme.light().colorScheme.surface,
+      AppShellChrome.contentBackground(AppTheme.light().colorScheme),
     );
-    expect(find.text('Comic Book Maker'), findsOneWidget);
-  });
-
-  testWidgets('split chrome aligns caption lead with sidebar width at desktop',
-      (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1280, 800);
-    tester.view.devicePixelRatio = 1.0;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await pumpShell(
-      tester,
-      config: const DesktopWindowConfig(chromeEnabled: true),
-      frameBuilderOverride: (child) => child,
-    );
-
-    expect(find.byKey(DesktopShellChromeLead.keySlot), findsOneWidget);
-    expect(find.text('Comic Book Maker'), findsOneWidget);
+    expect(find.text('Comic Book Maker'), findsNothing);
   });
 }

@@ -1,9 +1,6 @@
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
-/// 侧栏 Tab 功能对话框在窄屏下切换为 header Tab 的宽度断点。
-const sideTabDialogCompactBreakpoint = 560.0;
-
 /// 对话框内侧栏 Tab + 内容区（新建向导 / 项目属性等共用）。
 class SideTabDialogShell extends StatelessWidget {
   const SideTabDialogShell({
@@ -13,7 +10,6 @@ class SideTabDialogShell extends StatelessWidget {
     required this.tabs,
     required this.child,
     this.height,
-    this.showSideTabs = true,
   });
 
   final int selectedIndex;
@@ -24,33 +20,15 @@ class SideTabDialogShell extends StatelessWidget {
   /// 外壳高度；未设时按宽度选用 400 / 440，并在父级有界时不超过可用高度。
   final double? height;
 
-  /// 窄屏 header Tab 模式下为 `false`，仅渲染内容区。
-  final bool showSideTabs;
-
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final preferredHeight = constraints.maxWidth < sideTabDialogCompactBreakpoint
-            ? 400.0
-            : 440.0;
+        final preferredHeight = 440.0;
         final shellHeight = height ??
             (constraints.hasBoundedHeight
                 ? constraints.maxHeight.clamp(240.0, preferredHeight)
                 : preferredHeight);
-
-        if (!showSideTabs) {
-          return SizedBox(
-            width: double.maxFinite,
-            height: shellHeight,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: child,
-            ),
-          );
-        }
 
         return SizedBox(
           width: double.maxFinite,
@@ -72,11 +50,6 @@ class SideTabDialogShell extends StatelessWidget {
                   ],
                 ),
               ),
-              VerticalDivider(
-                width: 1,
-                thickness: 1,
-                color: scheme.outline,
-              ),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.md),
@@ -87,37 +60,6 @@ class SideTabDialogShell extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// 窄屏对话框 header 内横排 Tab（仅文字 + 底部指示条）。
-class SideTabDialogHeaderTabs extends StatelessWidget {
-  const SideTabDialogHeaderTabs({
-    super.key,
-    required this.tabs,
-    required this.selectedIndex,
-    required this.onTabSelected,
-  });
-
-  final List<SideTabDialogTab> tabs;
-  final int selectedIndex;
-  final ValueChanged<int> onTabSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < tabs.length; i++) ...[
-          if (i > 0) const SizedBox(width: AppSpacing.xs),
-          _SideTabHeaderTabItem(
-            label: tabs[i].label,
-            selected: selectedIndex == i,
-            onTap: () => onTabSelected(i),
-          ),
-        ],
-      ],
     );
   }
 }
@@ -194,63 +136,6 @@ class _SideTabNavItemState extends State<_SideTabNavItem> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SideTabHeaderTabItem extends StatefulWidget {
-  const _SideTabHeaderTabItem({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  State<_SideTabHeaderTabItem> createState() => _SideTabHeaderTabItemState();
-}
-
-class _SideTabHeaderTabItemState extends State<_SideTabHeaderTabItem> {
-  var _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final foreground =
-        widget.selected ? scheme.primary : scheme.onSurfaceVariant;
-    final textStyle = theme.textTheme.labelLarge?.copyWith(
-      color: foreground,
-      fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
-      height: 1.25,
-    );
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
-          decoration: BoxDecoration(
-            color: _hovered ? scheme.surfaceContainer : null,
-            border: Border(
-              bottom: BorderSide(
-                color: widget.selected ? scheme.primary : Colors.transparent,
-                width: 2,
-              ),
-            ),
-          ),
-          child: Text(widget.label, style: textStyle),
         ),
       ),
     );

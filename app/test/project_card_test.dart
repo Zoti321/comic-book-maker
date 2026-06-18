@@ -21,6 +21,14 @@ void main() {
     expect(find.text('测试漫画'), findsOneWidget);
     expect(find.text('最近打开'), findsOneWidget);
     expect(find.byType(Card), findsOneWidget);
+    expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+
+    final card = tester.widget<Card>(find.byType(Card));
+    expect(card.elevation, 1);
+
+    final inkWell = tester.widget<InkWell>(find.byType(InkWell));
+    expect(inkWell.splashFactory, equals(NoSplash.splashFactory));
+    expect(inkWell.overlayColor, isNotNull);
   });
 
   testWidgets('tap invokes onTap', (tester) async {

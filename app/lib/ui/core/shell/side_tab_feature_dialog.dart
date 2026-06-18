@@ -25,8 +25,6 @@ class SideTabFeatureDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useHeaderTabs =
-            constraints.maxWidth < sideTabDialogCompactBreakpoint;
         final shellHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight.clamp(280.0, 440.0)
             : 440.0;
@@ -34,13 +32,6 @@ class SideTabFeatureDialog extends StatelessWidget {
         return _MaterialSideTabDialog(
           title: title,
           contentPadding: EdgeInsets.zero,
-          titleTrailing: useHeaderTabs
-              ? SideTabDialogHeaderTabs(
-                  tabs: tabs,
-                  selectedIndex: selectedIndex,
-                  onTabSelected: onTabSelected,
-                )
-              : null,
           content: SizedBox(
             height: shellHeight,
             child: SideTabDialogShell(
@@ -48,7 +39,6 @@ class SideTabFeatureDialog extends StatelessWidget {
               selectedIndex: selectedIndex,
               onTabSelected: onTabSelected,
               tabs: tabs,
-              showSideTabs: !useHeaderTabs,
               child: body,
             ),
           ),
@@ -63,13 +53,11 @@ class _MaterialSideTabDialog extends StatelessWidget {
   const _MaterialSideTabDialog({
     required this.title,
     required this.content,
-    this.titleTrailing,
     this.actions,
     this.contentPadding = const EdgeInsets.fromLTRB(24, 16, 24, 16),
   });
 
   final String title;
-  final Widget? titleTrailing;
   final Widget content;
   final List<Widget>? actions;
   final EdgeInsetsGeometry contentPadding;
@@ -84,10 +72,8 @@ class _MaterialSideTabDialog extends StatelessWidget {
 
     return Dialog(
       backgroundColor: scheme.surface,
-      surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: AppRadius.lgBorder,
-        side: BorderSide(color: scheme.outline),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: 280, maxHeight: maxHeight),
@@ -97,23 +83,14 @@ class _MaterialSideTabDialog extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-              child: Row(
-                children: [
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                  if (titleTrailing != null) ...[
-                    const Spacer(),
-                    Flexible(child: titleTrailing!),
-                  ],
-                ],
+              child: Text(
+                title,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: scheme.onSurface,
+                ),
               ),
             ),
-            Divider(height: 1, thickness: 1, color: scheme.outline),
             Flexible(
               fit: FlexFit.loose,
               child: SingleChildScrollView(
@@ -124,7 +101,6 @@ class _MaterialSideTabDialog extends StatelessWidget {
               ),
             ),
             if (hasActions) ...[
-              Divider(height: 1, thickness: 1, color: scheme.outline),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Row(

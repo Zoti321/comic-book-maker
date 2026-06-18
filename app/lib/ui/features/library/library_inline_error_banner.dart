@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 漫画库页内联错误条（Material errorContainer，无 design_system 依赖）。
 class LibraryInlineErrorBanner extends StatelessWidget {
@@ -30,7 +29,7 @@ class LibraryInlineErrorBanner extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                LucideIcons.circleAlert,
+                Icons.error_outline,
                 size: 20,
                 color: scheme.onErrorContainer,
               ),
@@ -44,13 +43,14 @@ class LibraryInlineErrorBanner extends StatelessWidget {
                 ),
               ),
               if (onDismiss != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  iconSize: 20,
+                  color: scheme.onErrorContainer,
+                  tooltip: '关闭',
+                  visualDensity: VisualDensity.compact,
                   onPressed: onDismiss,
-                  child: Text(
-                    '关闭',
-                    style: TextStyle(color: scheme.onErrorContainer),
-                  ),
                 ),
               ],
             ],

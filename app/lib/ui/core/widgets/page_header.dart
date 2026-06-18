@@ -1,7 +1,7 @@
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
-/// 内容区顶栏（surface 底 + 底部轻阴影 + M3 排版）。
+/// 内容区顶栏（surface 底 + M3 排版）。
 class PageHeader extends StatelessWidget {
   const PageHeader({
     super.key,
@@ -9,6 +9,7 @@ class PageHeader extends StatelessWidget {
     this.titleTrailing,
     this.subtitle,
     this.actions = const [],
+    this.horizontalPadding,
   });
 
   final String title;
@@ -16,24 +17,26 @@ class PageHeader extends StatelessWidget {
   final String? subtitle;
   final List<Widget> actions;
 
+  /// 覆盖水平内边距（如 [contentPaddingOf]），与下方内容区左缘对齐。
+  final EdgeInsets? horizontalPadding;
+
   static const _contentMinHeight = AppTypography.controlHeightCompact;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final padding = AppSpacing.pagePadding(context);
+    final insets = horizontalPadding ?? AppSpacing.pagePadding(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface,
-        boxShadow: const [AppElevation.headerShadow],
       ),
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          padding.left,
+          insets.left,
           AppSpacing.md,
-          padding.right,
+          insets.right,
           AppSpacing.md,
         ),
         child: LayoutBuilder(

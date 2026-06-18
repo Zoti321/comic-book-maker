@@ -1,6 +1,4 @@
-import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 漫画库空状态（Material 排版 + FilledButton 主操作）。
 class LibraryEmptyState extends StatelessWidget {
@@ -26,19 +24,10 @@ class LibraryEmptyState extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(color: scheme.outline),
-                ),
-                child: Icon(
-                  LucideIcons.library,
-                  size: 32,
-                  color: scheme.onSurfaceVariant,
-                ),
+              Icon(
+                Icons.folder_open_outlined,
+                size: 64,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
               const SizedBox(height: 20),
               Text(
@@ -61,8 +50,7 @@ class LibraryEmptyState extends StatelessWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: onCreateProject,
-                  style: _libraryCompactFilledButtonStyle(context),
-                  icon: const Icon(LucideIcons.plus, size: 16),
+                  icon: const Icon(Icons.add),
                   label: const Text('新建项目'),
                 ),
               ],
@@ -73,17 +61,3 @@ class LibraryEmptyState extends StatelessWidget {
     );
   }
 }
-
-/// 顶栏与空状态共用的紧凑 FilledButton 样式（对齐原 AppButtonSize.sm）。
-ButtonStyle _libraryCompactFilledButtonStyle(BuildContext context) {
-  return FilledButton.styleFrom(
-    visualDensity: VisualDensity.compact,
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    minimumSize: const Size(0, AppTypography.controlHeightCompact),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    textStyle: Theme.of(context).textTheme.labelLarge,
-  );
-}
-
-ButtonStyle libraryCompactFilledButtonStyle(BuildContext context) =>
-    _libraryCompactFilledButtonStyle(context);

@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/ui/core/design_system/design_system.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
-import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +25,7 @@ void main() {
     return tester.getSize(find.byType(PageHeader)).height;
   }
 
-  testWidgets('uses header shadow without bottom border', (tester) async {
+  testWidgets('uses flat surface background without shadow', (tester) async {
     setWideViewport(tester);
 
     await tester.pumpWidget(
@@ -45,7 +44,7 @@ void main() {
       ),
     );
     final decoration = decorated.decoration as BoxDecoration;
-    expect(decoration.boxShadow, equals(const [AppElevation.headerShadow]));
+    expect(decoration.boxShadow, isNull);
     expect(decoration.border, isNull);
   });
 

@@ -7,6 +7,7 @@ use crate::project_format::ExportFormat;
 pub struct MetadataFieldSpecDto {
     pub id: String,
     pub label: String,
+    pub hint: Option<String>,
     pub kind: MetadataFieldKind,
     pub required: bool,
     pub options: Vec<String>,
@@ -58,6 +59,7 @@ fn field_to_dto(field: &MetadataFieldSpec) -> MetadataFieldSpecDto {
     MetadataFieldSpecDto {
         id: field.id.to_string(),
         label: field.label.to_string(),
+        hint: field.hint.map(str::to_string),
         kind: field.kind,
         required: field.required,
         options: field.options.iter().map(|option| (*option).to_string()).collect(),
@@ -68,5 +70,31 @@ fn field_to_dto(field: &MetadataFieldSpec) -> MetadataFieldSpecDto {
             .iter()
             .map(|id| (*id).to_string())
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::project_format::ExportFormat;
+
+    #[test]
+    fn editor_schema_dto_propagates_field_hints() {
+        let dto = editor_schema_dto(ExportFormat::ComicArchive);
+        let general = &dto.sections[0];
+        let language = general
+            .fields
+            .iter()
+            .find(|field| field.id == "language_iso")
+            .expect("language_iso");
+        assert_eq!(language.hint.as_deref(), Some("如 zh-CN"));
+
+        let series = &dto.sections[1];
+        let number = series
+            .fields
+            .iter()
+            .find(|field| field.id == "number")
+            .expect("number");
+        assert_eq!(number.hint.as_deref(), Some("如 1A"));
     }
 }

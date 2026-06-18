@@ -1,4 +1,4 @@
-import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:flutter/material.dart';
 
 class SectionChipBar extends StatelessWidget {
@@ -7,52 +7,47 @@ class SectionChipBar extends StatelessWidget {
     required this.sections,
     required this.selectedIndex,
     required this.onSelected,
+    this.expandOnCompact = true,
   });
 
   final List<String> sections;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+  final bool expandOnCompact;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.hardEdge,
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Row(
-        children: [
-          for (var i = 0; i < sections.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(sections[i]),
-                selected: selectedIndex == i,
-                onSelected: (_) => onSelected(i),
-                showCheckmark: false,
-                selectedColor: scheme.surfaceContainerHighest,
-                labelStyle: TextStyle(
-                  color: selectedIndex == i
-                      ? scheme.onSurface
-                      : scheme.onSurfaceVariant,
-                  fontWeight:
-                      selectedIndex == i ? FontWeight.w600 : FontWeight.w500,
-                ),
-                side: BorderSide(
-                  color: selectedIndex == i
-                      ? scheme.onSurfaceVariant.withValues(alpha: 0.5)
-                      : scheme.outline,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppRadius.mdBorder,
-                ),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-        ],
+    final segmented = SegmentedButton<int>(
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        ),
+        side: WidgetStateProperty.resolveWith((states) {
+          final selected = states.contains(WidgetState.selected);
+          return BorderSide(
+            color: selected ? scheme.onSurfaceVariant : scheme.outline,
+          );
+        }),
       ),
+      segments: [
+        for (var i = 0; i < sections.length; i++)
+          ButtonSegment<int>(value: i, label: Text(sections[i])),
+      ],
+      selected: {selectedIndex},
+      onSelectionChanged: (selection) {
+        if (selection.isEmpty) return;
+        onSelected(selection.first);
+      },
     );
+
+    if (expandOnCompact && isCompact(context)) {
+      return SizedBox(width: double.infinity, child: segmented);
+    }
+
+    return Align(alignment: Alignment.centerLeft, child: segmented);
   }
 }

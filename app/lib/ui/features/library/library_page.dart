@@ -1,6 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
-import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
@@ -17,7 +16,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class LibraryPage extends HookConsumerWidget {
   const LibraryPage({super.key});
@@ -89,15 +87,13 @@ class LibraryPage extends HookConsumerWidget {
       }
     }
 
-    final columns = libraryGridColumns(context);
     final padding = libraryContentPadding(context);
-    final compact = isCompact(context);
 
-    final createButton = FilledButton.icon(
+    final createButton = IconButton(
       onPressed: startCreateProject,
-      style: libraryCompactFilledButtonStyle(context),
-      icon: const Icon(LucideIcons.plus, size: 16),
-      label: Text(compact ? '新建' : '新建项目'),
+      tooltip: '新建项目',
+      style: IconButton.styleFrom(shape: const CircleBorder()),
+      icon: const Icon(Icons.add),
     );
 
     return CustomScrollView(
@@ -105,6 +101,7 @@ class LibraryPage extends HookConsumerWidget {
         SliverToBoxAdapter(
           child: PageHeader(
             title: '漫画库',
+            horizontalPadding: padding,
             titleTrailing: LibraryCountChip(count: projects.length),
             actions: [
               const LibrarySortMenuButton(),
@@ -139,11 +136,11 @@ class LibraryPage extends HookConsumerWidget {
                   ),
                 )
               : SliverGrid(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
+                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: libraryCardMaxExtent,
                     mainAxisSpacing: libraryGridSpacing,
                     crossAxisSpacing: libraryGridSpacing,
-                    childAspectRatio: libraryGridChildAspectRatio(context),
+                    childAspectRatio: libraryGridChildAspectRatio(),
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
