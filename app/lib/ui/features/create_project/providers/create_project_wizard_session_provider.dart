@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/domain/models/create_project_draft.dart';
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_session.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -117,4 +118,12 @@ final createProjectWizardSessionProvider = NotifierProvider<
     CreateProjectWizardSessionNotifier,
     CreateProjectWizardSessionData>(
   CreateProjectWizardSessionNotifier.new,
+);
+
+/// [openSideTabFeature] 会话接缝：打开重置草稿，关闭 invalidate provider。
+final createProjectWizardSideTabSession = SideTabFeatureSession.resettable(
+  reset: (container) =>
+      container.read(createProjectWizardSessionProvider.notifier).reset(),
+  invalidate: (container) =>
+      container.invalidate(createProjectWizardSessionProvider),
 );

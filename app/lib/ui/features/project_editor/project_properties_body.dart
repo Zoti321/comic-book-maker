@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
+import 'package:comic_book_maker/ui/features/project_editor/providers/project_properties_session_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
@@ -20,6 +21,26 @@ const projectPropertiesTabs = [
   SideTabDialogTab(label: '导出', icon: Icons.upload_outlined),
   SideTabDialogTab(label: '元数据', icon: Icons.description_outlined),
 ];
+
+class ProjectPropertiesTabState {
+  const ProjectPropertiesTabState({
+    required this.tabIndex,
+    required this.setTabIndex,
+  });
+
+  final int tabIndex;
+  final ValueChanged<int> setTabIndex;
+}
+
+ProjectPropertiesTabState useProjectPropertiesTabState(WidgetRef ref) {
+  final session = ref.watch(projectPropertiesSessionProvider);
+  final notifier = ref.read(projectPropertiesSessionProvider.notifier);
+
+  return ProjectPropertiesTabState(
+    tabIndex: session.tabIndex,
+    setTabIndex: notifier.setTabIndex,
+  );
+}
 
 /// 项目属性 Tab 面板（概览 / 导入 / 导出 / 元数据）。
 class ProjectPropertiesTabPanel extends HookConsumerWidget {

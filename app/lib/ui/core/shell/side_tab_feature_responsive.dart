@@ -1,137 +1,138 @@
 import 'dart:async';
 
 import 'package:comic_book_maker/ui/core/design_system/app_dialog.dart';
-import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_coordinator.dart';
+import 'package:comic_book_maker/ui/core/shell/side_tab_feature_session.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// [Navigator.pop] / [GoRouter.pop] 在 Dialog ↔ 全页变形时返回的哨兵，不表示用户取消。
-class SideTabFeatureMorphMarker {
-  const SideTabFeatureMorphMarker();
-}
+export 'side_tab_feature_coordinator.dart';
+export 'side_tab_feature_session.dart';
 
-const sideTabFeatureMorphMarker = SideTabFeatureMorphMarker();
-
-/// 变形目标（由 [SideTabFeatureCoordinator.scheduleMorph] 在 pop 前登记）。
-enum SideTabMorphTarget { dialog, page }
-
-/// 侧栏 Tab 功能（新建项目、项目属性）打开 / 变形会话的共享状态。
-class SideTabFeatureCoordinator<T> {
-  SideTabFeatureCoordinator({required this.compactPageLocation});
-
-  final String compactPageLocation;
-
-  final _completer = Completer<T?>();
-  var tabIndex = 0;
-  var _morphing = false;
-  SideTabMorphTarget? _pendingMorph;
-  final morphingListenable = ValueNotifier(false);
-  VoidCallback? popCompactPage;
-
-  Future<T?> get result => _completer.future;
-  bool get isCompleted => _completer.isCompleted;
-  bool get isMorphing => _morphing;
-
-  void setMorphing(bool value) {
-    _morphing = value;
-    morphingListenable.value = value;
-  }
-
-  void scheduleMorph(SideTabMorphTarget target) => _pendingMorph = target;
-
-  SideTabMorphTarget? takePendingMorph() {
-    final target = _pendingMorph;
-    _pendingMorph = null;
-    return target;
-  }
-
-  void complete(T? value) {
-    if (!_completer.isCompleted) {
-      _completer.complete(value);
-    }
-  }
-
-  static bool isMorphResult(Object? value) => value is SideTabFeatureMorphMarker;
-
-  static SideTabFeatureCoordinator<T>? of<T>(BuildContext context) {
-    if (GoRouter.maybeOf(context) == null) return null;
-    final extra = GoRouterState.of(context).extra;
-    return extra is SideTabFeatureCoordinator<T> ? extra : null;
-  }
-}
-
-/// 打开 / 关闭侧栏 Tab 功能时重置或清理关联状态（如新建项目 session）。
-class SideTabFeatureSessionHooks {
-  const SideTabFeatureSessionHooks({
-    required this.onOpen,
-    required this.onClose,
-  });
-
-  final void Function(ProviderContainer container) onOpen;
-  final void Function(ProviderContainer container) onClose;
-}
-
-/// 窄屏全页形态下由 [openSideTabFeature] 挂载：在 DesktopShell 断点重建导致
-/// [SideTabFeaturePagePresentation] 子树销毁时，仍能可靠触发全页 → 对话框变形。
-class _PageToDialogMorphObserver with WidgetsBindingObserver {
-  _PageToDialogMorphObserver({required this.coordinator});
+/// 单次 [openSideTabFeature] 会话内的变形引擎：断点策略、pop 时机、淡出协调。
+class SideTabMorphSession
+    with WidgetsBindingObserver
+    implements SideTabMorphSessionHandle {
+  SideTabMorphSession(this.coordinator);
 
   final SideTabFeatureCoordinator<dynamic> coordinator;
-  var _wasCompact = true;
-  var _morphing = false;
 
-  void attach() {
+  SideTabMorphForm? _form;
+  bool? _wasCompact;
+  var _running = false;
+
+  VoidCallback? _popPage;
+  Future<void> Function()? _popDialog;
+  Future<void> Function()? _fadeOut;
+
+  @override
+  void bindPagePop(VoidCallback pop) => _popPage = pop;
+
+  @override
+  void bindDialogPop(Future<void> Function() pop) => _popDialog = pop;
+
+  @override
+  void bindFadeOut(Future<void> Function() fadeOut) => _fadeOut = fadeOut;
+
+  @override
+  void watch(SideTabMorphForm form) {
+    _form = form;
     final ctx = rootNavigatorKey.currentContext;
     _wasCompact =
         ctx != null && ctx.mounted && isCompactForSideTabMorph(ctx);
     WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _evaluate());
+    WidgetsBinding.instance.addPostFrameCallback((_) => evaluate());
   }
 
-  void detach() {
+  @override
+  void unwatch() {
     WidgetsBinding.instance.removeObserver(this);
     final ctx = rootNavigatorKey.currentContext;
     if (ctx != null && ctx.mounted) {
       _wasCompact = isCompactForSideTabMorph(ctx);
     }
+    _form = null;
+    _popPage = null;
+    _popDialog = null;
+    _fadeOut = null;
   }
 
   @override
-  void didChangeMetrics() => _evaluate();
+  void didChangeMetrics() => evaluate();
 
-  Future<void> _evaluate() async {
-    if (_morphing || coordinator.isMorphing || coordinator.isCompleted) {
+  @override
+  void evaluate() {
+    final form = _form;
+    if (form == null ||
+        _running ||
+        coordinator.isMorphing ||
+        coordinator.isCompleted) {
       return;
     }
+
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
 
     final compact = isCompactForSideTabMorph(ctx);
-    final shouldMorph = _wasCompact && !compact;
-    _wasCompact = compact;
-    if (!shouldMorph) return;
+    final expectCompact = form == SideTabMorphForm.page;
 
-    _morphing = true;
-    coordinator.scheduleMorph(SideTabMorphTarget.dialog);
-    coordinator.setMorphing(true);
-    // 须在 DesktopShell 断点重建前立刻 pop；延迟后再 pop 会因路由栈失效而无效。
-    final popPage = coordinator.popCompactPage;
-    if (popPage != null) {
-      popPage();
-    } else {
-      final popContext = rootNavigatorKey.currentContext;
-      if (popContext != null && popContext.mounted) {
-        final router = GoRouter.of(popContext);
-        if (router.canPop()) router.pop();
+    if (_wasCompact == null) {
+      _wasCompact = compact;
+      if (compact != expectCompact) {
+        unawaited(_runMorph(
+          compact ? SideTabMorphTarget.page : SideTabMorphTarget.dialog,
+        ));
       }
+      return;
     }
-    await Future<void>.delayed(AppPageTransitions.fadeDuration);
+
+    if (_wasCompact! && !compact && form == SideTabMorphForm.page) {
+      unawaited(_runMorph(SideTabMorphTarget.dialog));
+    } else if (!_wasCompact! && compact && form == SideTabMorphForm.dialog) {
+      unawaited(_runMorph(SideTabMorphTarget.page));
+    }
+    _wasCompact = compact;
+  }
+
+  Future<void> _runMorph(SideTabMorphTarget target) async {
+    if (_running || coordinator.isMorphing || coordinator.isCompleted) return;
+    _running = true;
+    coordinator.scheduleMorph(target);
+    coordinator.setMorphing(true);
+
+    if (target == SideTabMorphTarget.dialog) {
+      // 须在 DesktopShell 断点重建前立刻 pop；延迟后再 pop 会因路由栈失效而无效。
+      if (_popPage != null) {
+        _popPage!();
+      } else {
+        _fallbackPopPage();
+      }
+      await Future<void>.delayed(AppPageTransitions.fadeDuration);
+    } else {
+      await (_fadeOut?.call() ??
+          Future<void>.delayed(AppPageTransitions.fadeDuration));
+      await (_popDialog?.call() ?? _fallbackPopDialog());
+    }
+
     coordinator.setMorphing(false);
-    _morphing = false;
+    _running = false;
+  }
+
+  void _fallbackPopPage() {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    final router = GoRouter.of(ctx);
+    if (router.canPop()) router.pop();
+  }
+
+  Future<void> _fallbackPopDialog() async {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    Navigator.of(ctx, rootNavigator: true).pop(sideTabFeatureMorphMarker);
   }
 }
 
@@ -166,7 +167,7 @@ Future<T?> openSideTabFeature<T>({
   )
       dialogBuilder,
   required String compactPageLocation,
-  SideTabFeatureSessionHooks? session,
+  SideTabFeatureSession? session,
 }) async {
   final container = ProviderScope.containerOf(context);
   session?.onOpen(container);
@@ -174,6 +175,9 @@ Future<T?> openSideTabFeature<T>({
   final coordinator = SideTabFeatureCoordinator<T>(
     compactPageLocation: compactPageLocation,
   );
+  final morphSession = SideTabMorphSession(coordinator);
+  coordinator.morphSession = morphSession;
+  container.read(sideTabMorphCoordinatorProvider.notifier).bind(coordinator);
 
   try {
     var mode = isCompact(context)
@@ -186,11 +190,17 @@ Future<T?> openSideTabFeature<T>({
         final hostContext = _hostContext(context);
         if (!hostContext.mounted) break;
 
-        final popResult = await _showMorphableDialog(
-          context: hostContext,
-          coordinator: coordinator,
-          dialogBuilder: dialogBuilder,
-        );
+        morphSession.watch(SideTabMorphForm.dialog);
+        Object? popResult;
+        try {
+          popResult = await _showMorphableDialog(
+            context: hostContext,
+            coordinator: coordinator,
+            dialogBuilder: dialogBuilder,
+          );
+        } finally {
+          morphSession.unwatch();
+        }
         if (coordinator.isCompleted) break;
         if (_shouldMorphTo(coordinator, SideTabMorphTarget.page, popResult)) {
           await _waitForPresentationSettle();
@@ -204,18 +214,14 @@ Future<T?> openSideTabFeature<T>({
         final hostContext = _hostContext(context);
         if (!hostContext.mounted) break;
 
-        final morphObserver = desktopWindowConfig.chromeEnabled
-            ? _PageToDialogMorphObserver(coordinator: coordinator)
-            : null;
-        morphObserver?.attach();
+        morphSession.watch(SideTabMorphForm.page);
         Object? popResult;
         try {
           popResult = await GoRouter.of(hostContext).push<Object?>(
             coordinator.compactPageLocation,
-            extra: coordinator,
           );
         } finally {
-          morphObserver?.detach();
+          morphSession.unwatch();
         }
         if (coordinator.isCompleted) break;
         if (_shouldMorphTo(coordinator, SideTabMorphTarget.dialog, popResult)) {
@@ -231,6 +237,8 @@ Future<T?> openSideTabFeature<T>({
 
     return coordinator.isCompleted ? await coordinator.result : result;
   } finally {
+    coordinator.morphSession = null;
+    container.read(sideTabMorphCoordinatorProvider.notifier).clear();
     session?.onClose(container);
   }
 }
@@ -247,8 +255,9 @@ Future<Object?> _showMorphableDialog<T>({
   return showDialog<Object?>(
     context: context,
     useRootNavigator: true,
-    builder: (dialogContext) => SideTabFeatureDialogPresentation(
+    builder: (dialogContext) => SideTabMorphPresentation(
       coordinator: coordinator,
+      form: SideTabMorphForm.dialog,
       child: AppFeatureDialogFrame(
         child: dialogBuilder(dialogContext, coordinator),
       ),
@@ -256,235 +265,94 @@ Future<Object?> _showMorphableDialog<T>({
   );
 }
 
-/// 监听窗口 / 布局断点变化；由 Dialog / Page presentation 持有。
-class _SideTabBreakpointListener with WidgetsBindingObserver {
-  _SideTabBreakpointListener({
-    required this.isMounted,
-    required this.context,
+/// 变形淡出包装；断点监听由 [SideTabMorphSession] 负责。
+class SideTabMorphPresentation extends StatefulWidget {
+  const SideTabMorphPresentation({
+    super.key,
     required this.coordinator,
-    required this.expectCompact,
-    required this.onShrinkToCompact,
-    required this.onGrowToWide,
+    required this.form,
+    required this.child,
   });
 
-  final bool Function() isMounted;
-  final BuildContext Function() context;
   final SideTabFeatureCoordinator<dynamic> coordinator;
-  final bool expectCompact;
-  final Future<void> Function() onShrinkToCompact;
-  final Future<void> Function() onGrowToWide;
+  final SideTabMorphForm form;
+  final Widget child;
 
-  bool? _wasCompact;
+  @override
+  State<SideTabMorphPresentation> createState() =>
+      _SideTabMorphPresentationState();
+}
 
-  void attach() {
-    WidgetsBinding.instance.addObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => evaluate());
-  }
+class _SideTabMorphPresentationState extends State<SideTabMorphPresentation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeController;
 
-  void detach() {
-    WidgetsBinding.instance.removeObserver(this);
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: AppPageTransitions.fadeDuration,
+      value: 1,
+    );
+    widget.coordinator.morphingListenable.addListener(_onMorphingChanged);
+    _bindPopToSession();
   }
 
   @override
-  void didChangeMetrics() => evaluate();
+  void dispose() {
+    widget.coordinator.morphingListenable.removeListener(_onMorphingChanged);
+    _fadeController.dispose();
+    super.dispose();
+  }
 
-  void onDependenciesChanged() => evaluate();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    widget.coordinator.morphSession?.evaluate();
+  }
 
-  void evaluate() {
-    if (!isMounted()) return;
-    if (coordinator.isMorphing || coordinator.isCompleted) return;
-
-    final compact = isCompactForSideTabMorph(context());
-    if (_wasCompact == null) {
-      _wasCompact = compact;
-      if (compact != expectCompact) {
-        if (compact) {
-          onShrinkToCompact();
-        } else {
-          onGrowToWide();
-        }
-      }
+  void _onMorphingChanged() {
+    if (widget.form != SideTabMorphForm.page) return;
+    if (!widget.coordinator.isMorphing) return;
+    if (_fadeController.status == AnimationStatus.reverse ||
+        _fadeController.status == AnimationStatus.dismissed) {
       return;
     }
+    _fadeController.reverse();
+  }
 
-    if (_wasCompact! && !compact) {
-      onGrowToWide();
-    } else if (!_wasCompact! && compact) {
-      onShrinkToCompact();
+  void _bindPopToSession() {
+    final session = widget.coordinator.morphSession;
+    if (session == null) return;
+
+    if (widget.form == SideTabMorphForm.page) {
+      session.bindPagePop(() {
+        if (!mounted) return;
+        context.pop();
+      });
+    } else {
+      session.bindDialogPop(() async {
+        if (!mounted) return;
+        Navigator.of(context, rootNavigator: true)
+            .pop(sideTabFeatureMorphMarker);
+      });
     }
-    _wasCompact = compact;
-  }
-}
 
-/// 宽屏对话框形态：监听断点，缩窗时淡出并 morph 到全页。
-class SideTabFeatureDialogPresentation extends StatefulWidget {
-  const SideTabFeatureDialogPresentation({
-    super.key,
-    required this.coordinator,
-    required this.child,
-  });
-
-  final SideTabFeatureCoordinator<dynamic> coordinator;
-  final Widget child;
-
-  @override
-  State<SideTabFeatureDialogPresentation> createState() =>
-      _SideTabFeatureDialogPresentationState();
-}
-
-class _SideTabFeatureDialogPresentationState
-    extends State<SideTabFeatureDialogPresentation>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _fadeController;
-  late final _SideTabBreakpointListener _breakpointListener;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: AppPageTransitions.fadeDuration,
-      value: 1,
-    );
-    _breakpointListener = _SideTabBreakpointListener(
-      isMounted: () => mounted,
-      context: () => context,
-      coordinator: widget.coordinator,
-      expectCompact: false,
-      onShrinkToCompact: _morphToPage,
-      onGrowToWide: () async {},
-    );
-    _breakpointListener.attach();
-  }
-
-  @override
-  void dispose() {
-    widget.coordinator.setMorphing(false);
-    _breakpointListener.detach();
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _breakpointListener.onDependenciesChanged();
-  }
-
-  Future<void> _morphToPage() async {
-    if (widget.coordinator.isMorphing) return;
-    widget.coordinator.scheduleMorph(SideTabMorphTarget.page);
-    widget.coordinator.setMorphing(true);
-    await _fadeController.reverse();
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true).pop(sideTabFeatureMorphMarker);
-    widget.coordinator.setMorphing(false);
+    session.bindFadeOut(() async {
+      if (!mounted) return;
+      await _fadeController.reverse();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _breakpointListener.evaluate();
-        });
-        return FadeTransition(
-          opacity: _fadeController,
-          child: widget.child,
-        );
-      },
-    );
-  }
-}
-
-/// 窄屏全页形态：监听断点，拉宽时淡出并 morph 到对话框。
-class SideTabFeaturePagePresentation extends StatefulWidget {
-  const SideTabFeaturePagePresentation({
-    super.key,
-    required this.coordinator,
-    required this.child,
-  });
-
-  final SideTabFeatureCoordinator<dynamic> coordinator;
-  final Widget child;
-
-  @override
-  State<SideTabFeaturePagePresentation> createState() =>
-      _SideTabFeaturePagePresentationState();
-}
-
-class _SideTabFeaturePagePresentationState
-    extends State<SideTabFeaturePagePresentation>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _fadeController;
-  _SideTabBreakpointListener? _breakpointListener;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: AppPageTransitions.fadeDuration,
-      value: 1,
-    );
-    if (!desktopWindowConfig.chromeEnabled) {
-      _breakpointListener = _SideTabBreakpointListener(
-        isMounted: () => mounted,
-        context: () => context,
-        coordinator: widget.coordinator,
-        expectCompact: true,
-        onShrinkToCompact: () async {},
-        onGrowToWide: _morphToDialog,
-      )..attach();
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.coordinator.setMorphing(false);
-    _breakpointListener?.detach();
-    _fadeController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _breakpointListener?.onDependenciesChanged();
-  }
-
-  Future<void> _morphToDialog() async {
-    if (widget.coordinator.isMorphing) return;
-    widget.coordinator.scheduleMorph(SideTabMorphTarget.dialog);
-    widget.coordinator.setMorphing(true);
-    await _fadeController.reverse();
-    if (!mounted) return;
-    context.pop();
-    widget.coordinator.setMorphing(false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: widget.coordinator.morphingListenable,
-      builder: (context, _) {
-        if (widget.coordinator.isMorphing &&
-            _fadeController.status != AnimationStatus.reverse &&
-            _fadeController.status != AnimationStatus.dismissed) {
-          _fadeController.reverse();
-        }
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _breakpointListener?.evaluate();
-            });
-            return FadeTransition(
-              opacity: _fadeController,
-              child: widget.child,
-            );
-          },
-        );
-      },
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.coordinator.morphSession?.evaluate();
+    });
+    return FadeTransition(
+      opacity: _fadeController,
+      child: widget.child,
     );
   }
 }

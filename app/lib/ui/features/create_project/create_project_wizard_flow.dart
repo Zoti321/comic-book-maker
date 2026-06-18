@@ -4,18 +4,9 @@ import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_responsive.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
+import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_feature.dart';
 import 'package:comic_book_maker/ui/features/create_project/providers/create_project_wizard_session_provider.dart';
 import 'package:flutter/material.dart';
-
-final _createProjectWizardSessionHooks = SideTabFeatureSessionHooks(
-  onOpen: (container) {
-    container.read(createProjectWizardSessionProvider.notifier).reset();
-  },
-  onClose: (container) {
-    container.invalidate(createProjectWizardSessionProvider);
-  },
-);
 
 /// 打开新建项目向导；确认后在后台创建，通过 Material SnackBar 反馈进度。
 Future<void> runCreateProjectWizard({
@@ -51,10 +42,11 @@ Future<CreateProjectDraft?> _openCreateProjectWizard(BuildContext context) {
   return openSideTabFeature<CreateProjectDraft>(
     context: context,
     compactPageLocation: AppRoutes.projectCreate,
-    session: _createProjectWizardSessionHooks,
-    dialogBuilder: (dialogContext, coordinator) => CreateProjectWizardDialog(
+    session: createProjectWizardSideTabSession,
+    dialogBuilder: (dialogContext, coordinator) => CreateProjectWizardFeature(
       coordinator: coordinator,
-      dialogContext: dialogContext,
+      closeContext: dialogContext,
+      form: SideTabMorphForm.dialog,
     ),
   );
 }

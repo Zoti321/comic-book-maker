@@ -1,10 +1,10 @@
 import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_page.dart';
+import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_feature.dart';
 import 'package:comic_book_maker/ui/features/library/library_page.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_route_page.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_properties_page.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_properties_feature.dart';
 import 'package:comic_book_maker/ui/features/settings/settings_page.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/shell/app_shell.dart';
@@ -33,7 +33,7 @@ final appRouter = GoRouter(
                   parentNavigatorKey: rootNavigatorKey,
                   pageBuilder: (context, state) => fadeTransitionPage(
                     key: state.pageKey,
-                    child: const CreateProjectWizardPage(),
+                    child: const CreateProjectWizardFeature(),
                   ),
                 ),
               ],
@@ -89,7 +89,7 @@ final appRouter = GoRouter(
             }
             return fadeTransitionPage(
               key: state.pageKey,
-              child: ProjectPropertiesPage(projectId: projectId),
+              child: ProjectPropertiesFeature(projectId: projectId),
             );
           },
         ),

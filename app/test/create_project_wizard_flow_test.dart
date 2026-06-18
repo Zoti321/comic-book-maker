@@ -1,17 +1,16 @@
 import 'package:comic_book_maker/main.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
-import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
-import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
+import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/shell/app_navigation_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'support/data/repositories/in_memory_core_gateway.dart';
 import 'support/frb/rust_fake.dart';
 import 'support/provider/core_gateway_scope.dart';
+import 'support/ui/shell/side_tab_morph_test_harness.dart';
 
 void main() {
   rustTestSetUpAll();
@@ -45,11 +44,7 @@ void main() {
   }
 
   Future<void> dismissOpenWizardIfPresent(WidgetTester tester) async {
-    final cancel = find.text('取消');
-    if (cancel.evaluate().isNotEmpty) {
-      await tester.tap(cancel);
-      await tester.pumpAndSettle();
-    }
+    await SideTabMorphTestHarness.withoutChrome(tester).dismissIfOpen();
   }
 
   group('runCreateProjectWizard routing', () {
@@ -63,8 +58,8 @@ void main() {
       await tester.tap(find.byTooltip('新建项目'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(TabBar), findsOneWidget);
+      SideTabMorphTestHarness.withoutChrome(tester)
+          .expectPresentation(SideTabMorphPresentationMode.page);
       expect(find.text('新建项目'), findsWidgets);
       expect(find.text('取消'), findsOneWidget);
       expect(find.text('创建'), findsOneWidget);
@@ -80,8 +75,8 @@ void main() {
       await tester.tap(find.byTooltip('新建项目'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(TabBar), findsNothing);
+      SideTabMorphTestHarness.withoutChrome(tester)
+          .expectPresentation(SideTabMorphPresentationMode.dialog);
       expect(find.widgetWithText(FilledButton, '创建'), findsOneWidget);
 
       await dismissOpenWizardIfPresent(tester);
@@ -90,88 +85,51 @@ void main() {
     testWidgets('wide dialog morphs to compact page when viewport shrinks', (
       tester,
     ) async {
-      await pumpLibrary(tester, surfaceSize: const Size(1280, 900));
+      final harness = SideTabMorphTestHarness.withoutChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
 
-      await tester.tap(find.byTooltip('新建项目'));
-      await tester.pumpAndSettle();
-      expect(find.byType(Dialog), findsOneWidget);
-
-      tester.view.physicalSize = const Size(400, 800);
-      await tester.pump();
-      await tester.pump(AppPageTransitions.fadeDuration);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(TabBar), findsOneWidget);
+      await harness.morphTo(SideTabMorphTestHarness.compactWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.page);
     });
 
     testWidgets('compact page morphs to wide dialog when viewport grows', (
       tester,
     ) async {
-      await pumpLibrary(tester, surfaceSize: const Size(400, 800));
+      final harness = SideTabMorphTestHarness.withoutChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.compactWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.page);
 
-      await tester.tap(find.byTooltip('新建项目'));
-      await tester.pumpAndSettle();
-      expect(find.byType(Dialog), findsNothing);
-      expect(find.byType(TabBar), findsOneWidget);
-
-      tester.view.physicalSize = const Size(1280, 900);
-      await tester.pump();
-      await tester.pump(AppPageTransitions.fadeDuration);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(TabBar), findsNothing);
+      await harness.morphTo(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
     });
 
     testWidgets('wide dialog morphs to page then back to dialog on round trip', (
       tester,
     ) async {
-      await pumpLibrary(tester, surfaceSize: const Size(1280, 900));
+      final harness = SideTabMorphTestHarness.withoutChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
 
-      await tester.tap(find.byTooltip('新建项目'));
-      await tester.pumpAndSettle();
-      expect(find.byType(Dialog), findsOneWidget);
+      await harness.morphTo(SideTabMorphTestHarness.compactWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.page);
 
-      tester.view.physicalSize = const Size(400, 800);
-      await tester.pump();
-      await tester.pump(AppPageTransitions.fadeDuration);
-      await tester.pumpAndSettle();
-      expect(find.byType(TabBar), findsOneWidget);
-      expect(find.byType(Dialog), findsNothing);
-
-      tester.view.physicalSize = const Size(1280, 900);
-      await tester.pump();
-      await tester.pump(AppPageTransitions.fadeDuration);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(TabBar), findsNothing);
+      await harness.morphTo(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
       expect(find.text('尚未选择'), findsOneWidget);
     });
   });
 
   group('runCreateProjectWizard routing with desktop chrome', () {
-    setUp(() {
-      desktopWindowConfig = const DesktopWindowConfig(chromeEnabled: true);
-    });
-
     testWidgets('compact page morphs to dialog when viewport grows', (
       tester,
     ) async {
-      await pumpLibrary(tester, surfaceSize: const Size(400, 800));
+      final harness = SideTabMorphTestHarness.withDesktopChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.compactWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.page);
 
-      await tester.tap(find.byTooltip('新建项目'));
-      await tester.pumpAndSettle();
-      expect(find.byType(TabBar), findsOneWidget);
-
-      tester.view.physicalSize = const Size(1280, 900);
-      await tester.pump();
-      await tester.pump(AppPageTransitions.fadeDuration);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(Dialog), findsOneWidget);
-      expect(find.byType(TabBar), findsNothing);
+      await harness.morphTo(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
     });
   });
 }
