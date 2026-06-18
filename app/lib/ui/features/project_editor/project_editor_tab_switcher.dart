@@ -1,7 +1,6 @@
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_app_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// 编辑页 Tab：图片 / 元数据（分段按钮，非 [TabBar]）。
 class ProjectEditorTabSwitcher extends StatelessWidget {
@@ -9,12 +8,10 @@ class ProjectEditorTabSwitcher extends StatelessWidget {
     super.key,
     required this.selectedTab,
     required this.onTabSelected,
-    this.trailing,
   });
 
   final ProjectEditorTab selectedTab;
   final ValueChanged<ProjectEditorTab> onTabSelected;
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +35,12 @@ class ProjectEditorTabSwitcher extends StatelessWidget {
         ButtonSegment(
           value: ProjectEditorTab.images,
           label: Text('图片'),
-          icon: Icon(LucideIcons.images, size: 18),
+          icon: Icon(Icons.image_outlined, size: 18),
         ),
         ButtonSegment(
           value: ProjectEditorTab.metadata,
           label: Text('元数据'),
-          icon: Icon(LucideIcons.fileText, size: 18),
+          icon: Icon(Icons.description_outlined, size: 18),
         ),
       ],
       selected: {selectedTab},
@@ -53,34 +50,13 @@ class ProjectEditorTabSwitcher extends StatelessWidget {
       },
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final stackTrailing = isCompact(context) && trailing != null;
+    if (isCompact(context)) {
+      return SizedBox(width: double.infinity, child: tabControl);
+    }
 
-        if (stackTrailing) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              tabControl,
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerRight,
-                child: trailing!,
-              ),
-            ],
-          );
-        }
-
-        return Row(
-          children: [
-            Flexible(child: tabControl),
-            if (trailing != null) ...[
-              const SizedBox(width: 8),
-              trailing!,
-            ],
-          ],
-        );
-      },
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: tabControl,
     );
   }
 }

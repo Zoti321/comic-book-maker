@@ -200,9 +200,8 @@ class _AddPageTile extends StatelessWidget {
 
     return Material(
       color: scheme.surfaceContainerLow,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.zero,
-        side: BorderSide(color: scheme.outline),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -255,30 +254,18 @@ class _PageThumbnailTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final menuButtonStyle = (
-      iconColor: scheme.onSurface,
-      backgroundColor: scheme.surface.withValues(alpha: 0.92),
-    );
 
     return RepaintBoundary(
       child: Material(
         color: scheme.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
-          side: BorderSide(
-            color: isCover ? scheme.onSurface : scheme.outline,
-            width: isCover ? 2 : 1,
-          ),
         ),
         clipBehavior: Clip.antiAlias,
         child: PageThumbnailHoverMenu<PageThumbnailAction>(
-          buttonTop: 6,
-          buttonRight: 6,
-          menuButtonIconColor: menuButtonStyle.iconColor,
-          menuButtonBackgroundColor: menuButtonStyle.backgroundColor,
           onSelected: onAction,
-          menuItemsBuilder: (context) => _pageThumbnailMenuItems(
+          menuActionsBuilder: (context) => _pageThumbnailMenuActions(
             context: context,
             isCover: isCover,
             canMoveEarlier: canMoveEarlier,
@@ -297,23 +284,13 @@ class _PageThumbnailTile extends StatelessWidget {
                 Positioned(
                   left: 6,
                   bottom: 6,
-                  child: _Badge(
-                    label: '${page.sortIndex + 1}',
-                    background: scheme.surface.withValues(alpha: 0.92),
-                    foreground: scheme.onSurface,
-                    borderColor: scheme.outline,
-                  ),
+                  child: _PageIndexChip(index: page.sortIndex + 1),
                 ),
                 if (isCover)
-                  Positioned(
+                  const Positioned(
                     left: 6,
                     top: 6,
-                    child: _Badge(
-                      label: '封面',
-                      background: scheme.inverseSurface,
-                      foreground: scheme.onInverseSurface,
-                      icon: LucideIcons.bookmark,
-                    ),
+                    child: _CoverChip(),
                   ),
               ],
             ),
@@ -324,7 +301,7 @@ class _PageThumbnailTile extends StatelessWidget {
   }
 }
 
-List<PopupMenuEntry<PageThumbnailAction>> _pageThumbnailMenuItems({
+List<PageThumbnailMenuAction<PageThumbnailAction>> _pageThumbnailMenuActions({
   required BuildContext context,
   required bool isCover,
   required bool canMoveEarlier,
@@ -333,100 +310,94 @@ List<PopupMenuEntry<PageThumbnailAction>> _pageThumbnailMenuItems({
   final scheme = Theme.of(context).colorScheme;
 
   return [
-    _menuRow(
-      icon: LucideIcons.zoomIn,
-      label: '查看原图',
+    const PageThumbnailMenuAction(
       value: PageThumbnailAction.view,
+      icon: Icons.zoom_in,
+      label: '查看原图',
     ),
-    _menuRow(
-      icon: LucideIcons.replace,
-      label: '替换图片',
+    const PageThumbnailMenuAction(
       value: PageThumbnailAction.replace,
+      icon: Icons.swap_horiz,
+      label: '替换图片',
     ),
     if (!isCover)
-      _menuRow(
-        icon: LucideIcons.bookmark,
-        label: '设为封面',
+      const PageThumbnailMenuAction(
         value: PageThumbnailAction.setCover,
+        icon: Icons.bookmark_border,
+        label: '设为封面',
       ),
     if (canMoveEarlier)
-      _menuRow(
-        icon: LucideIcons.arrowLeft,
-        label: '前移',
+      const PageThumbnailMenuAction(
         value: PageThumbnailAction.moveEarlier,
+        icon: Icons.arrow_back,
+        label: '前移',
       ),
     if (canMoveLater)
-      _menuRow(
-        icon: LucideIcons.arrowRight,
-        label: '后移',
+      const PageThumbnailMenuAction(
         value: PageThumbnailAction.moveLater,
+        icon: Icons.arrow_forward,
+        label: '后移',
       ),
-    const PopupMenuDivider(),
-    _menuRow(
-      icon: LucideIcons.trash2,
-      label: '删除',
+    PageThumbnailMenuAction(
       value: PageThumbnailAction.delete,
+      icon: Icons.delete_outline,
+      label: '删除',
       foregroundColor: scheme.error,
     ),
   ];
 }
 
-PopupMenuItem<PageThumbnailAction> _menuRow({
-  required IconData icon,
-  required String label,
-  required PageThumbnailAction value,
-  Color? foregroundColor,
-}) {
-  return PopupMenuItem(
-    value: value,
-    padding: EdgeInsets.zero,
-    height: PageThumbnailMenuRow.menuItemHeight,
-    child: PageThumbnailMenuRow(
-      icon: icon,
-      label: label,
-      foregroundColor: foregroundColor,
-    ),
-  );
-}
+class _PageIndexChip extends StatelessWidget {
+  const _PageIndexChip({required this.index});
 
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.label,
-    required this.background,
-    required this.foreground,
-    this.icon,
-    this.borderColor,
-  });
-
-  final String label;
-  final Color background;
-  final Color foreground;
-  final IconData? icon;
-  final Color? borderColor;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: AppRadius.smBorder,
-        border: borderColor != null
-            ? Border.all(color: borderColor!)
-            : null,
-      ),
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Text(
+          '$index',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CoverChip extends StatelessWidget {
+  const _CoverChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.primaryContainer,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[
-              Icon(icon, size: 12, color: foreground),
-              const SizedBox(width: 3),
-            ],
+            Icon(
+              Icons.bookmark_outline,
+              size: 14,
+              color: scheme.onPrimaryContainer,
+            ),
+            const SizedBox(width: 4),
             Text(
-              label,
+              '封面',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: foreground,
+                    color: scheme.onPrimaryContainer,
                     fontWeight: FontWeight.w600,
                   ),
             ),

@@ -2,7 +2,7 @@ import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/features/library/library_page.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_editor_page.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_route_page.dart';
 import 'package:comic_book_maker/ui/features/settings/settings_page.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/shell/app_shell.dart';
@@ -44,8 +44,8 @@ final appRouter = GoRouter(
       path: AppRoutes.projectEditor,
       parentNavigatorKey: rootNavigatorKey,
       pageBuilder: (context, state) {
-        final project = state.extra as ProjectSummary?;
-        if (project == null) {
+        final projectId = state.pathParameters['projectId'];
+        if (projectId == null || projectId.isEmpty) {
           return fadeTransitionPage(
             key: state.pageKey,
             child: const Scaffold(
@@ -55,7 +55,10 @@ final appRouter = GoRouter(
         }
         return fadeTransitionPage(
           key: state.pageKey,
-          child: ProjectEditorPage(project: project),
+          child: ProjectEditorRoutePage(
+            projectId: projectId,
+            initialProject: state.extra as ProjectSummary?,
+          ),
         );
       },
     ),

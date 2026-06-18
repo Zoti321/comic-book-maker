@@ -96,14 +96,14 @@ void main() {
       appRouter.go(AppRoutes.projectEditorPath(project.id), extra: project);
       await tester.pumpAndSettle();
 
-      expect(find.text('测试项目'), findsOneWidget);
+      expect(find.text('测试项目 · 1 页'), findsOneWidget);
       expect(find.text('导出'), findsOneWidget);
       expect(find.text('添加图片'), findsOneWidget);
       expect(find.text('图片'), findsOneWidget);
       expect(find.text('元数据'), findsOneWidget);
       expect(find.byTooltip('项目属性'), findsOneWidget);
       expect(find.text('0 页'), findsNothing);
-      expect(find.text('1 页'), findsNWidgets(2));
+      expect(find.text('1 页'), findsOneWidget);
       expect(find.text('添加页面'), findsOneWidget);
 
       await tester.tap(find.text('元数据'));
