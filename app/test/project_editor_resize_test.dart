@@ -3,6 +3,7 @@ import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
+import 'package:comic_book_maker/ui/core/shell/app_shell_desktop_chrome.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -56,6 +57,7 @@ void main() {
 
     expect(find.text('缺少项目信息'), findsNothing);
     expect(find.text('图片'), findsOneWidget);
+    expect(find.byKey(AppShellFullWidthChromeRow.slotKey), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

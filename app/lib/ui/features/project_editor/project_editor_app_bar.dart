@@ -2,7 +2,6 @@ import 'package:comic_book_maker/ui/features/project_editor/providers/project_wo
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/page_import_rules.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
-import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/ellipsis_tooltip_text.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_settings_bar.dart';
 import 'package:flutter/material.dart';
@@ -96,13 +95,10 @@ ButtonStyle _desktopOutlinedButtonStyle(BuildContext context) {
   );
 }
 
-ButtonStyle _compactFilledButtonStyle(BuildContext context) {
-  return FilledButton.styleFrom(
+ButtonStyle _compactCircularIconButtonStyle() {
+  return IconButton.styleFrom(
     visualDensity: VisualDensity.compact,
-    padding: const EdgeInsets.symmetric(horizontal: 12),
-    minimumSize: const Size(0, AppTypography.controlHeightCompact),
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    textStyle: Theme.of(context).textTheme.labelLarge,
+    shape: const CircleBorder(),
   );
 }
 
@@ -117,10 +113,7 @@ class _ProjectPropertiesButton extends StatelessWidget {
       onPressed: onPressed,
       tooltip: '项目属性',
       icon: const Icon(Icons.settings_outlined),
-      style: IconButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        shape: const CircleBorder(),
-      ),
+      style: _compactCircularIconButtonStyle(),
     );
   }
 }
@@ -164,7 +157,7 @@ class _AppendImportButton extends StatelessWidget {
     final iconButton = IconButton(
       onPressed: enabled ? onPressed : null,
       icon: const Icon(Icons.file_download_outlined),
-      style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
+      style: _compactCircularIconButtonStyle(),
     );
     if (disabledTooltip != null) {
       return Tooltip(message: disabledTooltip, child: iconButton);
@@ -202,10 +195,10 @@ class _ExportButton extends StatelessWidget {
       );
     }
 
-    final iconButton = IconButton.filled(
+    final iconButton = IconButton(
       onPressed: canExport ? onPressed : null,
       icon: const Icon(Icons.file_upload_outlined),
-      style: IconButton.styleFrom(visualDensity: VisualDensity.compact),
+      style: _compactCircularIconButtonStyle(),
     );
     if (canExport) {
       return Tooltip(
