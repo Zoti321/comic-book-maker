@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
+import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,6 +73,28 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('compact page shows tab bar with material icons', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(400, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            home: CreateProjectWizardPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('新建项目'), findsOneWidget);
+      expect(find.byType(TabBar), findsOneWidget);
+      expect(find.text('导入'), findsWidgets);
+      expect(find.text('导出'), findsWidgets);
+      expect(find.text('行为'), findsWidgets);
+      expect(find.text('取消'), findsOneWidget);
+      expect(find.text('创建'), findsOneWidget);
     });
   });
 }

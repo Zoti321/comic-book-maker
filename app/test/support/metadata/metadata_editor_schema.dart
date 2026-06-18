@@ -9,7 +9,9 @@ const _publishedDateFormFieldIds = [
 ];
 
 /// 测试用 canonical schema fixture（与 Core `metadata_schema` 结构对齐）。
-MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat) {
+MetadataEditorSchemaFrb metadataEditorSchemaFixture(
+  ExportFormatFrb exportFormat,
+) {
   const agePresets = ['Adults Only 18+', 'Everyone', 'R18+', 'Unknown'];
 
   return MetadataEditorSchemaFrb(
@@ -22,7 +24,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
         fields: [
           MetadataFieldSpecFrb(
             id: 'title',
-            label: '标题',
+            label: '漫画标题',
+            hint: null,
             kind: MetadataFieldKindFrb.text,
             required_: true,
             options: [],
@@ -31,6 +34,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           MetadataFieldSpecFrb(
             id: 'published_date',
             label: '发布日期',
+            hint: null,
             kind: MetadataFieldKindFrb.publishedDate,
             required_: false,
             options: [],
@@ -38,7 +42,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           ),
           MetadataFieldSpecFrb(
             id: 'language_iso',
-            label: '语言 (ISO，如 zh-CN)',
+            label: '语言',
+            hint: '如 zh-CN',
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
@@ -47,6 +52,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           MetadataFieldSpecFrb(
             id: 'age_rating',
             label: '年龄分级',
+            hint: null,
             kind: MetadataFieldKindFrb.ageRating,
             required_: false,
             options: [],
@@ -54,7 +60,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           ),
           MetadataFieldSpecFrb(
             id: 'description',
-            label: '描述',
+            label: '简介',
+            hint: null,
             kind: MetadataFieldKindFrb.multilineText,
             required_: false,
             options: [],
@@ -68,7 +75,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
         fields: [
           MetadataFieldSpecFrb(
             id: 'series',
-            label: '系列',
+            label: '系列名',
+            hint: null,
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
@@ -77,6 +85,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           MetadataFieldSpecFrb(
             id: 'number',
             label: '期号',
+            hint: '如 1A',
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
@@ -84,7 +93,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           ),
           MetadataFieldSpecFrb(
             id: 'series_count',
-            label: '系列总期数',
+            label: '总期数',
+            hint: null,
             kind: MetadataFieldKindFrb.text,
             required_: false,
             options: [],
@@ -99,6 +109,7 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           MetadataFieldSpecFrb(
             id: 'author',
             label: '作者',
+            hint: null,
             kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
@@ -106,7 +117,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           ),
           MetadataFieldSpecFrb(
             id: 'tags',
-            label: '标签（逗号分隔）',
+            label: '标签',
+            hint: null,
             kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
@@ -114,7 +126,8 @@ MetadataEditorSchemaFrb metadataEditorSchemaFixture(ExportFormatFrb exportFormat
           ),
           MetadataFieldSpecFrb(
             id: 'characters',
-            label: '登场人物',
+            label: '角色',
+            hint: null,
             kind: MetadataFieldKindFrb.commaSeparatedTags,
             required_: false,
             options: [],
@@ -137,9 +150,7 @@ String _publishedDatePart(String? publishedDate, int partIndex) {
   return int.tryParse(segment)?.toString() ?? segment;
 }
 
-String? _mergePublishedDateFromFormValues(
-  Map<String, String> valuesByFieldId,
-) {
+String? _mergePublishedDateFromFormValues(Map<String, String> valuesByFieldId) {
   final year = valuesByFieldId[_publishedDateFormFieldIds[0]]?.trim() ?? '';
   final month = valuesByFieldId[_publishedDateFormFieldIds[1]]?.trim() ?? '';
   final day = valuesByFieldId[_publishedDateFormFieldIds[2]]?.trim() ?? '';
@@ -225,8 +236,7 @@ Metadata mockMergeMetadataFromForm({
   for (final fieldId in ['author', 'tags', 'characters']) {
     if (!valuesByFieldId.containsKey(fieldId)) continue;
     final parsed = parseCommaSeparatedTags(valuesByFieldId[fieldId]!);
-    final normalized =
-        parsed.isEmpty ? null : formatCommaSeparatedTags(parsed);
+    final normalized = parsed.isEmpty ? null : formatCommaSeparatedTags(parsed);
     switch (fieldId) {
       case 'author':
         author = normalized;

@@ -149,21 +149,19 @@ class MetadataPanel extends HookConsumerWidget {
 
     useEffect(() {
       if (session.loading || session.metadata == null) return null;
-      syncControllersFromSession(
-        skipFieldIds: session.takeSkipSyncFieldIds(),
-      );
+      syncControllersFromSession(skipFieldIds: session.takeSkipSyncFieldIds());
       return null;
     }, [session.loading, session.formSyncGeneration]);
 
     Future<bool> saveNow() => session.save(
-          validateForm: validateForm,
-          readTextFieldValues: captureTextFieldValues,
-        );
+      validateForm: validateForm,
+      readTextFieldValues: captureTextFieldValues,
+    );
 
     Future<bool> prepareForNavigation() => session.flushForNavigation(
-          validateForm: validateForm,
-          readTextFieldValues: captureTextFieldValues,
-        );
+      validateForm: validateForm,
+      readTextFieldValues: captureTextFieldValues,
+    );
 
     useEffect(() {
       final panelController = controller;
@@ -188,6 +186,7 @@ class MetadataPanel extends HookConsumerWidget {
         controller: fieldController(field.id),
         focusNode: focusNodeFor(field.id),
         label: field.label,
+        hintText: field.hint,
         onChanged: onTextFieldChanged,
         onEditingComplete: () => unawaited(saveNow()),
       );
@@ -209,15 +208,13 @@ class MetadataPanel extends HookConsumerWidget {
       );
     }
 
-    Widget textField(
-      MetadataFieldSpecFrb field, {
-      int maxLines = 1,
-    }) {
+    Widget textField(MetadataFieldSpecFrb field, {int maxLines = 1}) {
       return TextFormField(
         controller: fieldController(field.id),
         focusNode: focusNodeFor(field.id),
         decoration: InputDecoration(
           labelText: field.label,
+          hintText: field.hint,
           alignLabelWithHint: maxLines > 1,
         ),
         maxLines: maxLines,
@@ -235,7 +232,10 @@ class MetadataPanel extends HookConsumerWidget {
       return TextFormField(
         controller: fieldController(field.id),
         focusNode: focusNodeFor(field.id),
-        decoration: InputDecoration(labelText: field.label),
+        decoration: InputDecoration(
+          labelText: field.label,
+          hintText: field.hint,
+        ),
         keyboardType: TextInputType.number,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         validator: (value) {
@@ -254,6 +254,7 @@ class MetadataPanel extends HookConsumerWidget {
     Widget ageRatingField(MetadataFieldSpecFrb field) {
       return MetadataAgeRatingField(
         label: field.label,
+        hintText: field.hint,
         controller: fieldController(field.id),
         presets: session.schema.ageRatingPresets,
         onChanged: onTextFieldChanged,
@@ -296,25 +297,23 @@ class MetadataPanel extends HookConsumerWidget {
     }
 
     final padding = AppSpacing.pagePadding(context);
-    final sectionLabels =
-        session.schema.sections.map((section) => section.label).toList();
+    final sectionLabels = session.schema.sections
+        .map((section) => section.label)
+        .toList();
 
-    Widget headerRow() {
+    Widget sectionBarRow() {
       final theme = Theme.of(context);
 
       return Row(
         children: [
-          Flexible(
-            child: Text(
-              session.schema.editorTitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          Expanded(
+            child: SectionChipBar(
+              sections: sectionLabels,
+              selectedIndex: sectionIndex.value,
+              onSelected: (i) => sectionIndex.value = i,
             ),
           ),
-          if (session.schema.editable && session.saving) ...[
+          if (session.saving) ...[
             const SizedBox(width: 12),
             SizedBox(
               width: 16,
@@ -342,7 +341,8 @@ class MetadataPanel extends HookConsumerWidget {
         child: ProjectEditorEmptyState(
           icon: LucideIcons.fileText,
           title: '当前格式不支持编辑',
-          subtitle: session.schema.pdfMessage ??
+          subtitle:
+              session.schema.pdfMessage ??
               '请在「项目属性」中将 Export 格式改为 CBZ 或 EPUB 后再编辑元数据。',
         ),
       );
@@ -355,28 +355,15 @@ class MetadataPanel extends HookConsumerWidget {
         return CustomScrollView(
           controller: scrollController,
           shrinkWrap: !boundedHeight,
-          physics: boundedHeight
-              ? null
-              : const NeverScrollableScrollPhysics(),
+          physics: boundedHeight ? null : const NeverScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-              sliver: SliverToBoxAdapter(child: headerRow()),
-            ),
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(padding.left, 12, padding.right, 0),
-              sliver: SliverToBoxAdapter(
-                child: SectionChipBar(
-                  sections: sectionLabels,
-                  selectedIndex: sectionIndex.value,
-                  onSelected: (i) => sectionIndex.value = i,
-                ),
-              ),
+              sliver: SliverToBoxAdapter(child: sectionBarRow()),
             ),
             if (session.saveError != null)
               SliverPadding(
-                padding:
-                    EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
+                padding: EdgeInsets.fromLTRB(padding.left, 8, padding.right, 0),
                 sliver: SliverToBoxAdapter(
                   child: ProjectEditorInlineErrorBanner(
                     message: '保存失败：${session.saveError}',

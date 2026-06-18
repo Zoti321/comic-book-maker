@@ -85,6 +85,7 @@ void main() {
       expect(find.text('添加页面'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
+      expect(find.byType(MenuAnchor), findsNWidgets(2));
     });
 
     testWidgets('invokes onAdd from add tile', (tester) async {

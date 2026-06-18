@@ -1,19 +1,21 @@
 import 'dart:async';
 
+import 'package:comic_book_maker/domain/models/create_project_draft.dart';
+import 'package:comic_book_maker/domain/models/create_project_command.dart';
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
+import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
+import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 /// 打开新建项目向导；确认后在后台创建，通过 Material SnackBar 反馈进度。
 Future<void> runCreateProjectWizard({
   required BuildContext context,
   required LibraryOperations library,
 }) async {
-  final draft = await showDialog<CreateProjectDraft>(
-    context: context,
-    builder: (dialogContext) => const CreateProjectWizardDialog(),
-  );
+  final draft = await _openCreateProjectWizard(context);
   if (draft == null || !draft.canCreate) {
     return;
   }
@@ -35,6 +37,17 @@ Future<void> runCreateProjectWizard({
       context: context,
       loadingController: loadingController,
     ),
+  );
+}
+
+Future<CreateProjectDraft?> _openCreateProjectWizard(BuildContext context) {
+  if (isCompact(context)) {
+    final router = GoRouter.of(context);
+    return router.push<CreateProjectDraft>(AppRoutes.projectCreate);
+  }
+  return showDialog<CreateProjectDraft>(
+    context: context,
+    builder: (dialogContext) => const CreateProjectWizardDialog(),
   );
 }
 

@@ -10,7 +10,7 @@ import 'package:comic_book_maker/ui/features/project_editor/project_editor_expor
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_page_states.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_tab_switcher.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_properties_dialog.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_properties_flow.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -91,8 +91,8 @@ class ProjectEditorPage extends HookConsumerWidget {
       context.pop();
     }
 
-    void openProjectProperties() {
-      showProjectPropertiesDialog(
+    void handleOpenProjectProperties() {
+      openProjectProperties(
         context: context,
         projectId: project.id,
       );
@@ -123,7 +123,7 @@ class ProjectEditorPage extends HookConsumerWidget {
             workspace: workspace,
             onExport: runExport,
             onAppendImport: appendFromSource,
-            onOpenProjectProperties: openProjectProperties,
+            onOpenProjectProperties: handleOpenProjectProperties,
             onBack: onBackPressed,
           ),
         ),

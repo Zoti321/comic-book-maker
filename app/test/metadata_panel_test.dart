@@ -56,8 +56,7 @@ void main() {
       exportFormat: ExportFormatFrb.comicArchive,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('ComicInfo'), findsNothing);
@@ -74,8 +73,7 @@ void main() {
       exportFormat: ExportFormatFrb.epub,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     await selectMetadataSection(tester, '系列');
     expect(find.text('期号'), findsOneWidget);
     expect(find.text('OPF Metadata'), findsNothing);
@@ -91,35 +89,35 @@ void main() {
       exportFormat: ExportFormatFrb.pdf,
     );
 
-    expect(find.text('元数据'), findsWidgets);
-    expect(find.text('标题'), findsOneWidget);
+    expect(find.text('漫画标题'), findsOneWidget);
     expect(find.text('当前格式不支持编辑'), findsNothing);
   });
 
-  testWidgets('published date year-only displays partial until picker saves full date', (
-    tester,
-  ) async {
-    gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
-      publishedDate: '2024',
-    );
+  testWidgets(
+    'published date year-only displays partial until picker saves full date',
+    (tester) async {
+      gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(
+        publishedDate: '2024',
+      );
 
-    await pumpMetadataPanel(
-      tester,
-      gateway: gateway,
-      exportFormat: ExportFormatFrb.comicArchive,
-    );
-    await selectMetadataSection(tester, '常规');
+      await pumpMetadataPanel(
+        tester,
+        gateway: gateway,
+        exportFormat: ExportFormatFrb.comicArchive,
+      );
+      await selectMetadataSection(tester, '常规');
 
-    expect(find.text('2024年'), findsOneWidget);
+      expect(find.text('2024年'), findsOneWidget);
 
-    await openPublishedDatePicker(tester);
-    await confirmDatePicker(tester);
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
+      await openPublishedDatePicker(tester);
+      await confirmDatePicker(tester);
+      await tester.pump(const Duration(milliseconds: 700));
+      await tester.pumpAndSettle();
 
-    expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-01-01');
-    expect(find.text('2024年1月1日'), findsOneWidget);
-  });
+      expect(gateway.metadataByProjectId['p1']?.publishedDate, '2024-01-01');
+      expect(find.text('2024年1月1日'), findsOneWidget);
+    },
+  );
 
   testWidgets('published date year-month displays partial', (tester) async {
     gateway.metadataByProjectId['p1'] = kMetadataPanelFixture.copyWith(

@@ -41,6 +41,7 @@ pub enum MetadataFieldKind {
 pub struct MetadataFieldSpec {
     pub id: &'static str,
     pub label: &'static str,
+    pub hint: Option<&'static str>,
     pub kind: MetadataFieldKind,
     pub required: bool,
     pub options: &'static [&'static str],
@@ -69,6 +70,7 @@ macro_rules! text_field {
         MetadataFieldSpec {
             id: $id,
             label: $label,
+            hint: None,
             kind: MetadataFieldKind::Text,
             required: false,
             options: &[],
@@ -81,6 +83,7 @@ macro_rules! text_field {
         MetadataFieldSpec {
             id: $id,
             label: $label,
+            hint: None,
             kind: MetadataFieldKind::Text,
             required: true,
             options: &[],
@@ -96,6 +99,7 @@ macro_rules! multiline_field {
         MetadataFieldSpec {
             id: $id,
             label: $label,
+            hint: None,
             kind: MetadataFieldKind::MultilineText,
             required: false,
             options: &[],
@@ -111,6 +115,7 @@ macro_rules! comma_tags_field {
         MetadataFieldSpec {
             id: $id,
             label: $label,
+            hint: None,
             kind: MetadataFieldKind::CommaSeparatedTags,
             required: false,
             options: &[],
@@ -130,10 +135,11 @@ pub fn form_field_ids(field: &MetadataFieldSpec) -> &'static [&'static str] {
 }
 
 const GENERAL_FIELDS: &[MetadataFieldSpec] = &[
-    text_field!("title", "标题", required),
+    text_field!("title", "漫画标题", required),
     MetadataFieldSpec {
         id: "published_date",
         label: "发布日期",
+        hint: None,
         kind: MetadataFieldKind::PublishedDate,
         required: false,
         options: &[],
@@ -141,10 +147,21 @@ const GENERAL_FIELDS: &[MetadataFieldSpec] = &[
         int_max: None,
         read_only_value: None,
     },
-    text_field!("language_iso", "语言 (ISO，如 zh-CN)"),
+    MetadataFieldSpec {
+        id: "language_iso",
+        label: "语言",
+        hint: Some("如 zh-CN"),
+        kind: MetadataFieldKind::Text,
+        required: false,
+        options: &[],
+        int_min: None,
+        int_max: None,
+        read_only_value: None,
+    },
     MetadataFieldSpec {
         id: "age_rating",
         label: "年龄分级",
+        hint: None,
         kind: MetadataFieldKind::AgeRating,
         required: false,
         options: &[],
@@ -152,19 +169,29 @@ const GENERAL_FIELDS: &[MetadataFieldSpec] = &[
         int_max: None,
         read_only_value: None,
     },
-    multiline_field!("description", "描述"),
+    multiline_field!("description", "简介"),
 ];
 
 const SERIES_FIELDS: &[MetadataFieldSpec] = &[
-    text_field!("series", "系列"),
-    text_field!("number", "期号"),
-    text_field!("series_count", "系列总期数"),
+    text_field!("series", "系列名"),
+    MetadataFieldSpec {
+        id: "number",
+        label: "期号",
+        hint: Some("如 1A"),
+        kind: MetadataFieldKind::Text,
+        required: false,
+        options: &[],
+        int_min: None,
+        int_max: None,
+        read_only_value: None,
+    },
+    text_field!("series_count", "总期数"),
 ];
 
 const CREATIVE_FIELDS: &[MetadataFieldSpec] = &[
     comma_tags_field!("author", "作者"),
-    comma_tags_field!("tags", "标签（逗号分隔）"),
-    comma_tags_field!("characters", "登场人物"),
+    comma_tags_field!("tags", "标签"),
+    comma_tags_field!("characters", "角色"),
 ];
 
 const CANONICAL_SECTIONS: &[MetadataSectionSpec] = &[
@@ -383,6 +410,19 @@ mod tests {
         for field in creative.fields {
             assert_eq!(field.kind, MetadataFieldKind::CommaSeparatedTags);
         }
+    }
+
+    #[test]
+    fn selected_fields_have_product_hints() {
+        let general = &CANONICAL_SCHEMA.sections[0];
+        let language = &general.fields[2];
+        assert_eq!(language.id, "language_iso");
+        assert_eq!(language.hint, Some("如 zh-CN"));
+
+        let series = &CANONICAL_SCHEMA.sections[1];
+        let number = &series.fields[1];
+        assert_eq!(number.id, "number");
+        assert_eq!(number.hint, Some("如 1A"));
     }
 
     #[test]

@@ -6,12 +6,14 @@ class MetadataAgeRatingField extends StatefulWidget {
   const MetadataAgeRatingField({
     super.key,
     required this.label,
+    this.hintText,
     required this.controller,
     required this.presets,
     required this.onChanged,
   });
 
   final String label;
+  final String? hintText;
   final TextEditingController controller;
   final List<String> presets;
   final VoidCallback onChanged;
@@ -81,22 +83,19 @@ class _MetadataAgeRatingFieldState extends State<MetadataAgeRatingField> {
             isExpanded: true,
             decoration: InputDecoration(
               labelText: widget.label,
-              hintText: '未设置',
+              hintText: widget.hintText ?? '未设置',
             ),
             hint: Text(
-              '未设置',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+              widget.hintText ?? '未设置',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
             ),
             items: widget.presets
                 .map(
                   (preset) => DropdownMenuItem<String>(
                     value: preset,
-                    child: Text(
-                      preset,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    child: Text(preset, overflow: TextOverflow.ellipsis),
                   ),
                 )
                 .toList(),

@@ -54,8 +54,11 @@ class PageThumbnailHoverMenu<T> extends StatefulWidget {
 
 class _PageThumbnailHoverMenuState<T> extends State<PageThumbnailHoverMenu<T>> {
   bool _hovering = false;
+  bool _menuOpen = false;
   final GlobalKey _anchorKey = GlobalKey();
   final MenuController _menuController = MenuController();
+
+  bool get _showOverflowButton => _hovering || _menuOpen;
 
   Future<void> _openCompactMenu() async {
     final anchorContext = _anchorKey.currentContext;
@@ -140,28 +143,37 @@ class _PageThumbnailHoverMenuState<T> extends State<PageThumbnailHoverMenu<T>> {
             fit: StackFit.passthrough,
             children: [
               widget.child,
-              if (showHoverButton && _hovering)
+              if (showHoverButton)
                 Positioned(
                   top: widget.buttonTop,
                   right: widget.buttonRight,
-                  child: MenuAnchor(
-                    controller: _menuController,
-                    style: PageThumbnailHoverMenu.menuStyle,
-                    menuChildren: _menuChildren(context),
-                    builder: (context, controller, child) {
-                      return IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        tooltip: '更多',
-                        style: PageThumbnailHoverMenu.overflowIconButtonStyle,
-                        onPressed: () {
-                          if (controller.isOpen) {
-                            controller.close();
-                          } else {
-                            controller.open();
-                          }
+                  child: IgnorePointer(
+                    ignoring: !_showOverflowButton,
+                    child: Opacity(
+                      opacity: _showOverflowButton ? 1 : 0,
+                      child: MenuAnchor(
+                        controller: _menuController,
+                        style: PageThumbnailHoverMenu.menuStyle,
+                        onOpen: () => setState(() => _menuOpen = true),
+                        onClose: () => setState(() => _menuOpen = false),
+                        menuChildren: _menuChildren(context),
+                        builder: (context, controller, child) {
+                          return IconButton(
+                            icon: const Icon(Icons.more_vert),
+                            tooltip: '更多',
+                            style:
+                                PageThumbnailHoverMenu.overflowIconButtonStyle,
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                controller.close();
+                              } else {
+                                controller.open();
+                              }
+                            },
+                          );
                         },
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
             ],

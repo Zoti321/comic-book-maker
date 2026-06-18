@@ -23,6 +23,7 @@ class MetadataCommaTagsField extends StatefulWidget {
     required this.controller,
     required this.focusNode,
     required this.label,
+    this.hintText,
     required this.onChanged,
     this.onEditingComplete,
   });
@@ -30,6 +31,7 @@ class MetadataCommaTagsField extends StatefulWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
   final String label;
+  final String? hintText;
   final VoidCallback onChanged;
   final VoidCallback? onEditingComplete;
 
@@ -190,8 +192,7 @@ class _MetadataCommaTagsFieldState extends State<MetadataCommaTagsField> {
               focusedErrorBorder: InputBorder.none,
               isDense: true,
               contentPadding: EdgeInsets.zero,
-              hintText: '输入后按逗号或回车添加',
-            ),
+            ).copyWith(hintText: widget.hintText),
             onChanged: _onInputChanged,
             onSubmitted: (value) {
               _tryAddTag(value);
