@@ -73,8 +73,6 @@ class _SortMenuRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Expanded(child: Text(field.label)),
-        if (selected)
-          Icon(Icons.check, size: 18, color: scheme.primary),
       ],
     );
   }
