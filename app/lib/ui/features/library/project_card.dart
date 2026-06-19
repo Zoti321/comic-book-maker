@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_surface_ink_well.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -99,21 +100,12 @@ class ProjectCard extends HookWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: InkWell(
+              child: AppSurfaceInkWell(
+                preset: AppSurfaceInkPreset.libraryCard,
                 onTap: onTap,
                 onLongPress: onDelete != null && compact
                     ? () => _showCompactDeleteMenu(context)
                     : null,
-                splashFactory: NoSplash.splashFactory,
-                overlayColor: WidgetStateProperty.resolveWith((states) {
-                  if (states.contains(WidgetState.pressed)) {
-                    return scheme.onSurface.withValues(alpha: 0.12);
-                  }
-                  if (states.contains(WidgetState.hovered)) {
-                    return scheme.onSurface.withValues(alpha: 0.08);
-                  }
-                  return null;
-                }),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

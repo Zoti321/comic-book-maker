@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_surface_ink_well.dart';
 import 'package:comic_book_maker/ui/features/project_editor/pages/page_thumbnail_hover_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -204,7 +205,8 @@ class _AddPageTile extends StatelessWidget {
         borderRadius: BorderRadius.zero,
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
+      child: AppSurfaceInkWell(
+        preset: AppSurfaceInkPreset.gridTile,
         onTap: onAdd,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +273,8 @@ class _PageThumbnailTile extends StatelessWidget {
             canMoveEarlier: canMoveEarlier,
             canMoveLater: canMoveLater,
           ),
-          child: InkWell(
+          child: AppSurfaceInkWell(
+            preset: AppSurfaceInkPreset.gridTile,
             onTap: onViewOriginal,
             child: Stack(
               fit: StackFit.expand,

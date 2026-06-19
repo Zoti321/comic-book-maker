@@ -49,6 +49,8 @@ class _MetadataCommaTagsFieldState extends State<MetadataCommaTagsField> {
     super.initState();
     _inputController = TextEditingController();
     _tags = parseCommaSeparatedTags(widget.controller.text);
+    _inputController.addListener(_rebuildForDecoratorState);
+    widget.focusNode.addListener(_rebuildForDecoratorState);
     widget.controller.addListener(_syncFromCommittedController);
   }
 
@@ -60,13 +62,24 @@ class _MetadataCommaTagsFieldState extends State<MetadataCommaTagsField> {
       widget.controller.addListener(_syncFromCommittedController);
       _syncFromCommittedController();
     }
+    if (oldWidget.focusNode != widget.focusNode) {
+      oldWidget.focusNode.removeListener(_rebuildForDecoratorState);
+      widget.focusNode.addListener(_rebuildForDecoratorState);
+    }
   }
 
   @override
   void dispose() {
     widget.controller.removeListener(_syncFromCommittedController);
-    _inputController.dispose();
+    widget.focusNode.removeListener(_rebuildForDecoratorState);
+    _inputController
+      ..removeListener(_rebuildForDecoratorState)
+      ..dispose();
     super.dispose();
+  }
+
+  void _rebuildForDecoratorState() {
+    if (mounted) setState(() {});
   }
 
   void _syncFromCommittedController() {
@@ -146,12 +159,13 @@ class _MetadataCommaTagsFieldState extends State<MetadataCommaTagsField> {
     final decorationTheme = theme.inputDecorationTheme;
     final hasTags = _tags.isNotEmpty;
     final hasPendingText = _inputController.text.isNotEmpty;
+    final isFocused = widget.focusNode.hasFocus;
 
     return InputDecorator(
       decoration: InputDecoration(
         labelText: widget.label,
       ).applyDefaults(decorationTheme),
-      isEmpty: !hasTags && !hasPendingText,
+      isEmpty: !hasTags && !hasPendingText && !isFocused,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

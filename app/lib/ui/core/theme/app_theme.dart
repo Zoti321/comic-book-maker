@@ -29,6 +29,7 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
+      splashFactory: InkSparkle.splashFactory,
       scaffoldBackgroundColor: scheme.surface,
       visualDensity: VisualDensity.compact,
     );

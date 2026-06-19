@@ -15,6 +15,50 @@ void main() {
     expect(formatCommaSeparatedTags(['肉便器', '群交']), '肉便器,群交');
   });
 
+  testWidgets('label floats while typing pending text without comma', (
+    tester,
+  ) async {
+    final committed = TextEditingController();
+    final focusNode = FocusNode();
+    addTearDown(committed.dispose);
+    addTearDown(focusNode.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: MetadataCommaTagsField(
+            controller: committed,
+            focusNode: focusNode,
+            label: '作者',
+            onChanged: () {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fieldFinder = find.byType(MetadataCommaTagsField);
+    final decoratorFinder = find.descendant(
+      of: fieldFinder,
+      matching: find.byType(InputDecorator),
+    );
+
+    InputDecorator outerDecorator(WidgetTester tester) {
+      final decorators = tester.widgetList<InputDecorator>(decoratorFinder);
+      expect(decorators.length, greaterThanOrEqualTo(1));
+      return decorators.first;
+    }
+
+    expect(outerDecorator(tester).isEmpty, isTrue);
+
+    await tester.enterText(find.byType(TextField), '23');
+    await tester.pump();
+
+    expect(outerDecorator(tester).isEmpty, isFalse);
+    expect(find.text('23'), findsOneWidget);
+  });
+
   testWidgets('committing duplicate tag does not duplicate chips or text', (
     tester,
   ) async {

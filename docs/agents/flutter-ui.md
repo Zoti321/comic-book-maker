@@ -27,6 +27,8 @@ Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)
 - **ThemeMode**：`themeModeProvider`（`shared_preferences`）持久化；设置页 `SegmentedButton` 三档（跟随系统 / 浅色 / 深色）
 - 间距、圆角、排版 token：`app/lib/ui/core/theme/app_tokens.dart`；颜色优先 `Theme.of(context).colorScheme`
 - **输入框视觉**：全局 `InputDecorationTheme` 为 M3 Outlined（无填充底色）；水平 `16px`；目标容器高度 **56px**（`AppTypography.controlHeightForm`，与 M3 Specs 一致；Flutter 实现用 `vertical: 20` + `suffixIconConstraints` 达到该高度）；**M3 浮动 label**
+- **Ink 反馈**：`AppTheme` 全局 `splashFactory: InkSparkle.splashFactory`（按钮、导航、表单等控件级交互）；大面积卡片式 surface（库卡片、图片 Tab 缩略图/添加页格）用 `AppSurfaceInkWell`（`NoSplash` + preset overlay，见下表）
+- **表单 suffix 按钮**：元数据等字段尾部操作用 `AppFieldSuffixIconButton`（36×36 圆形、`Icon` 20px）；`AppDropdownMenu(clearable)` 为「清空 + 4px + 下拉箭头」分区布局
 - **下拉菜单**：`AppTheme` 配置 `dropdownMenuTheme`；业务侧统一用 `AppDropdownMenu`（菜单与锚点字段**同宽**、项文字 **ellipsis**、`clearable` 清空在字段内 suffix）
 - **桌面窗口 chrome**：[ADR-0010](../adr/0010-desktop-borderless-chrome-solid-shell.md) 仍有效：`DesktopShell` + `DesktopWindowCaption`（无边框、实色标题栏）
 
@@ -54,7 +56,7 @@ Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)
 | 单行 / 多行输入 | `TextFormField` + `InputDecorationTheme` |
 | 下拉 | `AppDropdownMenu`（`ui/core/widgets/app_dropdown_menu.dart`；继承表单 56px 与 Outlined 主题；弹出菜单与字段同宽） |
 | 勾选 | `Checkbox`（常与 `Row` + `Text` 组合） |
-| 卡片 / 可点列表项 | `Card`、`InkWell` |
+| 卡片 / 可点列表项 | `Card` + `AppSurfaceInkWell`（`libraryCard` preset：hover 8%、按下 12%，无 ripple）；密 grid 表面用 `gridTile` preset（仅按下 8%） |
 | 锚点菜单 | `PopupMenuButton` 或 `showMenu` |
 | 对话框 | `showDialog` + `AlertDialog` |
 | 底部 Sheet | `showModalBottomSheet` |
