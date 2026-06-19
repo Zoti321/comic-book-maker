@@ -63,4 +63,12 @@ flutter run -d windows   # 或其他已连接设备
 ```powershell
 cd app
 flutter test
+flutter test integration_test/ -d flutter-tester
+```
+
+集成测试使用真 Rust Core 与 `integration_test/fixtures/two_pages.cbz`。首次克隆若缺少 fixture：
+
+```powershell
+cd app
+dart run tool/generate_integration_fixture.dart
 ```
