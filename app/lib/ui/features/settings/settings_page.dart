@@ -1,6 +1,7 @@
 import 'package:card_settings_ui/card_settings_ui.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
@@ -51,7 +52,7 @@ class SettingsPage extends HookConsumerWidget {
     }
 
     Future<void> confirmClearExportDirectory() async {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showAppOverlayDialog<bool>(
         context: context,
         builder: (dialogContext) {
           final scheme = Theme.of(dialogContext).colorScheme;

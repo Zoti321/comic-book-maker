@@ -121,6 +121,7 @@ class SideTabMorphTestHarness {
           path: AppRoutes.projectCreate,
           parentNavigatorKey: rootNavigatorKey,
           pageBuilder: (context, state) => fadeTransitionPage(
+            context: context,
             key: state.pageKey,
             child: const CreateProjectWizardFeature(),
           ),

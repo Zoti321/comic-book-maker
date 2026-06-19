@@ -24,6 +24,7 @@
 | 0011 | CB7/7Z Import + Export（`sevenz-rust2`） |
 | 0012 | Canonical 元数据模型与 Archive Format 映射边界 |
 | 0013 | Material You 全面迁移，feature 直用 Material 控件 |
+| 0014 | UI 动效基础设施（`AppMotion`、token、`flutter_animate`） |
 
 ## Agent 约定
 

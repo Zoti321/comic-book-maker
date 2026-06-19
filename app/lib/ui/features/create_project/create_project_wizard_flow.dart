@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_responsive.dart';
@@ -91,7 +92,7 @@ Future<void> _createProjectInBackground({
             if (navContext == null || !navContext.mounted) return;
             final message = error.toString();
 
-            showDialog<void>(
+            showAppOverlayDialog<void>(
               context: navContext,
               builder: (dialogContext) {
                 final scheme = Theme.of(dialogContext).colorScheme;

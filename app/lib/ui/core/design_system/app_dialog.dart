@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/ui/core/design_system/app_button.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ Future<T?> showAppFeatureDialog<T>({
   required WidgetBuilder builder,
   bool barrierDismissible = true,
 }) {
-  return showDialog<T>(
+  return showAppOverlayDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (dialogContext) => AppFeatureDialogFrame(
@@ -27,7 +28,7 @@ Future<T?> showSideTabFeatureDialog<T>({
   required WidgetBuilder builder,
   bool barrierDismissible = true,
 }) {
-  return showDialog<T>(
+  return showAppOverlayDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (dialogContext) => AppFeatureDialogFrame(
@@ -71,7 +72,7 @@ Future<T?> showAppDialog<T>({
   List<Widget> Function(BuildContext dialogContext)? actionsBuilder,
   bool barrierDismissible = true,
 }) {
-  return showDialog<T>(
+  return showAppOverlayDialog<T>(
     context: context,
     barrierDismissible: barrierDismissible,
     builder: (dialogContext) => AppDialog(

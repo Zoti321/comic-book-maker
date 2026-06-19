@@ -32,6 +32,7 @@ final appRouter = GoRouter(
                   path: 'create',
                   parentNavigatorKey: rootNavigatorKey,
                   pageBuilder: (context, state) => fadeTransitionPage(
+                    context: context,
                     key: state.pageKey,
                     child: const CreateProjectWizardFeature(),
                   ),
@@ -59,6 +60,7 @@ final appRouter = GoRouter(
         final projectId = state.pathParameters['projectId'];
         if (projectId == null || projectId.isEmpty) {
           return fadeTransitionPage(
+            context: context,
             key: state.pageKey,
             child: const Scaffold(
               body: Center(child: Text('缺少项目信息')),
@@ -66,6 +68,7 @@ final appRouter = GoRouter(
           );
         }
         return fadeTransitionPage(
+          context: context,
           key: state.pageKey,
           child: ProjectEditorRoutePage(
             projectId: projectId,
@@ -81,6 +84,7 @@ final appRouter = GoRouter(
             final projectId = state.pathParameters['projectId'];
             if (projectId == null || projectId.isEmpty) {
               return fadeTransitionPage(
+                context: context,
                 key: state.pageKey,
                 child: const Scaffold(
                   body: Center(child: Text('缺少项目信息')),
@@ -88,6 +92,7 @@ final appRouter = GoRouter(
               );
             }
             return fadeTransitionPage(
+              context: context,
               key: state.pageKey,
               child: ProjectPropertiesFeature(projectId: projectId),
             );

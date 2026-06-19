@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:comic_book_maker/ui/core/design_system/app_dialog.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
@@ -252,7 +253,7 @@ Future<Object?> _showMorphableDialog<T>({
   )
       dialogBuilder,
 }) {
-  return showDialog<Object?>(
+  return showAppOverlayDialog<Object?>(
     context: context,
     useRootNavigator: true,
     builder: (dialogContext) => SideTabMorphPresentation(

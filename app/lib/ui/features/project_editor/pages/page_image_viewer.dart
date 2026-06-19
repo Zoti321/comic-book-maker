@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -12,7 +13,7 @@ Future<void> showPageImageViewer(
   required List<PageSummary> pages,
   required PageSummary initialPage,
 }) {
-  return showDialog<void>(
+  return showAppOverlayDialog<void>(
     context: context,
     barrierColor: Colors.black87,
     barrierDismissible: false,

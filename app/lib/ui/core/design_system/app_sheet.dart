@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/theme/app_overlay_transitions.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -10,13 +11,40 @@ Future<T?> showAppBottomSheet<T>({
   required WidgetBuilder builder,
   bool isDismissible = true,
 }) {
-  return showModalBottomSheet<T>(
+  final scheme = Theme.of(context).colorScheme;
+  final localizations = MaterialLocalizations.of(context);
+
+  return showGeneralDialog<T>(
     context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
-    isDismissible: isDismissible,
-    backgroundColor: Theme.of(context).colorScheme.surface,
-    builder: (context) => AppSheetFrame(child: builder(context)),
+    barrierDismissible: isDismissible,
+    barrierLabel: localizations.modalBarrierDismissLabel,
+    barrierColor: Colors.black54,
+    transitionDuration: AppOverlayTransitions.transitionDuration(context),
+    transitionBuilder: AppOverlayTransitions.sheetTransitionBuilder,
+    pageBuilder: (sheetContext, animation, secondaryAnimation) {
+      return Align(
+        alignment: Alignment.bottomCenter,
+        child: Material(
+          color: scheme.surface,
+          elevation: 1,
+          shadowColor: Colors.black26,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: AppSheetFrame(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const _AppSheetDragHandle(),
+                builder(sheetContext),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
   );
 }
 
@@ -87,6 +115,29 @@ class AppSheetDescription extends StatelessWidget {
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
+    );
+  }
+}
+
+class _AppSheetDragHandle extends StatelessWidget {
+  const _AppSheetDragHandle();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Center(
+        child: Container(
+          width: 32,
+          height: 4,
+          decoration: BoxDecoration(
+            color: scheme.onSurfaceVariant.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
     );
   }
 }

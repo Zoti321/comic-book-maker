@@ -20,7 +20,7 @@ Flutter 侧目录与 Core 接缝以 **`docs/adr/0007-flutter-layered-lib-frb-bou
 
 ## 主题与 Material You
 
-Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)**；视觉参考 [Animeko](https://github.com/open-ani/animeko) 的 M3 桌面/平板信息架构，**不**移植其代码。
+Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)**；UI 动效见 **[ADR-0014](../adr/0014-ui-motion-infrastructure.md)**。视觉参考 [Animeko](https://github.com/open-ani/animeko) 的 M3 桌面/平板信息架构，**不**移植其代码。
 
 - 根应用：`MaterialApp.router` + `go_router` + `ProviderScope`（`app/lib/main.dart`、`app/lib/ui/core/router/`）
 - **双主题**：`AppTheme.light()` / `AppTheme.dark()`，均由 `ColorScheme.fromSeed(seedColor: 0xFF1565C0)` 生成
@@ -29,6 +29,7 @@ Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)
 - **输入框视觉**：全局 `InputDecorationTheme` 为 M3 Outlined（无填充底色）；水平 `16px`；目标容器高度 **56px**（`AppTypography.controlHeightForm`，与 M3 Specs 一致；Flutter 实现用 `vertical: 20` + `suffixIconConstraints` 达到该高度）；**M3 浮动 label**
 - **Ink 反馈**：`AppTheme` 全局 `splashFactory: InkSparkle.splashFactory`（按钮、导航、表单等控件级交互）；大面积卡片式 surface（库卡片、图片 Tab 缩略图/添加页格）用 `AppSurfaceInkWell`（`NoSplash` + preset overlay，见下表）
 - **表单 suffix 按钮**：元数据等字段尾部操作用 `AppFieldSuffixIconButton`（36×36 圆形、`Icon` 20px）；`AppDropdownMenu(clearable)` 为「清空 + 4px + 下拉箭头」分区布局
+- **Motion**：时长/曲线见 `AppDurations` / `AppCurves`；**必须**经 `AppMotion` 读取 `MediaQuery.disableAnimations`（为 true 时 `Duration.zero`）。全屏路由用 `fadeTransitionPage`（纯 fade，`pageTransition` 200ms）；壳内 Tab 无过渡。Dialog / BottomSheet 统一 `showAppOverlayDialog` / `showAppBottomSheet`（scale 0.96 + fade，`motionNormal` 250ms，见 `app_overlay_transitions.dart`）；**禁止** feature 直接 `showDialog` / `showModalBottomSheet`。组件级动效优先 `flutter_animate`（`staggerEntrance` / `fadeEntrance` 见 `app_motion_effects.dart`）；`animated_text_kit` 仅空态等短标题（见 ADR-0014）。漫画库网格**仅首次有项目时** stagger 入场，排序/增删不重播
 - **下拉菜单**：`AppTheme` 配置 `dropdownMenuTheme`；业务侧统一用 `AppDropdownMenu`（菜单与锚点字段**同宽**、项文字 **ellipsis**、`clearable` 清空在字段内 suffix）
 - **桌面窗口 chrome**：[ADR-0010](../adr/0010-desktop-borderless-chrome-solid-shell.md) 仍有效：`DesktopShell` + `DesktopWindowCaption`（无边框、实色标题栏）
 
@@ -58,8 +59,8 @@ Material You 全面迁移见 **[ADR-0013](../adr/0013-material-you-migration.md)
 | 勾选 | `Checkbox`（常与 `Row` + `Text` 组合） |
 | 卡片 / 可点列表项 | `Card` + `AppSurfaceInkWell`（`libraryCard` preset：hover 8%、按下 12%，无 ripple）；密 grid 表面用 `gridTile` preset（仅按下 8%） |
 | 锚点菜单 | `PopupMenuButton` 或 `showMenu` |
-| 对话框 | `showDialog` + `AlertDialog` |
-| 底部 Sheet | `showModalBottomSheet` |
+| 对话框 | `showAppOverlayDialog` + `AlertDialog` / `AppDialog`（scale+fade 入场） |
+| 底部 Sheet | `showAppBottomSheet`（scale+fade 入场） |
 | 侧栏 Tab 功能对话框 | `SideTabFeatureDialog` + `SideTabDialogShell`（`ui/core/shell/side_tab_feature_dialog.dart`） |
 | 短时反馈 | `ScaffoldMessenger.showSnackBar` |
 | 阻塞长任务 | `AlertDialog` + `CircularProgressIndicator`（见 `project_editor_dialogs.dart` 等 feature helper） |

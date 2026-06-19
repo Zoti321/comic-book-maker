@@ -1,6 +1,8 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
+import 'package:comic_book_maker/ui/core/theme/app_motion.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
 import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_flow.dart';
@@ -25,6 +27,32 @@ class LibraryPage extends HookConsumerWidget {
     final projects = ref.watch(sortedLibraryProjectsProvider);
     final library = ref.read(libraryOperationsProvider);
     final error = useState<String?>(null);
+    final playGridEntrance = useState(false);
+    final gridEntranceConsumed = useRef(false);
+
+    useEffect(() {
+      if (projects.isEmpty) {
+        gridEntranceConsumed.value = false;
+        playGridEntrance.value = false;
+        return null;
+      }
+      if (gridEntranceConsumed.value) {
+        return null;
+      }
+      gridEntranceConsumed.value = true;
+      playGridEntrance.value = true;
+      return null;
+    }, [projects.isEmpty]);
+
+    useEffect(() {
+      if (!playGridEntrance.value) {
+        return null;
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        playGridEntrance.value = false;
+      });
+      return null;
+    }, [playGridEntrance.value]);
 
     Future<void> openProject(ProjectSummary project) async {
       try {
@@ -54,7 +82,7 @@ class LibraryPage extends HookConsumerWidget {
     }
 
     Future<void> confirmDeleteProject(ProjectSummary project) async {
-      final confirmed = await showDialog<bool>(
+      final confirmed = await showAppOverlayDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text('删除项目'),
@@ -146,10 +174,15 @@ class LibraryPage extends HookConsumerWidget {
                     (context, index) {
                       final project = projects[index];
                       return ProjectCard(
+                        key: ValueKey(project.id),
                         title: project.title,
                         coverThumbnailPath: project.coverThumbnailPath,
                         onTap: () => openProject(project),
                         onDelete: () => confirmDeleteProject(project),
+                      ).staggerEntrance(
+                        context,
+                        index: index,
+                        play: playGridEntrance.value,
                       );
                     },
                     childCount: projects.length,

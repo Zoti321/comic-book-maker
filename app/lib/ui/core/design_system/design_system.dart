@@ -7,6 +7,7 @@ library;
 export 'append_archive_sheet.dart';
 export 'app_blocking_loading.dart';
 export 'app_button.dart';
+export 'app_overlay.dart';
 export 'app_operation_feedback.dart';
 export 'app_popup_menu.dart';
 export 'app_popup_menu_panel.dart';
