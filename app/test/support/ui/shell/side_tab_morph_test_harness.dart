@@ -4,6 +4,7 @@ import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
+import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
@@ -65,7 +66,7 @@ class SideTabMorphTestHarness {
     assert(_started, 'Call pumpFeatureAt before morphTo');
     _setViewport(width);
     await tester.pump();
-    await tester.pump(AppPageTransitions.fadeDuration);
+    await tester.pump(AppDurations.motionNormal);
     await tester.pumpAndSettle();
   }
 

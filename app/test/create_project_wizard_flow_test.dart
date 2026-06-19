@@ -121,6 +121,17 @@ void main() {
   });
 
   group('runCreateProjectWizard routing with desktop chrome', () {
+    testWidgets('wide dialog morphs to compact page when viewport shrinks', (
+      tester,
+    ) async {
+      final harness = SideTabMorphTestHarness.withDesktopChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.wideWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.dialog);
+
+      await harness.morphTo(SideTabMorphTestHarness.compactWidth);
+      harness.expectPresentation(SideTabMorphPresentationMode.page);
+    });
+
     testWidgets('compact page morphs to dialog when viewport grows', (
       tester,
     ) async {

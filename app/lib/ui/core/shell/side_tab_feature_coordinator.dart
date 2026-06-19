@@ -23,7 +23,6 @@ abstract class SideTabMorphSessionHandle {
   void evaluate();
   void bindPagePop(VoidCallback pop);
   void bindDialogPop(Future<void> Function() pop);
-  void bindFadeOut(Future<void> Function() fadeOut);
 }
 
 /// 侧栏 Tab 功能（新建项目、项目属性）打开 / 变形会话的共享状态。

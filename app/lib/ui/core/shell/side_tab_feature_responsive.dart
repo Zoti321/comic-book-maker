@@ -7,6 +7,8 @@ import 'package:comic_book_maker/ui/core/router/app_navigator.dart';
 import 'package:comic_book_maker/ui/core/router/app_page_transitions.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_coordinator.dart';
 import 'package:comic_book_maker/ui/core/shell/side_tab_feature_session.dart';
+import 'package:comic_book_maker/ui/core/theme/app_motion.dart';
+import 'package:comic_book_maker/ui/core/theme/app_overlay_transitions.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -28,16 +30,12 @@ class SideTabMorphSession
 
   VoidCallback? _popPage;
   Future<void> Function()? _popDialog;
-  Future<void> Function()? _fadeOut;
 
   @override
   void bindPagePop(VoidCallback pop) => _popPage = pop;
 
   @override
   void bindDialogPop(Future<void> Function() pop) => _popDialog = pop;
-
-  @override
-  void bindFadeOut(Future<void> Function() fadeOut) => _fadeOut = fadeOut;
 
   @override
   void watch(SideTabMorphForm form) {
@@ -59,7 +57,6 @@ class SideTabMorphSession
     _form = null;
     _popPage = null;
     _popDialog = null;
-    _fadeOut = null;
   }
 
   @override
@@ -112,11 +109,12 @@ class SideTabMorphSession
       } else {
         _fallbackPopPage();
       }
-      await Future<void>.delayed(AppPageTransitions.fadeDuration);
+      await Future<void>.delayed(_morphSettleDuration());
     } else {
-      await (_fadeOut?.call() ??
-          Future<void>.delayed(AppPageTransitions.fadeDuration));
+      // dialog → page：与上对称，先 pop 再延迟；overlay 路由自行 scale+fade 退场。
+      // 不可先 await fadeOut——缩放触发的壳层重建会使 Presentation 卸载，bind 的 pop 静默失效。
       await (_popDialog?.call() ?? _fallbackPopDialog());
+      await Future<void>.delayed(_morphSettleDuration());
     }
 
     coordinator.setMorphing(false);
@@ -134,6 +132,16 @@ class SideTabMorphSession
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
     Navigator.of(ctx, rootNavigator: true).pop(sideTabFeatureMorphMarker);
+  }
+
+  Duration _morphSettleDuration() {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) {
+      return AppPageTransitions.fadeDuration;
+    }
+    final overlay = AppOverlayTransitions.transitionDuration(ctx);
+    final page = AppMotion.pageTransitionDuration(ctx);
+    return overlay > page ? overlay : page;
   }
 }
 
@@ -256,12 +264,8 @@ Future<Object?> _showMorphableDialog<T>({
   return showAppOverlayDialog<Object?>(
     context: context,
     useRootNavigator: true,
-    builder: (dialogContext) => SideTabMorphPresentation(
-      coordinator: coordinator,
-      form: SideTabMorphForm.dialog,
-      child: AppFeatureDialogFrame(
-        child: dialogBuilder(dialogContext, coordinator),
-      ),
+    builder: (dialogContext) => AppFeatureDialogFrame(
+      child: dialogBuilder(dialogContext, coordinator),
     ),
   );
 }
@@ -334,16 +338,12 @@ class _SideTabMorphPresentationState extends State<SideTabMorphPresentation>
       });
     } else {
       session.bindDialogPop(() async {
-        if (!mounted) return;
-        Navigator.of(context, rootNavigator: true)
+        final ctx = rootNavigatorKey.currentContext;
+        if (ctx == null || !ctx.mounted) return;
+        Navigator.of(ctx, rootNavigator: true)
             .pop(sideTabFeatureMorphMarker);
       });
     }
-
-    session.bindFadeOut(() async {
-      if (!mounted) return;
-      await _fadeController.reverse();
-    });
   }
 
   @override
