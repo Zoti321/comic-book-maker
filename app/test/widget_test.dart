@@ -1,3 +1,4 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/main.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
@@ -68,7 +69,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('漫画库'), findsOneWidget);
-      expect(find.text('还没有项目'), findsOneWidget);
+      expect(find.byType(AnimatedTextKit), findsOneWidget);
       expect(find.text('新建项目'), findsWidgets);
       expect(find.text('导入漫画'), findsNothing);
       expect(find.text('设置'), findsOneWidget);
