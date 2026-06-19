@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/widgets/app_field_suffix_icon_button.dart';
 import 'package:flutter/material.dart';
 
 /// Canonical `published_date`：Material 日历选择完整日期；Import 的 partial 仅作中文展示。
@@ -170,15 +171,17 @@ class MetadataPublishedDateField extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (hasValue)
-                        IconButton(
+                        AppFieldSuffixIconButton(
                           tooltip: '清空',
+                          icon: Icons.close,
                           onPressed: _clearDate,
-                          icon: const Icon(Icons.clear),
                         ),
-                      IconButton(
+                      if (hasValue)
+                        const SizedBox(width: AppFieldSuffixIconButton.gap),
+                      AppFieldSuffixIconButton(
                         tooltip: '选择日期',
+                        icon: Icons.calendar_today,
                         onPressed: () => _openDatePicker(context),
-                        icon: const Icon(Icons.calendar_today),
                       ),
                     ],
                   ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +18,21 @@ AppBreakpoint breakpointOf(BuildContext context) {
 
 bool isCompact(BuildContext context) =>
     breakpointOf(context) == AppBreakpoint.compact;
+
+/// 窗口物理宽度（不受子树 [MediaQuery] 内边距 / 侧栏占位影响）。
+double viewportWidthOf(BuildContext context) {
+  final view = View.of(context);
+  return view.physicalSize.width / view.devicePixelRatio;
+}
+
+/// 侧栏 Tab 变形专用：取 [MediaQuery] 与窗口宽度较大值，避免桌面 chrome 子树宽度滞后。
+bool isCompactForSideTabMorph(BuildContext context) {
+  final width = math.max(
+    MediaQuery.sizeOf(context).width,
+    viewportWidthOf(context),
+  );
+  return width < AppBreakpointWidths.medium;
+}
 
 bool isExpanded(BuildContext context) =>
     breakpointOf(context) == AppBreakpoint.expanded;

@@ -26,6 +26,11 @@ void main() {
     expect(AppRadius.md, 8.0);
   });
 
+  test('AppTheme uses InkSparkle splash factory', () {
+    expect(AppTheme.light().splashFactory, InkSparkle.splashFactory);
+    expect(AppTheme.dark().splashFactory, InkSparkle.splashFactory);
+  });
+
   test('AppTheme.light sets global tooltip wait duration', () {
     final theme = AppTheme.light();
 

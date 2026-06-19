@@ -1,44 +1,9 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
-import 'package:comic_book_maker/ui/core/layout/responsive.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_sheet.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
-/// 项目编辑相关功能对话框（限宽壳层）。
-Future<T?> showProjectEditorFeatureDialog<T>({
-  required BuildContext context,
-  required WidgetBuilder builder,
-  bool barrierDismissible = true,
-}) {
-  return showDialog<T>(
-    context: context,
-    barrierDismissible: barrierDismissible,
-    builder: (dialogContext) => _ProjectEditorFeatureDialogFrame(
-      child: builder(dialogContext),
-    ),
-  );
-}
-
-class _ProjectEditorFeatureDialogFrame extends StatelessWidget {
-  const _ProjectEditorFeatureDialogFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: sideTabFeatureDialogMaxWidth(context),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
 
 Future<bool?> showProjectEditorConfirmDialog({
   required BuildContext context,
@@ -48,7 +13,7 @@ Future<bool?> showProjectEditorConfirmDialog({
   String confirmLabel = '确定',
   bool destructive = false,
 }) {
-  return showDialog<bool>(
+  return showAppOverlayDialog<bool>(
     context: context,
     builder: (dialogContext) {
       final scheme = Theme.of(dialogContext).colorScheme;
@@ -82,7 +47,7 @@ Future<void> showProjectEditorAlertDialog({
   required Widget description,
   String actionLabel = '知道了',
 }) {
-  return showDialog<void>(
+  return showAppOverlayDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: Text(title),
@@ -136,7 +101,7 @@ Future<T> runProjectEditorBlockingOperation<T>({
     throw StateError('Context is not mounted');
   }
 
-  showDialog<void>(
+  showAppOverlayDialog<void>(
     context: context,
     barrierDismissible: false,
     useRootNavigator: true,
@@ -183,7 +148,7 @@ Future<T> runProjectEditorDismissibleBackgroundOperation<T>({
 
   final navigator = Navigator.of(context, rootNavigator: true);
   var loadingOpen = true;
-  final route = DialogRoute<void>(
+  final route = appOverlayDialogRoute<void>(
     context: context,
     barrierDismissible: true,
     builder: (dialogContext) {
@@ -259,49 +224,45 @@ Future<void> showProjectEditorAppendImportOutcome(
 Future<ArchiveFormatFrb?> showProjectEditorAppendArchiveSheet(
   BuildContext context,
 ) {
-  return showModalBottomSheet<ArchiveFormatFrb>(
+  return showAppBottomSheet<ArchiveFormatFrb>(
     context: context,
-    showDragHandle: true,
     builder: (sheetContext) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '从漫画压缩包导入',
-              style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '追加页面到当前项目',
-              style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cbz),
-              icon: const Icon(LucideIcons.folderArchive),
-              label: const Text('选择 CBZ'),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cbr),
-              icon: const Icon(LucideIcons.archive),
-              label: const Text('选择 CBR'),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
-              onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cb7),
-              icon: const Icon(LucideIcons.archive),
-              label: const Text('选择 CB7'),
-            ),
-          ],
-        ),
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '从漫画压缩包导入',
+            style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '追加页面到当前项目',
+            style: Theme.of(sheetContext).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cbz),
+            icon: const Icon(LucideIcons.folderArchive),
+            label: const Text('选择 CBZ'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cbr),
+            icon: const Icon(LucideIcons.archive),
+            label: const Text('选择 CBR'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.pop(sheetContext, ArchiveFormatFrb.cb7),
+            icon: const Icon(LucideIcons.archive),
+            label: const Text('选择 CB7'),
+          ),
+        ],
       );
     },
   );

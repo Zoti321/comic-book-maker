@@ -1,34 +1,20 @@
-import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_dialog.dart';
-import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_page.dart';
+import 'package:comic_book_maker/ui/features/create_project/create_project_wizard_feature.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/frb/rust_fake.dart';
+import 'support/ui/shell/side_tab_morph_test_harness.dart';
 
 void main() {
   rustTestSetUpAll();
-
-  Future<void> openWizard(WidgetTester tester) async {
-    await tester.binding.setSurfaceSize(const Size(1280, 900));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: _WizardHost(),
-        ),
-      ),
-    );
-    await tester.tap(find.text('打开向导'));
-    await tester.pumpAndSettle();
-  }
 
   group('CreateProjectWizardDialog', () {
     testWidgets('disables create until import source is chosen', (
       tester,
     ) async {
-      await openWizard(tester);
+      final harness = SideTabMorphTestHarness.withoutChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.wideWidth);
 
       expect(find.text('新建项目'), findsOneWidget);
       expect(find.text('尚未选择'), findsOneWidget);
@@ -44,7 +30,8 @@ void main() {
     });
 
     testWidgets('shows export tab after switching side tab', (tester) async {
-      await openWizard(tester);
+      final harness = SideTabMorphTestHarness.withoutChrome(tester);
+      await harness.pumpFeatureAt(SideTabMorphTestHarness.wideWidth);
 
       await tester.tap(find.text('导出'));
       await tester.pumpAndSettle();
@@ -59,18 +46,11 @@ void main() {
     });
 
     testWidgets('fits content when dialog height is tight', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: _WizardHost(),
-          ),
-        ),
+      final harness = SideTabMorphTestHarness(
+        tester,
+        height: 600,
       );
-      await tester.tap(find.text('打开向导'));
-      await tester.pumpAndSettle();
+      await harness.pumpFeatureAt(800);
 
       expect(tester.takeException(), isNull);
     });
@@ -82,7 +62,7 @@ void main() {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
-            home: CreateProjectWizardPage(),
+            home: CreateProjectWizardFeature(),
           ),
         ),
       );
@@ -97,23 +77,4 @@ void main() {
       expect(find.text('创建'), findsOneWidget);
     });
   });
-}
-
-class _WizardHost extends StatelessWidget {
-  const _WizardHost();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: FilledButton(
-          onPressed: () => showDialog<void>(
-            context: context,
-            builder: (context) => const CreateProjectWizardDialog(),
-          ),
-          child: const Text('打开向导'),
-        ),
-      ),
-    );
-  }
 }

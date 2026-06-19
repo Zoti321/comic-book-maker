@@ -10,6 +10,15 @@ abstract final class AppBreakpointWidths {
 abstract final class AppLayout {
   static const sidebarWidth = 80.0;
   static const contentMaxWidth = 1280.0;
+
+  /// 侧栏 Tab 功能对话框内左侧导航宽度。
+  static const sideTabDialogNavWidth = 112.0;
+
+  /// 侧栏 Tab 对话框内容区最小高度（M3 内容驱动 + 下限）。
+  static const sideTabDialogMinHeight = 320.0;
+
+  /// 对话框相对视口上下的总留白（用于 [maxHeight]）。
+  static const dialogViewportMargin = 48.0;
 }
 
 /// 间距、圆角、排版等设计 token（与 [AppTheme.light] 配套）。
@@ -66,6 +75,28 @@ abstract final class AppTypography {
 abstract final class AppDurations {
   /// 全局 tooltip 悬停后出现延迟（见 [AppTheme.light] `tooltipTheme`）。
   static const tooltipWait = Duration(seconds: 1);
+
+  /// 微交互（hover、轻 fade 等）。
+  static const motionFast = Duration(milliseconds: 150);
+
+  /// Dialog / Sheet、列表 stagger 等常规过渡。
+  static const motionNormal = Duration(milliseconds: 250);
+
+  /// 较慢强调（首版预留，少用）。
+  static const motionSlow = Duration(milliseconds: 400);
+
+  /// 全屏路由 push/pop 对称 fade（见 [fadeTransitionPage]）。
+  static const pageTransition = Duration(milliseconds: 200);
+
+  /// Stagger 入场项间 delay（见 [AppMotion.staggerDelayForIndex]）。
+  static const staggerItemDelay = Duration(milliseconds: 40);
+}
+
+/// 动画曲线 token（与 [AppDurations] 配对使用）。
+abstract final class AppCurves {
+  static const standard = Curves.easeInOut;
+  static const enter = Curves.easeOut;
+  static const exit = Curves.easeIn;
 }
 
 /// 阴影 token（贴顶栏、浮层等共用数值，按场景选用）。

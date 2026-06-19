@@ -1,6 +1,7 @@
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_field_suffix_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -113,7 +114,9 @@ void main() {
     expect(value, 'R18+');
   });
 
-  testWidgets('clearable shows clear button inside suffix', (tester) async {
+  testWidgets('clearable shows separate clear and dropdown suffix controls', (
+    tester,
+  ) async {
     String? value = 'a';
 
     await tester.pumpWidget(
@@ -139,7 +142,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.byType(AppFieldSuffixIconButton), findsOneWidget);
     expect(find.byTooltip('清空'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(DropdownMenu<String>),

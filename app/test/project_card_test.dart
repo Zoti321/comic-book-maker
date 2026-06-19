@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
+import 'package:comic_book_maker/ui/core/widgets/app_surface_ink_well.dart';
 import 'package:comic_book_maker/ui/features/library/project_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,9 +27,12 @@ void main() {
     final card = tester.widget<Card>(find.byType(Card));
     expect(card.elevation, 1);
 
-    final inkWell = tester.widget<InkWell>(find.byType(InkWell));
-    expect(inkWell.splashFactory, equals(NoSplash.splashFactory));
-    expect(inkWell.overlayColor, isNotNull);
+    expect(find.byType(AppSurfaceInkWell), findsOneWidget);
+
+    final surfaceInk = tester.widget<AppSurfaceInkWell>(
+      find.byType(AppSurfaceInkWell),
+    );
+    expect(surfaceInk.preset, AppSurfaceInkPreset.libraryCard);
   });
 
   testWidgets('tap invokes onTap', (tester) async {

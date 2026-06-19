@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:flutter/material.dart';
 
 /// 全站唯一的阻塞式 loading 弹层（不可取消）。
@@ -5,7 +6,7 @@ Future<void> showAppBlockingLoading(
   BuildContext context, {
   required String message,
 }) {
-  return showDialog<void>(
+  return showAppOverlayDialog<void>(
     context: context,
     barrierDismissible: false,
     useRootNavigator: true,
@@ -77,7 +78,7 @@ Future<void> showAppDismissibleLoading(
   required String message,
   String? hint,
 }) {
-  return showDialog<void>(
+  return showAppOverlayDialog<void>(
     context: context,
     barrierDismissible: true,
     useRootNavigator: true,
@@ -146,7 +147,7 @@ Future<T> runAppDismissibleBackgroundOperation<T>({
 
   final navigator = Navigator.of(context, rootNavigator: true);
   var loadingOpen = true;
-  final route = DialogRoute<void>(
+  final route = appOverlayDialogRoute<void>(
     context: context,
     barrierDismissible: true,
     builder: (dialogContext) => AppDismissibleLoadingDialog(

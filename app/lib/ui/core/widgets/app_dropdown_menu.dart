@@ -1,3 +1,4 @@
+import 'package:comic_book_maker/ui/core/widgets/app_field_suffix_icon_button.dart';
 import 'package:flutter/material.dart';
 
 /// [AppDropdownMenu] 下拉项。
@@ -61,15 +62,20 @@ class AppDropdownMenu<T> extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
+        AppFieldSuffixIconButton(
           tooltip: '清空',
-          visualDensity: VisualDensity.compact,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+          icon: Icons.close,
           onPressed: () => onChanged?.call(null),
-          icon: const Icon(Icons.close),
         ),
-        const Icon(Icons.arrow_drop_down),
+        const SizedBox(width: AppFieldSuffixIconButton.gap),
+        SizedBox(
+          width: AppFieldSuffixIconButton.buttonSize,
+          height: AppFieldSuffixIconButton.buttonSize,
+          child: Icon(
+            Icons.arrow_drop_down,
+            size: AppFieldSuffixIconButton.iconSize,
+          ),
+        ),
       ],
     );
   }

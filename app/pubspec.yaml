@@ -50,6 +50,8 @@ dependencies:
   window_manager: ^0.5.1
   freezed_annotation: ^3.0.0
   card_settings_ui: 2.0.1
+  flutter_animate: ^4.5.2
+  animated_text_kit: ^4.3.0
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/domain/use_cases/archive_import_runner.dart';
 import 'package:comic_book_maker/domain/use_cases/library_operations.dart';
+import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:flutter/material.dart';
 
 String libraryImportDisplayName(ArchiveFormatFrb format) =>
@@ -21,7 +22,7 @@ Future<T> _runBlockingLibraryOperation<T>({
     throw StateError('Context is not mounted');
   }
 
-  showDialog<void>(
+  showAppOverlayDialog<void>(
     context: context,
     barrierDismissible: false,
     useRootNavigator: true,
@@ -62,7 +63,7 @@ Future<void> _showLibraryImportWarnings(
 }) async {
   if (warnings.isEmpty) return;
 
-  await showDialog<void>(
+  await showAppOverlayDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('导入完成（有警告）'),
