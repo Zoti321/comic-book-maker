@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import '../../tool/integration_fixture_cbz.dart';
+
 const integrationFixtureCbzName = 'two_pages.cbz';
 
 /// `integration_test/fixtures/two_pages.cbz` 的绝对路径。
@@ -18,12 +20,7 @@ String _integrationTestRoot() {
 }
 
 void ensureIntegrationFixtureCbz() {
-  final path = integrationFixtureCbzPath();
-  if (!File(path).existsSync()) {
-    throw StateError(
-      'Missing fixture at $path. Run: dart run tool/generate_integration_fixture.dart',
-    );
-  }
+  ensureValidIntegrationFixtureCbzFile(integrationFixtureCbzPath());
 }
 
 /// 从 fixture 文件名推断导入后的库内标题（与 Core 一致）。

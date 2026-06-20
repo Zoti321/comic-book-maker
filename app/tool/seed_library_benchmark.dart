@@ -5,6 +5,8 @@ import 'package:comic_book_maker/src/rust/frb_generated.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 
+import 'integration_fixture_cbz.dart';
+
 /// 默认 Profile 基准库目录（系统临时目录下固定路径，便于重复 Profile）。
 String defaultLibraryProfileBenchDir() {
   return p.join(Directory.systemTemp.path, 'cbm-library-profile-bench');
@@ -12,18 +14,11 @@ String defaultLibraryProfileBenchDir() {
 
 /// `integration_test/fixtures/two_pages.cbz` 绝对路径。
 String libraryProfileFixtureCbzPath() {
-  final cwd = Directory.current.path;
-  final appRoot = p.basename(cwd) == 'app' ? cwd : p.join(cwd, 'app');
-  return p.join(appRoot, 'integration_test', 'fixtures', 'two_pages.cbz');
+  return integrationFixtureCbzOutputPath();
 }
 
 void ensureLibraryProfileFixtureCbz() {
-  final path = libraryProfileFixtureCbzPath();
-  if (!File(path).existsSync()) {
-    throw StateError(
-      'Missing fixture at $path. Run: dart run tool/generate_integration_fixture.dart',
-    );
-  }
+  ensureValidIntegrationFixtureCbzFile(libraryProfileFixtureCbzPath());
 }
 
 /// Profile 基准 seed 选项。
