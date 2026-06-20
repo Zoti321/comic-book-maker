@@ -32,7 +32,7 @@ List<int> encodeIntegrationFixtureCbzBytes() {
     ..addFile(ArchiveFile('ComicInfo.xml', comicInfo.length, comicInfo));
 
   final encoded = ZipEncoder().encode(archive);
-  if (encoded == null || encoded.isEmpty) {
+  if (encoded.isEmpty) {
     throw StateError('Failed to encode integration fixture CBZ');
   }
   return encoded;

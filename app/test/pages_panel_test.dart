@@ -3,7 +3,6 @@ import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/ui/core/widgets/cover_thumbnail_image.dart';
 import 'package:comic_book_maker/ui/features/project_editor/pages/pages_panel.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
