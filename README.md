@@ -72,3 +72,13 @@ flutter test integration_test/ -d flutter-tester
 cd app
 dart run tool/generate_integration_fixture.dart
 ```
+
+### Library Profile 基准
+
+漫画库 Profile 性能优化（[#19](https://github.com/Zoti321/comic-book-maker/issues/19)）的可复现 seed 与验收流程见 [`docs/agents/library-profile-benchmark.md`](docs/agents/library-profile-benchmark.md)。快速开始：
+
+```powershell
+.\scripts\seed-library-benchmark.ps1 -Clean
+cd app
+flutter run --profile -d windows --dart-define=CBM_APP_DATA_DIR=$env:TEMP\cbm-library-profile-bench
+```

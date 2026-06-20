@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:comic_book_maker/ui/core/layout/responsive.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/app_surface_ink_well.dart';
+import 'package:comic_book_maker/ui/core/widgets/cover_thumbnail_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -56,7 +55,6 @@ class ProjectCard extends HookWidget {
     final compact = isCompact(context);
     final hovered = useState(false);
     final menuController = useMemoized(MenuController.new);
-    final hasCover = _hasValidCover(coverThumbnailPath);
     final showMenuButton = onDelete != null && hovered.value && !compact;
 
     final elevation = hovered.value && !compact
@@ -80,10 +78,6 @@ class ProjectCard extends HookWidget {
         ],
       ),
     );
-
-    final coverContent = hasCover
-        ? _CoverImage(path: coverThumbnailPath!)
-        : _CoverPlaceholder(scheme: scheme);
 
     return MouseRegion(
       onEnter: (_) => hovered.value = true,
@@ -109,7 +103,12 @@ class ProjectCard extends HookWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(child: coverContent),
+                    Expanded(
+                      child: _ProjectCardCover(
+                        coverThumbnailPath: coverThumbnailPath,
+                        scheme: scheme,
+                      ),
+                    ),
                     _CardFooter(
                       title: title,
                       subtitle: '最近打开',
@@ -200,10 +199,45 @@ class ProjectCard extends HookWidget {
       ],
     );
   }
+}
 
-  bool _hasValidCover(String? path) {
-    if (path == null || path.isEmpty) return false;
-    return File(path).existsSync();
+class _ProjectCardCover extends StatelessWidget {
+  const _ProjectCardCover({
+    required this.coverThumbnailPath,
+    required this.scheme,
+  });
+
+  final String? coverThumbnailPath;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = coverThumbnailPath;
+    if (path == null || path.isEmpty) {
+      return _CoverPlaceholder(scheme: scheme);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cacheSize = coverThumbnailCacheSize(
+          displayWidth: constraints.maxWidth,
+          displayHeight: constraints.maxHeight,
+          devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+        );
+
+        return RepaintBoundary(
+          child: CoverThumbnailImage(
+            filePath: path,
+            cacheWidth: cacheSize.width,
+            cacheHeight: cacheSize.height,
+            backgroundColor: scheme.surfaceContainerHighest,
+            errorIcon: Icons.image_outlined,
+            errorIconSize: 32,
+            errorIconOpacity: 0.65,
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -251,26 +285,6 @@ class _CardFooter extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _CoverImage extends StatelessWidget {
-  const _CoverImage({required this.path});
-
-  final String path;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Image.file(
-      File(path),
-      fit: BoxFit.cover,
-      alignment: Alignment.center,
-      filterQuality: FilterQuality.medium,
-      gaplessPlayback: true,
-      errorBuilder: (_, _, _) => _CoverPlaceholder(scheme: scheme),
     );
   }
 }
