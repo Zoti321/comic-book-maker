@@ -87,6 +87,10 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Generate integration test fixture
+        working-directory: app
+        run: dart run tool/generate_integration_fixture.dart
+
       - name: Build native core library for tests
         run: cargo build --manifest-path core/Cargo.toml
 
@@ -99,6 +103,12 @@ jobs:
         env:
           LD_LIBRARY_PATH: ${{ github.workspace }}/core/target/debug
         run: flutter test
+
+      - name: flutter integration test
+        working-directory: app
+        env:
+          LD_LIBRARY_PATH: ${{ github.workspace }}/core/target/debug
+        run: flutter test integration_test/ -d flutter-tester
 
       - name: FRB UI isolation
         run: bash scripts/check-frb-ui-isolation.sh

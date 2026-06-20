@@ -1,8 +1,7 @@
-import 'dart:io';
-
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/app_surface_ink_well.dart';
+import 'package:comic_book_maker/ui/core/widgets/cover_thumbnail_image.dart';
 import 'package:comic_book_maker/ui/features/project_editor/pages/page_thumbnail_hover_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -47,25 +46,6 @@ PageThumbnailTileSize pageThumbnailTileSize(double availableWidth) {
   return PageThumbnailTileSize(width: tileWidth, height: tileHeight);
 }
 
-/// 解码缓存像素尺寸（物理像素，供 [Image.cacheWidth] / [cacheHeight]）。
-class PageThumbnailCacheSize {
-  const PageThumbnailCacheSize({required this.width, required this.height});
-
-  final int width;
-  final int height;
-}
-
-PageThumbnailCacheSize pageThumbnailCacheSize({
-  required double tileWidth,
-  required double tileHeight,
-  required double devicePixelRatio,
-}) {
-  return PageThumbnailCacheSize(
-    width: (tileWidth * devicePixelRatio).ceil(),
-    height: (tileHeight * devicePixelRatio).ceil(),
-  );
-}
-
 /// 图片 Tab：SliverGrid 展示有序 Page 缩略图。
 class PageThumbnailGrid extends StatelessWidget {
   const PageThumbnailGrid({
@@ -102,9 +82,9 @@ class PageThumbnailGrid extends StatelessWidget {
         final crossAxisCount =
             pageThumbnailCrossAxisCount(constraints.maxWidth);
         final tileSize = pageThumbnailTileSize(constraints.maxWidth);
-        final cacheSize = pageThumbnailCacheSize(
-          tileWidth: tileSize.width,
-          tileHeight: tileSize.height,
+        final cacheSize = coverThumbnailCacheSize(
+          displayWidth: tileSize.width,
+          displayHeight: tileSize.height,
           devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
         );
 
@@ -279,10 +259,12 @@ class _PageThumbnailTile extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _PageThumbnailImage(
-                  page: page,
+                CoverThumbnailImage(
+                  filePath: page.absolutePath,
                   cacheWidth: cacheWidth,
                   cacheHeight: cacheHeight,
+                  backgroundColor: scheme.surfaceContainer,
+                  errorIcon: LucideIcons.imageOff,
                 ),
                 Positioned(
                   left: 6,
@@ -405,45 +387,6 @@ class _CoverChip extends StatelessWidget {
                   ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PageThumbnailImage extends StatelessWidget {
-  const _PageThumbnailImage({
-    required this.page,
-    required this.cacheWidth,
-    required this.cacheHeight,
-  });
-
-  final PageSummary page;
-  final int cacheWidth;
-  final int cacheHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return ColoredBox(
-      color: scheme.surfaceContainer,
-      child: Image.file(
-        File(page.absolutePath),
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.low,
-        gaplessPlayback: true,
-        cacheWidth: cacheWidth,
-        cacheHeight: cacheHeight,
-        errorBuilder: (_, _, _) => ColoredBox(
-          color: scheme.surfaceContainer,
-          child: Center(
-            child: Icon(
-              LucideIcons.imageOff,
-              size: 28,
-              color: scheme.onSurfaceVariant,
-            ),
-          ),
         ),
       ),
     );
