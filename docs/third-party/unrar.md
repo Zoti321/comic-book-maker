@@ -14,3 +14,4 @@ https://www.rarlab.com/license.htm
 
 - `core/src/import/cbr.rs` — CBR 导入适配器
 - `core/Cargo.toml` — `unrar-ng` 依赖
+- `third-party/unrar-ng-sys/` — 本地 `[patch.crates-io]`，修复 Windows 主机交叉编译 Android 时误编 Windows 专用 UnRAR 源文件（见 `PATCH.md`）

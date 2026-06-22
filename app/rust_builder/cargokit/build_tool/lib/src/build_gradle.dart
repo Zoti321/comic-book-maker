@@ -45,5 +45,44 @@ class BuildGradle {
         }
       }
     }
+
+    _copyAndroidCxxShared(targets);
+  }
+
+  void _copyAndroidCxxShared(List<Target> targets) {
+    final hostArch = Platform.isWindows
+        ? 'windows-x86_64'
+        : (Platform.isLinux ? 'linux-x86_64' : 'darwin-x86_64');
+    final ndkLibRoot = path.join(
+      path.join(
+        Environment.sdkPath,
+        'ndk',
+        Environment.ndkVersion,
+        'toolchains',
+        'llvm',
+        'prebuilt',
+        hostArch,
+      ),
+      'sysroot',
+      'usr',
+      'lib',
+    );
+
+    for (final target in targets) {
+      final androidAbi = target.android;
+      if (androidAbi == null) {
+        continue;
+      }
+      final src = File(
+        path.join(ndkLibRoot, target.rust, 'libc++_shared.so'),
+      );
+      if (!src.existsSync()) {
+        log.warning('NDK libc++_shared.so not found at ${src.path}');
+        continue;
+      }
+      final outputDir = path.join(Environment.outputDir, androidAbi);
+      Directory(outputDir).createSync(recursive: true);
+      src.copySync(path.join(outputDir, 'libc++_shared.so'));
+    }
   }
 }
