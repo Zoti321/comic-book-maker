@@ -21,5 +21,8 @@ rars = "0.2.0"
 sevenz-rust2 = { version = "0.20", features = ["compress"] }
 lopdf = { version = "0.41", default-features = false }
 
+[patch.crates-io]
+unrar-ng-sys = { path = "../third-party/unrar-ng-sys" }
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

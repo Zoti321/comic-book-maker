@@ -33,6 +33,9 @@ Thumbs.db
 # Local agent scratch / issues (see docs/agents/issue-tracker.md)
 .scratch/
 
+# Local DevTools preferences
+app/devtools_options.yaml
+
 # Flutter / Dart codegen (regenerate locally; do not commit)
 app/lib/**/*.g.dart
 app/lib/**/*.freezed.dart
