@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/ui/core/design_system/app_toast_host.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_shell.dart';
+import 'package:comic_book_maker/ui/core/shell/app_startup_auto_update_listener.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
 import 'package:comic_book_maker/ui/core/theme/app_theme.dart';
 import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
@@ -35,7 +36,11 @@ class ComicBookMakerApp extends ConsumerWidget {
       ],
       builder: (context, child) {
         return AppToastHost(
-          child: DesktopShell(child: child ?? const SizedBox.shrink()),
+          child: DesktopShell(
+            child: AppStartupAutoUpdateListener(
+              child: child ?? const SizedBox.shrink(),
+            ),
+          ),
         );
       },
     );
