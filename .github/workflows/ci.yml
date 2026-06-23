@@ -21,26 +21,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/flutter-frb-setup
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: core
-
-      - uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: flutter_rust_bridge_codegen
-          tag: ${{ env.FRB_CODEGEN_VERSION }}
-
-      - name: FRB codegen
-        working-directory: app
-        run: flutter_rust_bridge_codegen generate
+          frb-codegen-version: ${{ env.FRB_CODEGEN_VERSION }}
+          link-rust-builder: "false"
+          run-pub-get: "false"
 
       - name: cargo test
         run: cargo test --manifest-path core/Cargo.toml
@@ -51,41 +37,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/flutter-frb-setup
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: core
-
-      - name: Link rust_builder to core
-        run: |
-          rm -rf app/rust_builder/rust
-          ln -s ../../core app/rust_builder/rust
-
-      - uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: flutter_rust_bridge_codegen
-          tag: ${{ env.FRB_CODEGEN_VERSION }}
-
-      - name: FRB codegen
-        working-directory: app
-        run: flutter_rust_bridge_codegen generate
-
-      - name: FRB freezed codegen
-        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
-
-      - name: Riverpod codegen
-        run: bash app/tool/riverpod_codegen/run_codegen.sh
-
-      - name: flutter pub get
-        working-directory: app
-        run: flutter pub get
+          frb-codegen-version: ${{ env.FRB_CODEGEN_VERSION }}
+          run-freezed-codegen: "true"
+          run-riverpod-codegen: "true"
 
       - name: Generate integration test fixture
         working-directory: app
@@ -124,41 +81,12 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/flutter-frb-setup
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: core
-
-      - name: Link rust_builder to core
-        run: |
-          rm -rf app/rust_builder/rust
-          ln -s ../../core app/rust_builder/rust
-
-      - uses: taiki-e/cache-cargo-install-action@v2
-        with:
-          tool: flutter_rust_bridge_codegen
-          tag: ${{ env.FRB_CODEGEN_VERSION }}
-
-      - name: FRB codegen
-        working-directory: app
-        run: flutter_rust_bridge_codegen generate
-
-      - name: FRB freezed codegen
-        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
-
-      - name: Riverpod codegen
-        run: bash app/tool/riverpod_codegen/run_codegen.sh
-
-      - name: flutter pub get
-        working-directory: app
-        run: flutter pub get
+          frb-codegen-version: ${{ env.FRB_CODEGEN_VERSION }}
+          run-freezed-codegen: "true"
+          run-riverpod-codegen: "true"
 
       - name: Accept Android SDK licenses
         run: yes | flutter doctor --android-licenses
