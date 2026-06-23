@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/main.dart';
+import 'package:comic_book_maker/providers/auto_update_provider.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window.dart';
 import 'package:comic_book_maker/ui/core/layout/desktop_window_config.dart';
 import 'package:comic_book_maker/ui/core/router/app_router.dart';
@@ -8,6 +9,7 @@ import 'package:comic_book_maker/ui/core/shell/app_navigation_rail.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/data/repositories/in_memory_core_gateway.dart';
@@ -17,7 +19,16 @@ void main() {
   late InMemoryCoreGateway gateway;
 
   setUpAll(() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      autoUpdateStorageKey: false,
+    });
+    PackageInfo.setMockInitialValues(
+      appName: 'Comic Book Maker',
+      packageName: 'com.example.comic_book_maker',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
   });
 
   setUp(() {
@@ -25,6 +36,9 @@ void main() {
     desktopWindowConfig = DesktopWindowConfig.disabled;
     gateway = InMemoryCoreGateway.emptyLibrary();
     appRouter.go(AppRoutes.projects);
+    SharedPreferences.setMockInitialValues({
+      autoUpdateStorageKey: false,
+    });
   });
 
   void setViewport(WidgetTester tester, Size surfaceSize) {
@@ -89,7 +103,8 @@ void main() {
     await pumpApp(tester, surfaceSize: const Size(1280, 800));
 
     await tester.tap(find.text('设置').first);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('默认导出目录'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
