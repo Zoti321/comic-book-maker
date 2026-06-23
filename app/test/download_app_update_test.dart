@@ -6,7 +6,6 @@ import 'package:comic_book_maker/domain/models/app_update_release.dart';
 import 'package:comic_book_maker/domain/use_cases/app_version_utils.dart';
 import 'package:comic_book_maker/domain/use_cases/download_app_update.dart';
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
