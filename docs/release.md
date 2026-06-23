@@ -23,7 +23,7 @@
 
 | 平台 | 文件 |
 |------|------|
-| Windows x64 | `comic-book-maker-<version>-windows-x64-setup.exe` |
+| Windows x64 | `comic-book-maker-<version>-windows-x64-setup.exe`（安装向导为简体中文） |
 | macOS arm64 | `comic-book-maker-<version>-macos-arm64.zip` |
 | Linux x64 | `comic-book-maker-<version>-linux-x64.tar.gz` |
 
