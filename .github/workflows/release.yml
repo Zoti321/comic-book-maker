@@ -1,0 +1,307 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.38.5"
+  FRB_CODEGEN_VERSION: "2.12.0"
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: cargo test
+        run: cargo test --manifest-path core/Cargo.toml
+
+      - name: flutter analyze
+        working-directory: app
+        run: flutter analyze --no-fatal-infos
+
+      - name: FRB UI isolation
+        run: bash scripts/check-frb-ui-isolation.sh
+
+  build-windows:
+    name: build-windows
+    needs: verify
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        shell: bash
+        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        shell: pwsh
+        run: |
+          $junction = "app/rust_builder/rust"
+          if (Test-Path $junction) { Remove-Item $junction -Force -Recurse }
+          New-Item -ItemType Junction -Path $junction -Target (Resolve-Path core) | Out-Null
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        shell: pwsh
+        run: ./app/tool/frb_freezed_codegen/run_codegen.ps1
+
+      - name: Riverpod codegen
+        shell: pwsh
+        run: ./app/tool/riverpod_codegen/run_codegen.ps1
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter build windows
+        working-directory: app
+        run: >
+          flutter build windows --release
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ github.run_number }}
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.name }}"
+          $dist = Join-Path $env:GITHUB_WORKSPACE "dist"
+          New-Item -ItemType Directory -Force -Path $dist | Out-Null
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            $iscc = "C:\Program Files\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            throw "ISCC.exe not found after Inno Setup install"
+          }
+          & $iscc `
+            "/DMyAppVersion=$version" `
+            "/DOutputDir=$dist" `
+            "app\windows\installer\comic_book_maker.iss"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/comic-book-maker-*-windows-x64-setup.exe
+
+  build-macos:
+    name: build-macos
+    needs: verify
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter build macos
+        working-directory: app
+        run: >
+          flutter build macos --release
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ github.run_number }}
+
+      - name: Package macOS app
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          APP="app/build/macos/Build/Products/Release/comic_book_maker.app"
+          DIST="dist/comic-book-maker-${VERSION}-macos-arm64.zip"
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$DIST"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/comic-book-maker-*-macos-arm64.zip
+
+  build-linux:
+    name: build-linux
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libstdc++-12-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter build linux
+        working-directory: app
+        run: >
+          flutter build linux --release
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ github.run_number }}
+
+      - name: Package Linux bundle
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          mkdir -p dist
+          tar -czf "dist/comic-book-maker-${VERSION}-linux-x64.tar.gz" \
+            -C app/build/linux/x64/release bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/comic-book-maker-*-linux-x64.tar.gz
+
+  release:
+    name: release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*

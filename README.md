@@ -50,6 +50,10 @@ flutter pub get
 flutter run -d windows   # 或其他已连接设备
 ```
 
+## 发布
+
+桌面端 CD 发布流程与产物说明见 [`docs/release.md`](docs/release.md)。
+
 ## 开发说明
 
 - FRB 配置：`app/flutter_rust_bridge.yaml`（`rust_root: ../core/`）
