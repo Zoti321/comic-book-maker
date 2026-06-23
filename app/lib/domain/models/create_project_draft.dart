@@ -1,5 +1,6 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_command.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_platform.dart';
 import 'package:comic_book_maker/domain/models/create_project_import_source.dart';
 
 export 'package:comic_book_maker/domain/models/create_project_import_source.dart'
@@ -49,7 +50,7 @@ class CreateProjectDraft {
     if (importSource == null) {
       return '请先在「导入」中选择要导入的资源';
     }
-    if (!useDefaultExportDirectory) {
+    if (!usesMobileExportSaveFile() && !useDefaultExportDirectory) {
       final dir = exportDirectory?.trim();
       if (dir == null || dir.isEmpty) {
         return '请在「导出」中配置专用导出目录，或改为沿用全局默认目录';

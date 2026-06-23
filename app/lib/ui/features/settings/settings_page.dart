@@ -1,4 +1,5 @@
 import 'package:card_settings_ui/card_settings_ui.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_platform.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
 import 'package:comic_book_maker/providers/theme_mode_provider.dart' hide ThemeMode;
 import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
@@ -21,6 +22,7 @@ class SettingsPage extends HookConsumerWidget {
     final themeModeAsync = ref.watch(themeModeProvider);
     final savingExportPath = useState(false);
     final padding = AppSpacing.pagePadding(context);
+    final showExportDirectorySettings = !usesMobileExportSaveFile();
 
     Future<void> pickExportDirectory() async {
       final selected = await FilePicker.platform.getDirectoryPath(
@@ -131,46 +133,47 @@ class SettingsPage extends HookConsumerWidget {
                     ),
                   ],
                 ),
-                SettingsSection(
-                  margin: const EdgeInsetsDirectional.only(bottom: AppSpacing.md),
-                  title: const Text('默认导出目录'),
-                  tiles: [
-                    exportPathAsync.when(
-                      loading: () => SettingsTile(
-                        title: const Text('目录'),
-                        description: const SettingsTileLoading(),
-                      ),
-                      error: (error, _) => SettingsTile(
-                        title: const Text('目录'),
-                        description: ProjectEditorInlineErrorBanner(
-                          message: '无法读取设置：$error',
-                          padding: EdgeInsets.zero,
+                if (showExportDirectorySettings)
+                  SettingsSection(
+                    margin: const EdgeInsetsDirectional.only(bottom: AppSpacing.md),
+                    title: const Text('默认导出目录'),
+                    tiles: [
+                      exportPathAsync.when(
+                        loading: () => SettingsTile(
+                          title: const Text('目录'),
+                          description: const SettingsTileLoading(),
                         ),
-                      ),
-                      data: (exportDirectory) {
-                        final hasDirectory = exportDirectory != null &&
-                            exportDirectory.isNotEmpty;
-                        final busy = savingExportPath.value;
+                        error: (error, _) => SettingsTile(
+                          title: const Text('目录'),
+                          description: ProjectEditorInlineErrorBanner(
+                            message: '无法读取设置：$error',
+                            padding: EdgeInsets.zero,
+                          ),
+                        ),
+                        data: (exportDirectory) {
+                          final hasDirectory = exportDirectory != null &&
+                              exportDirectory.isNotEmpty;
+                          final busy = savingExportPath.value;
 
-                        return SettingsTile.navigation(
-                          title: Text(
-                            hasDirectory ? exportDirectory : '未设置',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          enabled: !busy,
-                          onPressed:
-                              busy ? null : (_) => pickExportDirectory(),
-                          trailing: _ExportDirectoryTrailing(
-                            busy: busy,
-                            showClear: hasDirectory && !busy,
-                            onClear: confirmClearExportDirectory,
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                          return SettingsTile.navigation(
+                            title: Text(
+                              hasDirectory ? exportDirectory : '未设置',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            enabled: !busy,
+                            onPressed:
+                                busy ? null : (_) => pickExportDirectory(),
+                            trailing: _ExportDirectoryTrailing(
+                              busy: busy,
+                              showClear: hasDirectory && !busy,
+                              onClear: confirmClearExportDirectory,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 const AppUpdateSettingsSection(),
                 SettingsSection(
                   margin: EdgeInsetsDirectional.zero,

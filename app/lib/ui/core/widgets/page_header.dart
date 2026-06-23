@@ -27,6 +27,7 @@ class PageHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final insets = horizontalPadding ?? AppSpacing.pagePadding(context);
+    final topPadding = AppSpacing.md + MediaQuery.paddingOf(context).top;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -35,7 +36,7 @@ class PageHeader extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           insets.left,
-          AppSpacing.md,
+          topPadding,
           insets.right,
           AppSpacing.md,
         ),

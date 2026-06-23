@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_platform.dart';
 import 'package:comic_book_maker/ui/core/widgets/app_dropdown_menu.dart';
 import 'package:comic_book_maker/ui/features/settings/comic_archive_export_controls.dart';
 import 'package:comic_book_maker/ui/features/settings/export_settings_layout.dart';
@@ -35,6 +36,7 @@ class ProjectExportSettingsPanel extends StatelessWidget {
   final ExportSettingsLayout layout;
 
   bool get _horizontal => layout == ExportSettingsLayout.horizontal;
+  bool get _showExportDirectorySettings => !usesMobileExportSaveFile();
 
   @override
   Widget build(BuildContext context) {
@@ -148,11 +150,16 @@ class ProjectExportSettingsPanel extends StatelessWidget {
             onUseComicExtensionChanged: onUseComicExtensionChanged,
           ),
         ],
-        const SizedBox(height: 16),
-        if (_horizontal)
-          _LabeledFieldRow(reserveLeadingSpace: true, child: exportDirectorySection)
-        else
-          exportDirectorySection,
+        if (_showExportDirectorySettings) ...[
+          const SizedBox(height: 16),
+          if (_horizontal)
+            _LabeledFieldRow(
+              reserveLeadingSpace: true,
+              child: exportDirectorySection,
+            )
+          else
+            exportDirectorySection,
+        ],
         if (showDeleteAfterExport) ...[
           const SizedBox(height: 16),
           if (_horizontal)

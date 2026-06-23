@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/domain/models/app_update_release.dart';
+import 'package:comic_book_maker/domain/use_cases/app_release_notes_format.dart';
 import 'package:comic_book_maker/domain/use_cases/app_version_utils.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
@@ -88,6 +89,7 @@ class GitHubAppUpdateRepository implements AppUpdateRepository {
 
     final body = json['body'];
     final releaseNotes = body is String ? body.trim() : '';
+    final publishedAt = parseReleasePublishedAt(json['published_at']);
 
     final normalizedTag = normalizeReleaseTagName(tagName);
     return AppUpdateRelease(
@@ -96,6 +98,7 @@ class GitHubAppUpdateRepository implements AppUpdateRepository {
       releaseNotes: releaseNotes,
       releasePageUrl: htmlUrl,
       downloadUrl: downloadUrl,
+      publishedAt: publishedAt,
     );
   }
 }
