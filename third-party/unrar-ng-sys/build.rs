@@ -30,6 +30,9 @@ fn main() {
     } else if target_os == "android" {
         // UnRAR is C++; FRB cdylib must link NDK libc++ when embedding libunrar.a.
         println!("cargo:rustc-link-lib=c++_shared");
+    } else if target_vendor == "apple" {
+        // Darwin staticlib is force-loaded from Xcode; rustc metadata helps non-pod links.
+        println!("cargo:rustc-link-lib=c++");
     }
 
     let mut file_stems: Vec<&str> = vec![

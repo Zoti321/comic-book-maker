@@ -16,4 +16,6 @@ Only emit `-lpthread` for Linux desktop targets; Android bionic provides pthread
 
 On Android, emit `cargo:rustc-link-lib=c++_shared` so the FRB cdylib links NDK libc++ for embedded UnRAR C++ objects. Pair with `libc++_shared.so` copied in cargokit `build_gradle.dart`.
 
+On macOS/iOS, Cargokit force-loads `libcomic_book_maker_core.a` from Xcode; `comic_book_maker_core.podspec` adds `-lc++` so UnRAR C++ symbols resolve at app link time. `build.rs` also emits `cargo:rustc-link-lib=c++` for Apple targets.
+
 Remove this vendored copy once upstream merges an equivalent fix.
