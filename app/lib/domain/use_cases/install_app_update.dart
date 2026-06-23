@@ -1,29 +1,39 @@
 import 'dart:io';
 
+import 'package:comic_book_maker/data/platform/android_apk_installer.dart';
 import 'package:comic_book_maker/domain/use_cases/app_version_utils.dart';
 
 typedef OpenDirectoryInFileManager = Future<void> Function(String directoryPath);
 
 typedef LaunchInstallerExecutable = Future<void> Function(String filePath);
 
+/// 应用已下载更新包，但尚未获得「安装未知应用」权限。
+class AppUpdateInstallPermissionRequired implements Exception {
+  const AppUpdateInstallPermissionRequired();
+}
+
 class InstallAppUpdate {
   InstallAppUpdate({
     OpenDirectoryInFileManager? openDirectory,
     LaunchInstallerExecutable? launchInstaller,
     AppUpdateTargetPlatform Function()? platform,
+    AndroidApkInstaller? androidApkInstaller,
   })  : _openDirectory = openDirectory ?? _defaultOpenDirectory,
         _launchInstaller = launchInstaller ?? _defaultLaunchInstaller,
-        _platform = platform ?? currentAppUpdateTargetPlatform;
+        _platform = platform ?? currentAppUpdateTargetPlatform,
+        _androidApkInstaller = androidApkInstaller ?? const AndroidApkInstaller();
 
   final OpenDirectoryInFileManager _openDirectory;
   final LaunchInstallerExecutable _launchInstaller;
   final AppUpdateTargetPlatform Function() _platform;
+  final AndroidApkInstaller _androidApkInstaller;
 
   Future<String> call({required String filePath}) async {
     return switch (_platform()) {
       AppUpdateTargetPlatform.windows => _installWindows(filePath),
       AppUpdateTargetPlatform.macos => _installMacOs(filePath),
       AppUpdateTargetPlatform.linux => _installLinux(filePath),
+      AppUpdateTargetPlatform.android => _installAndroid(filePath),
     };
   }
 
@@ -40,6 +50,27 @@ class InstallAppUpdate {
   Future<String> _installLinux(String filePath) async {
     await _openDirectory(File(filePath).parent.path);
     return '请解压下载的包并替换现有安装';
+  }
+
+  Future<String> _installAndroid(String filePath) async {
+    final canInstall = await _androidApkInstaller.canRequestPackageInstalls();
+    if (!canInstall) {
+      throw const AppUpdateInstallPermissionRequired();
+    }
+
+    try {
+      await _androidApkInstaller.installApk(filePath);
+    } on AndroidApkInstallException catch (error) {
+      final message = error.message;
+      if (message.contains('conflict') || message.contains('签名')) {
+        throw AndroidApkInstallException(
+          '安装失败：签名与已安装版本不一致，请先卸载旧版后重试',
+        );
+      }
+      rethrow;
+    }
+
+    return '请在系统安装界面中确认安装';
   }
 }
 

@@ -27,7 +27,7 @@ class _AppUpdateSettingsSectionBody extends HookConsumerWidget {
     final autoUpdateAsync = ref.watch(autoUpdateProvider);
     final appVersionAsync = ref.watch(appVersionProvider);
     final checkingUpdate = useState(false);
-    final isDesktop = isAppUpdateDesktopPlatform();
+    final isSupported = isAppUpdateSupportedPlatform();
 
     return SettingsSection(
       margin: const EdgeInsetsDirectional.only(bottom: AppSpacing.md),
@@ -48,9 +48,9 @@ class _AppUpdateSettingsSectionBody extends HookConsumerWidget {
           ),
           data: (enabled) => SettingsTile.switchTile(
             title: const Text('自动更新'),
-            initialValue: isDesktop ? enabled : false,
-            enabled: isDesktop,
-            onToggle: isDesktop
+            initialValue: isSupported ? enabled : false,
+            enabled: isSupported,
+            onToggle: isSupported
                 ? (value) {
                     if (value == null) return;
                     ref.read(autoUpdateProvider.notifier).setEnabled(value);
@@ -74,8 +74,8 @@ class _AppUpdateSettingsSectionBody extends HookConsumerWidget {
           data: (version) => _CheckUpdateSettingsTile(
             version: version,
             checking: checkingUpdate.value,
-            enabled: isDesktop && !checkingUpdate.value,
-            onPressed: isDesktop
+            enabled: isSupported && !checkingUpdate.value,
+            onPressed: isSupported
                 ? () async {
                     checkingUpdate.value = true;
                     try {

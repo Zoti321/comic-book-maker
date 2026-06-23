@@ -5,25 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   tearDown(resetAppUpdatePlatformOverride);
 
-  test('treats desktop target platforms as supported', () {
+  test('treats desktop and android target platforms as supported', () {
     for (final platform in [
       TargetPlatform.windows,
       TargetPlatform.macOS,
       TargetPlatform.linux,
+      TargetPlatform.android,
     ]) {
       appUpdatePlatformOverride = platform;
-      expect(isAppUpdateDesktopPlatform(), isTrue);
+      expect(isAppUpdateSupportedPlatform(), isTrue);
     }
   });
 
-  test('treats mobile target platforms as unsupported', () {
+  test('treats unsupported mobile target platforms as unsupported', () {
     for (final platform in [
-      TargetPlatform.android,
       TargetPlatform.iOS,
       TargetPlatform.fuchsia,
     ]) {
       appUpdatePlatformOverride = platform;
-      expect(isAppUpdateDesktopPlatform(), isFalse);
+      expect(isAppUpdateSupportedPlatform(), isFalse);
     }
   });
 }

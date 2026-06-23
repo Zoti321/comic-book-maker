@@ -18,7 +18,6 @@ void main() {
   late InMemoryCoreGateway gateway;
 
   setUpAll(() {
-    SharedPreferences.setMockInitialValues({});
     PackageInfo.setMockInitialValues(
       appName: 'Comic Book Maker',
       packageName: 'com.example.comic_book_maker',
@@ -29,6 +28,7 @@ void main() {
   });
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     resetDesktopWindowConfigForTesting();
     desktopWindowConfig = DesktopWindowConfig.disabled;
     gateway = InMemoryCoreGateway.emptyLibrary();
@@ -111,7 +111,7 @@ void main() {
     expect(switches.single.value, isFalse);
   });
 
-  testWidgets('app update controls are read-only placeholders on mobile', (
+  testWidgets('app update controls are enabled on android', (
     tester,
   ) async {
     appUpdatePlatformOverride = TargetPlatform.android;
@@ -123,12 +123,24 @@ void main() {
 
     final switches = tester.widgetList<Switch>(find.byType(Switch));
     expect(switches.length, 1);
+    expect(switches.first.value, isTrue);
+    expect(switches.first.onChanged, isNotNull);
+  });
+
+  testWidgets('app update controls remain disabled on ios', (
+    tester,
+  ) async {
+    appUpdatePlatformOverride = TargetPlatform.iOS;
+
+    await pumpSettings(tester, viewport: const Size(400, 800));
+
+    expect(find.text('应用更新'), findsOneWidget);
+    expect(find.text('当前版本 1.0.0'), findsOneWidget);
+
+    final switches = tester.widgetList<Switch>(find.byType(Switch));
+    expect(switches.length, 1);
     expect(switches.first.value, isFalse);
     expect(switches.first.onChanged, isNull);
-
-    await tester.tap(find.text('检查更新'));
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('export controls remain usable at compact width', (tester) async {

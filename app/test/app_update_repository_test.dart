@@ -36,6 +36,10 @@ void main() {
         'name': 'comic-book-maker-2.0.0-linux-x64.tar.gz',
         'browser_download_url': 'https://example.com/linux.tar.gz',
       },
+      {
+        'name': 'comic-book-maker-2.0.0-android-arm64.apk',
+        'browser_download_url': 'https://example.com/android.apk',
+      },
     ];
 
     test('selects windows asset', () {
@@ -56,6 +60,13 @@ void main() {
       expect(
         selectAssetDownloadUrl(assets, AppUpdateTargetPlatform.linux),
         'https://example.com/linux.tar.gz',
+      );
+    });
+
+    test('selects android asset', () {
+      expect(
+        selectAssetDownloadUrl(assets, AppUpdateTargetPlatform.android),
+        'https://example.com/android.apk',
       );
     });
 
