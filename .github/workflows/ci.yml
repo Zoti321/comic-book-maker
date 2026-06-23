@@ -112,3 +112,57 @@ jobs:
 
       - name: FRB UI isolation
         run: bash scripts/check-frb-ui-isolation.sh
+
+  android:
+    name: android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: Accept Android SDK licenses
+        run: yes | flutter doctor --android-licenses
+
+      - name: flutter build apk (arm64 smoke)
+        working-directory: app
+        run: flutter build apk --release --target-platform android-arm64

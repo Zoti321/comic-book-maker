@@ -4,9 +4,15 @@ on:
   push:
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Semantic version without v prefix (e.g. 1.0.0)"
+        required: true
+        default: "0.0.0-ci"
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}
   cancel-in-progress: false
 
 env:
@@ -76,7 +82,12 @@ jobs:
       - name: Parse version
         id: version
         shell: bash
-        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: subosito/flutter-action@v2
         with:
@@ -160,7 +171,12 @@ jobs:
 
       - name: Parse version
         id: version
-        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: subosito/flutter-action@v2
         with:
@@ -227,7 +243,12 @@ jobs:
 
       - name: Parse version
         id: version
-        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Install Linux build dependencies
         run: |
@@ -289,9 +310,162 @@ jobs:
           name: linux
           path: dist/comic-book-maker-*-linux-x64.tar.gz
 
+  build-android:
+    name: build-android
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: Accept Android SDK licenses
+        run: yes | flutter doctor --android-licenses
+
+      - name: flutter build apk
+        working-directory: app
+        run: >
+          flutter build apk --release
+          --target-platform android-arm64
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ github.run_number }}
+
+      - name: Package Android APK
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          mkdir -p dist
+          cp app/build/app/outputs/flutter-apk/app-release.apk \
+            "dist/comic-book-maker-${VERSION}-android-arm64.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/comic-book-maker-*-android-arm64.apk
+
+  build-ios:
+    name: build-ios
+    needs: verify
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: core
+
+      - name: Link rust_builder to core
+        run: |
+          rm -rf app/rust_builder/rust
+          ln -s ../../core app/rust_builder/rust
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: flutter_rust_bridge_codegen
+          tag: ${{ env.FRB_CODEGEN_VERSION }}
+
+      - name: FRB codegen
+        working-directory: app
+        run: flutter_rust_bridge_codegen generate
+
+      - name: FRB freezed codegen
+        run: bash app/tool/frb_freezed_codegen/run_codegen.sh
+
+      - name: Riverpod codegen
+        run: bash app/tool/riverpod_codegen/run_codegen.sh
+
+      - name: flutter pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: flutter build ios
+        working-directory: app
+        run: >
+          flutter build ios --release --no-codesign
+          --build-name=${{ steps.version.outputs.name }}
+          --build-number=${{ github.run_number }}
+
+      - name: Package iOS app
+        run: |
+          VERSION="${{ steps.version.outputs.name }}"
+          APP="app/build/ios/iphoneos/Runner.app"
+          DIST="dist/comic-book-maker-${VERSION}-ios-unsigned.zip"
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$DIST"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios
+          path: dist/comic-book-maker-*-ios-unsigned.zip
+
   release:
     name: release
-    needs: [build-windows, build-macos, build-linux]
+    needs: [build-windows, build-macos, build-linux, build-android, build-ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -301,7 +475,23 @@ jobs:
           path: dist
           merge-multiple: true
 
-      - uses: softprops/action-gh-release@v2
+      - name: Publish GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          body: |
+            ## 移动端说明
+
+            - **Android**（`*-android-arm64.apk`）：debug 签名侧载包，需在系统设置中允许「未知来源」安装；无法通过 Play 商店更新。
+            - **iOS**（`*-ios-unsigned.zip`）：未签名 `.app` 归档，**不可在真机安装**；仅供归档或模拟器调试参考。
+
+            ---
           files: dist/*
+
+      - name: Manual build summary
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Manual release build completed."
+          echo "Download platform artifacts from this workflow run (Artifacts tab)."
+          echo "No GitHub Release was created."
