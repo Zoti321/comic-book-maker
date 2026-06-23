@@ -5,6 +5,8 @@ import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
 import 'package:comic_book_maker/ui/core/widgets/page_header.dart';
 import 'package:comic_book_maker/ui/features/project_editor/project_editor_inline_error_banner.dart';
+import 'package:comic_book_maker/ui/features/settings/app_update_settings_section.dart';
+import 'package:comic_book_maker/ui/features/settings/settings_tile_loading.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -82,8 +84,9 @@ class SettingsPage extends HookConsumerWidget {
       await clearExportDirectory();
     }
 
-    return CustomScrollView(
-      slivers: [
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
         const SliverToBoxAdapter(
           child: PageHeader(title: '设置'),
         ),
@@ -106,13 +109,11 @@ class SettingsPage extends HookConsumerWidget {
                   tiles: [
                     themeModeAsync.when(
                       loading: () => SettingsTile(
-                        leading: const Icon(Icons.brightness_auto_outlined),
                         title: const Text('主题模式'),
                         enabled: false,
-                        trailing: const _SettingsTileLoadingValue(),
+                        trailing: const SettingsTileLoadingValue(),
                       ),
                       error: (error, _) => SettingsTile(
-                        leading: const Icon(Icons.brightness_auto_outlined),
                         title: const Text('主题模式'),
                         description: ProjectEditorInlineErrorBanner(
                           message: '无法读取设置：$error',
@@ -137,7 +138,7 @@ class SettingsPage extends HookConsumerWidget {
                     exportPathAsync.when(
                       loading: () => SettingsTile(
                         title: const Text('目录'),
-                        description: const _SettingsTileLoading(),
+                        description: const SettingsTileLoading(),
                       ),
                       error: (error, _) => SettingsTile(
                         title: const Text('目录'),
@@ -152,7 +153,6 @@ class SettingsPage extends HookConsumerWidget {
                         final busy = savingExportPath.value;
 
                         return SettingsTile.navigation(
-                          leading: const Icon(Icons.folder_outlined),
                           title: Text(
                             hasDirectory ? exportDirectory : '未设置',
                             maxLines: 2,
@@ -171,6 +171,7 @@ class SettingsPage extends HookConsumerWidget {
                     ),
                   ],
                 ),
+                const AppUpdateSettingsSection(),
                 SettingsSection(
                   margin: EdgeInsetsDirectional.zero,
                   title: const Text('关于'),
@@ -186,6 +187,7 @@ class SettingsPage extends HookConsumerWidget {
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -194,28 +196,23 @@ class _ThemeModeOption {
   const _ThemeModeOption({
     required this.mode,
     required this.label,
-    required this.icon,
   });
 
   final ThemeMode mode;
   final String label;
-  final IconData icon;
 
   static const values = <_ThemeModeOption>[
     _ThemeModeOption(
       mode: ThemeMode.system,
       label: '跟随系统',
-      icon: Icons.brightness_auto_outlined,
     ),
     _ThemeModeOption(
       mode: ThemeMode.light,
       label: '浅色',
-      icon: Icons.light_mode_outlined,
     ),
     _ThemeModeOption(
       mode: ThemeMode.dark,
       label: '深色',
-      icon: Icons.dark_mode_outlined,
     ),
   ];
 
@@ -290,7 +287,6 @@ class _ThemeModeNavigationTileBody extends HookWidget {
           ),
       ],
       child: SettingsTile.navigation(
-        leading: Icon(current.icon),
         title: const Text('主题模式'),
         value: Text(current.label),
         onPressed: (_) {
@@ -318,14 +314,14 @@ class _ThemeModeMenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return Row(
-      children: [
-        Icon(option.icon, size: 20, color: scheme.onSurface),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(child: Text(option.label)),
-        if (selected)
-          Icon(Icons.check, size: 18, color: scheme.primary),
-      ],
+    return Text(
+      option.label,
+      style: selected
+          ? TextStyle(
+              fontWeight: FontWeight.w600,
+              color: scheme.primary,
+            )
+          : null,
     );
   }
 }
@@ -363,38 +359,6 @@ class _ExportDirectoryTrailing extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       onPressed: onClear,
       icon: Icon(Icons.delete_outline, size: 20, color: scheme.error),
-    );
-  }
-}
-
-class _SettingsTileLoadingValue extends StatelessWidget {
-  const _SettingsTileLoadingValue();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: Theme.of(context).colorScheme.onSurfaceVariant,
-      ),
-    );
-  }
-}
-
-class _SettingsTileLoading extends StatelessWidget {
-  const _SettingsTileLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2.5),
-      ),
     );
   }
 }
