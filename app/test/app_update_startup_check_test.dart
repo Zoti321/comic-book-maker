@@ -145,8 +145,21 @@ void main() {
     expect(find.text('检查更新失败'), findsNothing);
   });
 
-  testWidgets('does not check on startup on mobile platforms', (tester) async {
+  testWidgets('shows update dialog on cold start when auto update is enabled on android', (
+    tester,
+  ) async {
     appUpdatePlatformOverride = TargetPlatform.android;
+
+    await pumpApp(tester, repository: _FakeAppUpdateRepository(_newerRelease));
+
+    expect(find.text('发现新版本 2.0.0'), findsOneWidget);
+    expect(find.text('启动检查新版本'), findsOneWidget);
+  });
+
+  testWidgets('does not check on startup on unsupported mobile platforms', (
+    tester,
+  ) async {
+    appUpdatePlatformOverride = TargetPlatform.iOS;
 
     await pumpApp(tester, repository: _FakeAppUpdateRepository(_newerRelease));
 

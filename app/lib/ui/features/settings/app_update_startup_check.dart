@@ -9,7 +9,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 Future<void> runStartupAppUpdateCheck({
   required WidgetRef ref,
 }) async {
-  if (!isAppUpdateDesktopPlatform()) {
+  if (!isAppUpdateSupportedPlatform()) {
     return;
   }
 

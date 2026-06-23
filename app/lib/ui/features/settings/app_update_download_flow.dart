@@ -1,13 +1,15 @@
 import 'package:comic_book_maker/data/repositories/app_update_repository.dart';
+import 'package:comic_book_maker/data/platform/android_apk_installer.dart';
 import 'package:comic_book_maker/domain/models/app_update_download_progress.dart';
 import 'package:comic_book_maker/domain/models/app_update_release.dart';
+import 'package:comic_book_maker/domain/use_cases/install_app_update.dart';
 import 'package:comic_book_maker/providers/app_update_providers.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_snack_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/app_update_download_dialog.dart';
+import 'package:comic_book_maker/ui/features/settings/app_update_install_permission_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-
 Future<void> runAppUpdateDownloadAndInstall({
   required BuildContext context,
   required WidgetRef ref,
@@ -38,11 +40,19 @@ Future<void> runAppUpdateDownloadAndInstall({
     hideAppUpdateDownloadDialog(context);
     await WidgetsBinding.instance.endOfFrame;
 
-    final message = await ref.read(installAppUpdateProvider).call(
-          filePath: filePath,
-        );
-    if (!context.mounted) return;
-    showAppSnackBar(context, message);
+    try {
+      final message = await ref.read(installAppUpdateProvider).call(
+            filePath: filePath,
+          );
+      if (!context.mounted) return;
+      showAppSnackBar(context, message);
+    } on AppUpdateInstallPermissionRequired {
+      if (!context.mounted) return;
+      await showAppUpdateInstallPermissionDialog(context: context);
+    } on AndroidApkInstallException catch (error) {
+      if (!context.mounted) return;
+      showAppSnackBar(context, '安装失败：${error.message}');
+    }
   } on DioException catch (error) {
     if (!context.mounted) return;
     hideAppUpdateDownloadDialog(context);

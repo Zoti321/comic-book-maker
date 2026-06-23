@@ -218,6 +218,22 @@ jobs:
           run-freezed-codegen: "true"
           run-riverpod-codegen: "true"
 
+      - name: Configure Android release signing
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/android/upload-keystore.jks
+          cat > app/android/key.properties <<EOF
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
       - name: Accept Android SDK licenses
         run: yes | flutter doctor --android-licenses
 
@@ -305,7 +321,7 @@ jobs:
           body: |
             ## 移动端说明
 
-            - **Android**（`*-android-arm64.apk`）：debug 签名侧载包，需在系统设置中允许「未知来源」安装；无法通过 Play 商店更新。
+            - **Android**（`*-android-arm64.apk`）：release 签名侧载包；首次安装需在系统设置中允许「未知来源」；应用内更新需使用同一签名密钥。
             - **iOS**（`*-ios-unsigned.zip`）：未签名 `.app` 归档，**不可在真机安装**；仅供归档或模拟器调试参考。
 
             ---

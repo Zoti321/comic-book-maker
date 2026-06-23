@@ -54,3 +54,52 @@ flutter build windows --release
   `xattr -cr /path/to/comic_book_maker.app`。
 
 Intel 版 Mac 可通过 Rosetta 运行 arm64 构建。
+
+## Android 签名与侧载更新
+
+Release APK 使用 **固定 release keystore** 签名，以便用户可通过应用内更新覆盖安装。本地与 CI 共用同一密钥。
+
+### 生成 keystore（一次性）
+
+```bash
+keytool -genkey -v \
+  -keystore upload-keystore.jks \
+  -keyalg RSA -keysize 2048 -validity 10000 \
+  -alias upload
+```
+
+将 `upload-keystore.jks` 放在 `app/android/`（已在 `.gitignore` 中忽略）。
+
+### 本地签名
+
+复制 `app/android/key.properties.example` 为 `app/android/key.properties`，填入密码与路径：
+
+```properties
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=upload-keystore.jks
+```
+
+未配置 `key.properties` 时，release 构建回退为 debug 签名（**无法与正式侧载包互相覆盖更新**）。
+
+### GitHub Actions Secrets
+
+在仓库 Settings → Secrets and variables → Actions 中配置：
+
+| Secret | 内容 |
+|--------|------|
+| `ANDROID_KEYSTORE_BASE64` | `upload-keystore.jks` 的 base64（`base64 -w0 upload-keystore.jks`） |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore 密码 |
+| `ANDROID_KEY_ALIAS` | 别名（如 `upload`） |
+| `ANDROID_KEY_PASSWORD` | key 密码 |
+
+配置后，`release.yml` 的 `build-android` job 会自动还原 keystore 并签名。
+
+### Android 产物
+
+| 文件 | 说明 |
+|------|------|
+| `comic-book-maker-<version>-android-arm64.apk` | arm64 侧载包；应用内更新会下载并调起系统安装器 |
+
+应用内更新需用户在系统设置中允许本应用「安装未知应用」。

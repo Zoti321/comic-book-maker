@@ -5,9 +5,10 @@ enum AppUpdateTargetPlatform {
   windows,
   macos,
   linux,
+  android,
 }
 
-/// 当前桌面更新目标平台；非桌面端调用将抛出 [StateError]。
+/// 当前应用内更新目标平台；不支持的平台调用将抛出 [StateError]。
 AppUpdateTargetPlatform currentAppUpdateTargetPlatform() {
   if (kIsWeb) {
     throw StateError('Web 平台不支持应用内更新');
@@ -18,6 +19,7 @@ AppUpdateTargetPlatform currentAppUpdateTargetPlatform() {
     TargetPlatform.windows => AppUpdateTargetPlatform.windows,
     TargetPlatform.macOS => AppUpdateTargetPlatform.macos,
     TargetPlatform.linux => AppUpdateTargetPlatform.linux,
+    TargetPlatform.android => AppUpdateTargetPlatform.android,
     _ => throw StateError('当前平台不支持应用内更新：$platform'),
   };
 }
@@ -27,6 +29,7 @@ String assetSuffixForPlatform(AppUpdateTargetPlatform platform) {
     AppUpdateTargetPlatform.windows => 'windows-x64-setup.exe',
     AppUpdateTargetPlatform.macos => 'macos-arm64.zip',
     AppUpdateTargetPlatform.linux => 'linux-x64.tar.gz',
+    AppUpdateTargetPlatform.android => 'android-arm64.apk',
   };
 }
 
