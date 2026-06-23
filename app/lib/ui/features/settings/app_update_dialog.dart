@@ -2,6 +2,7 @@ import 'package:comic_book_maker/domain/models/app_update_release.dart';
 import 'package:comic_book_maker/providers/app_update_providers.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/features/settings/app_update_download_flow.dart';
+import 'package:comic_book_maker/ui/features/settings/app_update_release_notes_content.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,9 +22,7 @@ Future<void> showAppUpdateAvailableDialog({
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 280),
             child: SingleChildScrollView(
-              child: SelectableText(
-                release.releaseNotes.isEmpty ? '暂无更新说明' : release.releaseNotes,
-              ),
+              child: AppUpdateReleaseNotesContent(release: release),
             ),
           ),
         ),

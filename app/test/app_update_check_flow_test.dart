@@ -106,13 +106,14 @@ void main() {
     await pumpSettings(
       tester,
       repository: _FakeAppUpdateRepository(
-        const AppUpdateRelease(
+        AppUpdateRelease(
           version: '2.0.0',
           tagName: 'v2.0.0',
-          releaseNotes: '修复若干问题',
+          releaseNotes: '- 修复若干问题',
           releasePageUrl:
               'https://github.com/Zoti321/comic-book-maker/releases/tag/v2.0.0',
           downloadUrl: 'https://example.com/win.exe',
+          publishedAt: DateTime.utc(2026, 6, 18),
         ),
       ),
     );
@@ -122,7 +123,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('发现新版本 2.0.0'), findsOneWidget);
-    expect(find.text('修复若干问题'), findsOneWidget);
+    expect(find.text('- 修复若干问题'), findsOneWidget);
+    expect(find.text('发布时间: 2026-06-18'), findsOneWidget);
     expect(find.text('稍后提醒'), findsOneWidget);
     expect(find.text('查看更新'), findsOneWidget);
     expect(find.text('立即更新'), findsOneWidget);

@@ -6,6 +6,7 @@ class AppUpdateRelease {
     required this.releaseNotes,
     required this.releasePageUrl,
     required this.downloadUrl,
+    this.publishedAt,
   });
 
   /// 不含 `v` 前缀的 semver，例如 `1.2.0`。
@@ -17,4 +18,7 @@ class AppUpdateRelease {
   final String releaseNotes;
   final String releasePageUrl;
   final String downloadUrl;
+
+  /// GitHub Release `published_at`，用于更新对话框底部日期。
+  final DateTime? publishedAt;
 }

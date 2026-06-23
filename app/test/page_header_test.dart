@@ -74,4 +74,56 @@ void main() {
 
     expect(titleOnlyHeight, withActionsHeight);
   });
+
+  testWidgets('adds status bar inset to top padding', (tester) async {
+    setWideViewport(tester);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: MediaQuery(
+          data: const MediaQueryData(padding: EdgeInsets.only(top: 24)),
+          child: const Scaffold(
+            body: PageHeader(title: '漫画库'),
+          ),
+        ),
+      ),
+    );
+
+    final padding = tester.widget<Padding>(
+      find.descendant(
+        of: find.byType(PageHeader),
+        matching: find.byType(Padding),
+      ),
+    );
+
+    expect(
+      (padding.padding as EdgeInsets).top,
+      AppSpacing.md + 24,
+    );
+  });
+
+  testWidgets('keeps default top padding when status bar inset is zero', (
+    tester,
+  ) async {
+    setWideViewport(tester);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: PageHeader(title: '设置'),
+        ),
+      ),
+    );
+
+    final padding = tester.widget<Padding>(
+      find.descendant(
+        of: find.byType(PageHeader),
+        matching: find.byType(Padding),
+      ),
+    );
+
+    expect((padding.padding as EdgeInsets).top, AppSpacing.md);
+  });
 }

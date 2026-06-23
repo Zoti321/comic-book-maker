@@ -1,14 +1,21 @@
+import 'dart:io';
+
 import 'package:comic_book_maker/domain/use_cases/export_workflow.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_platform.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_workflow.dart';
 import 'package:comic_book_maker/providers/core_gateway_provider.dart';
 import 'package:comic_book_maker/providers/export_path_provider.dart';
+import 'package:comic_book_maker/ui/core/router/app_routes.dart';
 import 'package:comic_book_maker/ui/features/library/providers/library_provider.dart';
+import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_provider.dart';
 import 'package:comic_book_maker/ui/features/project_editor/providers/project_workspace_state.dart';
-import 'package:comic_book_maker/ui/core/router/app_routes.dart';
-import 'package:comic_book_maker/ui/features/project_editor/project_editor_dialogs.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// 导出并删除后离开编辑页：使用 [GoRouter.go] 替换路由栈。
 void leaveProjectEditorAfterDeletedExport({
@@ -60,12 +67,40 @@ Future<void> runProjectExport({
     }
   }
 
+  final workflow = ExportWorkflow(gateway: ref.read(coreGatewayProvider));
+
+  if (usesMobileExportSaveFile()) {
+    await _runMobileProjectExport(
+      context: context,
+      ref: ref,
+      workspace: workspace,
+      projectId: projectId,
+      workflow: workflow,
+    );
+    return;
+  }
+
+  await _runDesktopProjectExport(
+    context: context,
+    ref: ref,
+    workspace: workspace,
+    projectId: projectId,
+    workflow: workflow,
+  );
+}
+
+Future<void> _runDesktopProjectExport({
+  required BuildContext context,
+  required WidgetRef ref,
+  required ProjectWorkspaceState workspace,
+  required String projectId,
+  required ExportWorkflow workflow,
+}) async {
   final globalExportDirectory = await readReadyGlobalExportDirectory(
     ref.read(exportPathProvider),
     awaitLoaded: () => ref.read(exportPathProvider.future),
   );
 
-  final workflow = ExportWorkflow(gateway: ref.read(coreGatewayProvider));
   final plan = workflow.plan(
     ExportWorkflowRequest(
       projectTitle: workspace.project.title,
@@ -93,38 +128,130 @@ Future<void> runProjectExport({
   final confirmed = await workflow.runConfirmations(
     needsOverwriteConfirmation: readyPlan.needsOverwriteConfirmation,
     deleteAfterExport: readyPlan.deleteAfterExport,
-    confirmOverwrite: () async {
-      if (!context.mounted) return false;
-      final result = await showProjectEditorConfirmDialog(
-        context: context,
-        title: '覆盖已有文件？',
-        description: Text(
-          '目标位置已存在文件：\n${readyPlan.target.destinationPath}\n\n'
-          '继续将覆盖该文件。',
-        ),
-        confirmLabel: '覆盖并导出',
-        destructive: true,
-      );
-      return result == true;
-    },
-    confirmDeleteProject: () async {
-      if (!context.mounted) return false;
-      final result = await showProjectEditorConfirmDialog(
-        context: context,
-        title: '导出并删除项目',
-        description: Text(
-          '将导出「${workspace.project.title}」为 ${readyPlan.target.formatLabel} 并保存至：\n'
-          '${readyPlan.target.destinationPath}\n\n'
-          '导出完成后，本地页面与元数据将被永久删除，此操作不可恢复。',
-        ),
-        confirmLabel: '导出并删除',
-        destructive: true,
-      );
-      return result == true;
-    },
+    confirmOverwrite: () => _confirmExportOverwrite(
+      context: context,
+      destinationPath: readyPlan.target.destinationPath,
+    ),
+    confirmDeleteProject: () => _confirmDeleteProjectAfterExport(
+      context: context,
+      projectTitle: workspace.project.title,
+      formatLabel: readyPlan.target.formatLabel,
+      destinationPath: readyPlan.target.destinationPath,
+    ),
   );
   if (!confirmed || !context.mounted) return;
 
+  await _executeProjectExport(
+    context: context,
+    ref: ref,
+    workspace: workspace,
+    projectId: projectId,
+    workflow: workflow,
+    readyPlan: readyPlan,
+    exportFailureNextStepHint:
+        '请检查目标路径是否可写，或在设置 / 项目属性中更换导出目录后重试。',
+  );
+}
+
+Future<void> _runMobileProjectExport({
+  required BuildContext context,
+  required WidgetRef ref,
+  required ProjectWorkspaceState workspace,
+  required String projectId,
+  required ExportWorkflow workflow,
+}) async {
+  final settings = workspace.settings;
+  if (settings == null) {
+    if (!context.mounted) return;
+    await showProjectEditorOperationFailure(
+      context,
+      title: '无法导出',
+      message: '项目设置尚未加载，请稍后重试。',
+      nextStepHint: '若问题持续，请返回漫画库后重新打开项目。',
+    );
+    return;
+  }
+
+  final tempDir = await getTemporaryDirectory();
+  final plan = workflow.plan(
+    ExportWorkflowRequest(
+      projectTitle: workspace.project.title,
+      settings: mobileExportPlanningSettings(settings),
+      globalExportDirectory: tempDir.path,
+      hasPages: workspace.pages.isNotEmpty,
+    ),
+  );
+
+  final ExportWorkflowReady readyTemplate;
+  switch (plan) {
+    case ExportWorkflowBlocked(:final presentation):
+      if (!context.mounted) return;
+      await showProjectEditorOperationFailure(
+        context,
+        title: presentation.title,
+        message: presentation.message,
+        nextStepHint: presentation.nextStepHint,
+      );
+      return;
+    case ExportWorkflowReady ready:
+      readyTemplate = ready;
+  }
+
+  final suggestedFileName = p.basename(readyTemplate.target.destinationPath);
+  final savedPath = await FilePicker.platform.saveFile(
+    dialogTitle: '导出 ${readyTemplate.target.formatLabel}',
+    fileName: suggestedFileName,
+  );
+  if (!context.mounted) return;
+  if (savedPath == null) return;
+
+  final target = targetWithDestination(
+    template: readyTemplate.target,
+    destinationPath: savedPath,
+  );
+  final readyPlan = ExportWorkflowReady(
+    target: target,
+    deleteAfterExport: readyTemplate.deleteAfterExport,
+    needsOverwriteConfirmation: File(savedPath).existsSync(),
+    progressMessage: readyTemplate.progressMessage,
+  );
+
+  final confirmed = await workflow.runConfirmations(
+    needsOverwriteConfirmation: readyPlan.needsOverwriteConfirmation,
+    deleteAfterExport: readyPlan.deleteAfterExport,
+    confirmOverwrite: () => _confirmExportOverwrite(
+      context: context,
+      destinationPath: readyPlan.target.destinationPath,
+    ),
+    confirmDeleteProject: () => _confirmDeleteProjectAfterExport(
+      context: context,
+      projectTitle: workspace.project.title,
+      formatLabel: readyPlan.target.formatLabel,
+      destinationPath: readyPlan.target.destinationPath,
+    ),
+  );
+  if (!confirmed || !context.mounted) return;
+
+  await _executeProjectExport(
+    context: context,
+    ref: ref,
+    workspace: workspace,
+    projectId: projectId,
+    workflow: workflow,
+    readyPlan: readyPlan,
+    exportFailureNextStepHint: '请重试导出并选择可写的保存位置。',
+  );
+}
+
+Future<void> _executeProjectExport({
+  required BuildContext context,
+  required WidgetRef ref,
+  required ProjectWorkspaceState workspace,
+  required String projectId,
+  required ExportWorkflow workflow,
+  required ExportWorkflowReady readyPlan,
+  required String exportFailureNextStepHint,
+}) async {
   try {
     await runProjectEditorDismissibleBackgroundOperation(
       context: context,
@@ -143,8 +270,7 @@ Future<void> runProjectExport({
       context,
       title: failure?.title ?? '导出失败',
       message: failure?.message ?? '导出过程中发生未知错误。',
-      nextStepHint: failure?.nextStepHint ??
-          '请检查目标路径是否可写，或在设置 / 项目属性中更换导出目录后重试。',
+      nextStepHint: failure?.nextStepHint ?? exportFailureNextStepHint,
     );
     return;
   }
@@ -165,4 +291,44 @@ Future<void> runProjectExport({
       projectId: projectId,
     );
   }
+}
+
+Future<bool> _confirmExportOverwrite({
+  required BuildContext context,
+  required String destinationPath,
+}) async {
+  if (!context.mounted) return false;
+  final result = await showProjectEditorConfirmDialog(
+    context: context,
+    title: '覆盖已有文件？',
+    description: Text(
+      '目标位置已存在文件：\n$destinationPath\n\n'
+      '继续将覆盖该文件。',
+    ),
+    confirmLabel: '覆盖并导出',
+    destructive: true,
+  );
+  return result == true;
+}
+
+Future<bool> _confirmDeleteProjectAfterExport({
+  required BuildContext context,
+  required String projectTitle,
+  required String formatLabel,
+  required String destinationPath,
+}) async {
+  if (!context.mounted) return false;
+
+  final result = await showProjectEditorConfirmDialog(
+    context: context,
+    title: '导出并删除项目',
+    description: Text(
+      '将导出「$projectTitle」为 $formatLabel 并保存至：\n'
+      '$destinationPath\n\n'
+      '导出完成后，本地页面与元数据将被永久删除，此操作不可恢复。',
+    ),
+    confirmLabel: '导出并删除',
+    destructive: true,
+  );
+  return result == true;
 }

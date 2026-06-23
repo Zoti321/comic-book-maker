@@ -1,9 +1,12 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
 import 'package:comic_book_maker/domain/models/create_project_command.dart';
 import 'package:comic_book_maker/domain/models/create_project_draft.dart';
+import 'package:comic_book_maker/domain/use_cases/mobile_export_platform.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  tearDown(resetMobileExportSaveFileOverride);
+
   group('CreateProjectDraft validation', () {
     test('cannot create without import source', () {
       final draft = CreateProjectDraft();
@@ -22,6 +25,20 @@ void main() {
       expect(draft.canCreate, isFalse);
       expect(draft.createDisabledReason, contains('专用导出目录'));
     });
+
+    test(
+      'allows create without dedicated export directory on mobile save-file platforms',
+      () {
+        mobileExportSaveFileOverride = () => true;
+        final draft = CreateProjectDraft(
+          importSource: const CreateProjectImageImport([r'C:\a.png']),
+          useDefaultExportDirectory: false,
+        );
+
+        expect(draft.canCreate, isTrue);
+        expect(draft.createDisabledReason, isNull);
+      },
+    );
 
     test('image import infers images kind and comic archive export', () {
       final draft = CreateProjectDraft()

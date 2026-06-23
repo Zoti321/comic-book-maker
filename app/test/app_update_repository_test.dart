@@ -90,12 +90,13 @@ void main() {
   });
 
   group('parseLatestReleaseJson', () {
-    test('parses tag, notes and platform asset', () {
+    test('parses tag, notes, publishedAt and platform asset', () {
       final release = GitHubAppUpdateRepository.parseLatestReleaseJson(
         const {
           'tag_name': 'v2.1.0',
           'html_url': 'https://github.com/Zoti321/comic-book-maker/releases/tag/v2.1.0',
-          'body': '修复导出问题',
+          'body': '- 修复导出问题',
+          'published_at': '2026-06-18T10:15:30Z',
           'assets': [
             {
               'name': 'comic-book-maker-2.1.0-windows-x64-setup.exe',
@@ -108,7 +109,8 @@ void main() {
 
       expect(release.version, '2.1.0');
       expect(release.tagName, 'v2.1.0');
-      expect(release.releaseNotes, '修复导出问题');
+      expect(release.releaseNotes, '- 修复导出问题');
+      expect(release.publishedAt, DateTime.utc(2026, 6, 18, 10, 15, 30));
       expect(release.downloadUrl, 'https://example.com/win.exe');
       expect(
         release.releasePageUrl,
