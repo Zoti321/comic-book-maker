@@ -1,4 +1,5 @@
 import 'package:comic_book_maker/data/repositories/core_gateway.dart';
+import 'package:comic_book_maker/ui/core/feedback/app_snack_bar.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_overlay.dart';
 import 'package:comic_book_maker/ui/core/design_system/app_sheet.dart';
 import 'package:comic_book_maker/ui/core/theme/app_tokens.dart';
@@ -201,7 +202,7 @@ void showProjectEditorExportSuccessSnackBar(
   required bool deletedProject,
 }) {
   final message = deletedProject ? '项目已导出并已删除' : '导出完成';
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  showAppSnackBar(context, message);
 }
 
 Future<void> showProjectEditorAppendImportOutcome(

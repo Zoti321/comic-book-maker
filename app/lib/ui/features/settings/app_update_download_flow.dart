@@ -4,7 +4,7 @@ import 'package:comic_book_maker/domain/models/app_update_download_progress.dart
 import 'package:comic_book_maker/domain/models/app_update_release.dart';
 import 'package:comic_book_maker/domain/use_cases/install_app_update.dart';
 import 'package:comic_book_maker/providers/app_update_providers.dart';
-import 'package:comic_book_maker/ui/core/design_system/app_snack_bar.dart';
+import 'package:comic_book_maker/ui/core/feedback/app_snack_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/app_update_download_dialog.dart';
 import 'package:comic_book_maker/ui/features/settings/app_update_install_permission_dialog.dart';
 import 'package:dio/dio.dart';
