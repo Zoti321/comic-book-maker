@@ -665,7 +665,8 @@ fn write_epub_to_path(
     let mut cover_image_href = String::new();
 
     extra_manifest_items.push_str(
-        r#"    <item id="ncx" href="xml/vol.nav" media-type="application/x-dtbncx+xml"/>
+        r#"    <item id="nav" href="html/nav.html" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="xml/vol.nav" media-type="application/x-dtbncx+xml"/>
     <item id="css" href="css/style.css" media-type="text/css"/>
 "#,
     );
@@ -896,7 +897,8 @@ fn build_content_opf(
 "#,
     );
     opf.push_str(
-        r#"    <itemref idref="Page_cover" />
+        r#"    <itemref idref="nav" linear="no"/>
+    <itemref idref="Page_cover" />
 "#,
     );
     opf.push_str(spine_items);

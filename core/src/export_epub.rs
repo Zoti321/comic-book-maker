@@ -168,6 +168,15 @@ mod tests {
         assert!(opf.contains("<meta name=\"characters\" content=\"角色A,角色B\"/>"));
         assert!(opf.contains("<meta name=\"tags\" content=\"标签A,标签B\"/>"));
         assert!(opf.contains("<dc:identifier id=\"book-id\">Export EPUB</dc:identifier>"));
+        assert!(opf.contains(r#"id="nav" href="html/nav.html""#));
+        assert!(opf.contains(r#"properties="nav""#));
+        assert!(opf.contains(r#"<itemref idref="nav" linear="no"/>"#));
+        let nav_spine_pos = opf.find(r#"<itemref idref="nav" linear="no"/>"#).expect("nav spine");
+        let cover_spine_pos = opf.find(r#"<itemref idref="Page_cover""#).expect("cover spine");
+        assert!(
+            nav_spine_pos < cover_spine_pos,
+            "nav spine itemref should precede Page_cover"
+        );
         assert!(opf.contains("<guide>"));
         assert!(opf.contains("type=\"cover\""));
         assert!(!opf.contains("ComicInfo"));
