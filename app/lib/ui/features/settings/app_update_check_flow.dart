@@ -1,7 +1,7 @@
 import 'package:comic_book_maker/data/repositories/app_update_repository.dart';
 import 'package:comic_book_maker/domain/use_cases/check_app_update.dart';
 import 'package:comic_book_maker/providers/app_update_providers.dart';
-import 'package:comic_book_maker/ui/core/design_system/app_snack_bar.dart';
+import 'package:comic_book_maker/ui/core/feedback/app_snack_bar.dart';
 import 'package:comic_book_maker/ui/features/settings/app_update_dialog.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
