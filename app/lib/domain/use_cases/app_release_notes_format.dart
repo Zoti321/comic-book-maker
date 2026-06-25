@@ -13,25 +13,78 @@ final class ReleaseNoteParagraph extends ReleaseNoteBlock {
   const ReleaseNoteParagraph(super.text);
 }
 
+final _whatsChangedHeaderPattern = RegExp(
+  r"^##\s+what's changed\s*$",
+  caseSensitive: false,
+);
+
 List<ReleaseNoteBlock> parseReleaseNoteBlocks(String releaseNotes) {
   final trimmed = releaseNotes.trim();
   if (trimmed.isEmpty) {
     return const [];
   }
 
+  final sectionLines = _extractWhatsChangedSectionLines(trimmed);
+  if (sectionLines == null) {
+    return const [];
+  }
+
   final blocks = <ReleaseNoteBlock>[];
-  for (final line in releaseNotes.split('\n')) {
-    final lineText = line.trim();
-    if (lineText.isEmpty) {
+  for (final line in sectionLines) {
+    final bulletText = _parseBulletLine(line.trim());
+    if (bulletText == null) {
       continue;
     }
-    if (lineText.startsWith('- ')) {
-      blocks.add(ReleaseNoteBullet(lineText.substring(2).trim()));
-    } else {
-      blocks.add(ReleaseNoteParagraph(lineText));
-    }
+    blocks.add(ReleaseNoteBullet(_cleanBulletText(bulletText)));
   }
   return blocks;
+}
+
+List<String>? _extractWhatsChangedSectionLines(String releaseNotes) {
+  final lines = releaseNotes.split('\n');
+  var inSection = false;
+  final sectionLines = <String>[];
+
+  for (final line in lines) {
+    final trimmed = line.trim();
+    if (_isWhatsChangedHeader(trimmed)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection && _isSectionHeader(trimmed)) {
+      break;
+    }
+    if (inSection) {
+      sectionLines.add(line);
+    }
+  }
+
+  if (!inSection) {
+    return null;
+  }
+  return sectionLines;
+}
+
+bool _isWhatsChangedHeader(String line) {
+  return _whatsChangedHeaderPattern.hasMatch(line);
+}
+
+bool _isSectionHeader(String line) {
+  return line.startsWith('## ');
+}
+
+String? _parseBulletLine(String lineText) {
+  if (lineText.startsWith('- ')) {
+    return lineText.substring(2).trim();
+  }
+  if (lineText.startsWith('* ')) {
+    return lineText.substring(2).trim();
+  }
+  return null;
+}
+
+String _cleanBulletText(String text) {
+  return text.replaceFirst(RegExp(r'\s+in\s+https?://\S+\s*$'), '').trim();
 }
 
 DateTime? parseReleasePublishedAt(Object? value) {

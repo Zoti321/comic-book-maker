@@ -3,26 +3,65 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('parseReleaseNoteBlocks', () {
-    test('parses bullet lines and paragraphs', () {
+    test('extracts What\'s Changed bullets and strips PR links', () {
       final blocks = parseReleaseNoteBlocks('''
-- 新增高级搜索支持
-- 图片预览现在支持多图浏览
+## What's Changed
+* 修复 Android Release 导出无响应，并统一桌面 SnackBar 反馈 by @Zoti321 in https://github.com/Zoti321/comic-book-maker/pull/39
+- 改进更新对话框 by @Zoti321 in https://github.com/Zoti321/comic-book-maker/pull/40
 
-其他说明
+## 移动端
+移动端说明不应显示
+
+**Full Changelog**: https://github.com/Zoti321/comic-book-maker/compare/v1.1.0...v1.1.1
 ''');
 
-      expect(blocks, hasLength(3));
+      expect(blocks, hasLength(2));
       expect(blocks[0], isA<ReleaseNoteBullet>());
-      expect((blocks[0] as ReleaseNoteBullet).text, '新增高级搜索支持');
+      expect(
+        (blocks[0] as ReleaseNoteBullet).text,
+        '修复 Android Release 导出无响应，并统一桌面 SnackBar 反馈 by @Zoti321',
+      );
       expect(blocks[1], isA<ReleaseNoteBullet>());
-      expect((blocks[1] as ReleaseNoteBullet).text, '图片预览现在支持多图浏览');
-      expect(blocks[2], isA<ReleaseNoteParagraph>());
-      expect((blocks[2] as ReleaseNoteParagraph).text, '其他说明');
+      expect(
+        (blocks[1] as ReleaseNoteBullet).text,
+        '改进更新对话框 by @Zoti321',
+      );
+    });
+
+    test('matches What\'s Changed header case-insensitively', () {
+      final blocks = parseReleaseNoteBlocks('''
+## what's changed
+* 修复若干问题 by @Zoti321
+''');
+
+      expect(blocks, hasLength(1));
+      expect((blocks.single as ReleaseNoteBullet).text, '修复若干问题 by @Zoti321');
+    });
+
+    test('returns empty list when What\'s Changed section is missing', () {
+      expect(
+        parseReleaseNoteBlocks('- 旧版手写说明\n其他说明'),
+        isEmpty,
+      );
+      expect(
+        parseReleaseNoteBlocks('What\'s Changed\n* 无二级标题'),
+        isEmpty,
+      );
     });
 
     test('returns empty list for blank notes', () {
       expect(parseReleaseNoteBlocks(''), isEmpty);
       expect(parseReleaseNoteBlocks('   \n  '), isEmpty);
+    });
+
+    test('returns empty list when What\'s Changed has no bullets', () {
+      expect(
+        parseReleaseNoteBlocks('''
+## What's Changed
+仅说明文字，无条目
+'''),
+        isEmpty,
+      );
     });
   });
 

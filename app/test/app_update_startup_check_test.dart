@@ -44,7 +44,10 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
 const _newerRelease = AppUpdateRelease(
   version: '2.0.0',
   tagName: 'v2.0.0',
-  releaseNotes: '启动检查新版本',
+  releaseNotes: '''
+## What's Changed
+* 启动检查新版本 by @Zoti321
+''',
   releasePageUrl:
       'https://github.com/Zoti321/comic-book-maker/releases/tag/v2.0.0',
   downloadUrl: 'https://example.com/win.exe',
@@ -106,7 +109,7 @@ void main() {
     await pumpApp(tester, repository: _FakeAppUpdateRepository(_newerRelease));
 
     expect(find.text('发现新版本 2.0.0'), findsOneWidget);
-    expect(find.text('启动检查新版本'), findsOneWidget);
+    expect(find.text('- 启动检查新版本 by @Zoti321'), findsOneWidget);
   });
 
   testWidgets('does not check on startup when auto update is disabled', (
@@ -153,7 +156,7 @@ void main() {
     await pumpApp(tester, repository: _FakeAppUpdateRepository(_newerRelease));
 
     expect(find.text('发现新版本 2.0.0'), findsOneWidget);
-    expect(find.text('启动检查新版本'), findsOneWidget);
+    expect(find.text('- 启动检查新版本 by @Zoti321'), findsOneWidget);
   });
 
   testWidgets('does not check on startup on unsupported mobile platforms', (

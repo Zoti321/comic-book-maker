@@ -109,7 +109,10 @@ void main() {
         AppUpdateRelease(
           version: '2.0.0',
           tagName: 'v2.0.0',
-          releaseNotes: '- 修复若干问题',
+          releaseNotes: '''
+## What's Changed
+* 修复若干问题 by @Zoti321
+''',
           releasePageUrl:
               'https://github.com/Zoti321/comic-book-maker/releases/tag/v2.0.0',
           downloadUrl: 'https://example.com/win.exe',
@@ -123,7 +126,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('发现新版本 2.0.0'), findsOneWidget);
-    expect(find.text('- 修复若干问题'), findsOneWidget);
+    expect(find.text('- 修复若干问题 by @Zoti321'), findsOneWidget);
     expect(find.text('发布时间: 2026-06-18'), findsOneWidget);
     expect(find.text('稍后提醒'), findsOneWidget);
     expect(find.text('查看更新'), findsOneWidget);
